@@ -413,7 +413,6 @@ export default function WakiiApp() {
           <div className={"screen" + (screen === "home" ? " active" : "")} id="s-home">
             <div className="mission">
               <span className="mlabel">오늘의 미션</span>
-              <span className="mcount">1/4</span>
               <div className="mtext">
                 오늘은 하지예요! 1년 중 해가
                 <br />가장 긴 날의 풍경을 담아보세요 ☀️
@@ -423,12 +422,8 @@ export default function WakiiApp() {
               </button>
             </div>
 
-            <div className="stepbar">
-              <div>
-                <div className="big">6,200</div>
-                <div className="lbl">오늘 내 걸음</div>
-              </div>
-              <div className="foot">👣</div>
+            <div className="steptext">
+              <b>6,200</b> 걸음
             </div>
 
             <div className="mark">
@@ -437,7 +432,6 @@ export default function WakiiApp() {
             </div>
 
             <div className="roomsheet">
-              <div className="grip" />
               <div className="room" onClick={() => openRoom("엄마아빠", "🏠")}>
                 <div className="ravatar on">🏠</div>
                 <div className="rmeta">

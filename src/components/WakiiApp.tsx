@@ -828,7 +828,6 @@ export default function WakiiApp() {
                             </div>
                           );
                         })}
-                        <div className="hint">탭하면 둘러보기 ›</div>
                       </div>
 
                       {deck.isMission && <div className="missionchip">{deck.label}</div>}

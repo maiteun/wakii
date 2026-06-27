@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import PhotoEditor from "./PhotoEditor";
 
 /* ===================================================================
    wakii — full prototype, ported from khux-prototype-full.html to React.
@@ -25,6 +26,15 @@ const overlays = ["🌅", "☕️", "🐶", "🍱", "🌷", "🌧️", "🌻", "
 const initialRooms: RoomsData = {
   엄마아빠: [
     {
+      label: "오늘의 풍경",
+      when: "오늘",
+      isMission: true,
+      cards: [
+        { who: "나", mine: true, date: "2026. 6. 26", ov: "🌻" },
+        { who: "엄마", mine: false, date: "2026. 6. 26", ov: "🌷" },
+      ],
+    },
+    {
       label: "엄마",
       when: "어제",
       isMission: false,
@@ -32,15 +42,6 @@ const initialRooms: RoomsData = {
         { who: "엄마", mine: false, date: "2026. 6. 25", ov: "🌅" },
         { who: "나", mine: true, date: "2026. 6. 25", ov: "☕️", reply: true },
         { who: "아빠", mine: false, date: "2026. 6. 26", ov: "" },
-      ],
-    },
-    {
-      label: "오늘의 풍경",
-      when: "오늘",
-      isMission: true,
-      cards: [
-        { who: "나", mine: true, date: "2026. 6. 26", ov: "🌻" },
-        { who: "엄마", mine: false, date: "2026. 6. 26", ov: "🌷" },
       ],
     },
     {
@@ -520,9 +521,9 @@ export default function WakiiApp() {
                             const rel = i - active;
                             const abs = Math.abs(rel);
                             const ang = rel * 26;
-                            const x = rel * 46;
-                            const z = -abs * 70;
-                            const scale = abs === 0 ? 1.12 : Math.max(0.7, 1 - abs * 0.14);
+                            const x = rel * 56;
+                            const z = -abs * 82;
+                            const scale = abs === 0 ? 1.14 : Math.max(0.7, 1 - abs * 0.14);
                             style.transform = `translateX(calc(-50% + ${x}px)) translateZ(${z}px) rotateY(${-ang}deg) scale(${scale})`;
                             style.zIndex = 50 - abs;
                             style.opacity = abs > 2 ? 0 : 1;
@@ -796,43 +797,48 @@ export default function WakiiApp() {
               <span style={{ width: 18 }} />
             </div>
             <div className="ul-stage">
-              {uploadMode === "mission" && <div className="ul-prompt">💡 오늘의 미션 촬영</div>}
-              <div className="vf">
-                {!shotTaken && (
-                  <video
-                    ref={videoRef}
-                    playsInline
-                    muted
-                    autoPlay
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      display: cameraActive ? "block" : "none",
-                    }}
-                  />
-                )}
-                {shotTaken && capturedSrc && (
-                  // eslint-disable-next-line @next/next/no-img-element
+              {!shotTaken && (
+                <>
+                  {uploadMode === "mission" && <div className="ul-prompt">💡 오늘의 미션 촬영</div>}
+                  <div className="vf">
+                    <video
+                      ref={videoRef}
+                      playsInline
+                      muted
+                      autoPlay
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: cameraActive ? "block" : "none",
+                      }}
+                    />
+                    <div className="ratio">3:4</div>
+                  </div>
+                  <div className="ul-shutter" onClick={shoot} />
+                  {uploadMode === "new" && (
+                    <div className="ul-gallery" onClick={() => galleryInputRef.current?.click()}>
+                      🖼️
+                    </div>
+                  )}
+                </>
+              )}
+              {/* after capture: full Instagram-style editor (skipped for the
+                  mission flow, which auto-completes) */}
+              {shotTaken && capturedSrc && uploadMode !== "mission" && (
+                <PhotoEditor src={capturedSrc} toast={toast} />
+              )}
+              {shotTaken && capturedSrc && uploadMode === "mission" && (
+                <div className="vf">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={capturedSrc}
                     alt="촬영한 사진"
                     style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
                   />
-                )}
-                <div className="ratio">3:4</div>
-                {shotTaken && (
-                  <div className="ed-stk" style={{ top: 8, right: 8 }}>
-                    오후 3:42
-                  </div>
-                )}
-              </div>
-              {!shotTaken && <div className="ul-shutter" onClick={shoot} />}
-              {!shotTaken && uploadMode === "new" && (
-                <div className="ul-gallery" onClick={() => galleryInputRef.current?.click()}>
-                  🖼️
+                  <div className="ratio">3:4</div>
                 </div>
               )}
             </div>
@@ -854,26 +860,6 @@ export default function WakiiApp() {
               onChange={onPickFile}
             />
             <canvas ref={canvasRef} style={{ display: "none" }} />
-            {shotTaken && uploadMode !== "mission" && (
-              <div className="ul-tools">
-                <div className="tg">
-                  <span className="ic">😊</span>
-                  <span className="tx">이모지</span>
-                </div>
-                <div className="tg">
-                  <span className="ic">✏️</span>
-                  <span className="tx">그림</span>
-                </div>
-                <div className="tg">
-                  <span className="ic">T</span>
-                  <span className="tx">텍스트</span>
-                </div>
-                <div className="tg">
-                  <span className="ic">🎤</span>
-                  <span className="tx">음성</span>
-                </div>
-              </div>
-            )}
             {shotTaken && (
               <div className="ul-next" onClick={() => setShareShow(true)}>
                 →

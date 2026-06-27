@@ -72,12 +72,12 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .decklabel{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--g40);margin-bottom:8px;}
 .decklabel b{color:var(--g70);font-weight:700;}
 .decklabel .cnt{margin-left:auto;background:var(--g08);border-radius:8px;padding:1px 8px;font-size:9px;color:var(--g55);font-weight:700;}
-.deck{position:relative;height:200px;cursor:pointer;user-select:none;perspective:900px;transition:height .3s;}
-.deck.open{height:250px;}
-.card{position:absolute;left:50%;top:6px;width:150px;aspect-ratio:3/4;border-radius:15px;overflow:hidden;background:linear-gradient(160deg,#8a8a8a,#5e5e5e);border:3px solid var(--parent);box-shadow:0 6px 16px rgba(0,0,0,.16);transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .4s;transform-origin:center center;transform-style:preserve-3d;}
+.deck{position:relative;height:248px;cursor:pointer;user-select:none;perspective:1000px;transition:height .3s;}
+.deck.open{height:300px;}
+.card{position:absolute;left:50%;top:6px;width:188px;aspect-ratio:3/4;border-radius:17px;overflow:hidden;background:linear-gradient(160deg,#8a8a8a,#5e5e5e);border:3px solid var(--parent);box-shadow:0 6px 16px rgba(0,0,0,.16);transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .4s;transform-origin:center center;transform-style:preserve-3d;}
 .card.mine{border-color:var(--me);background:linear-gradient(160deg,#6a6a6a,#3a3a3a);}
 .card .meta{position:absolute;top:7px;left:8px;font-size:8px;color:rgba(255,255,255,.92);font-weight:700;}
-.card .ov{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:24px;filter:grayscale(1);}
+.card .ov{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);font-size:30px;filter:grayscale(1);}
 .card .seq{position:absolute;bottom:7px;right:8px;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.9);color:#222;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;}
 .card .reporig{position:absolute;top:5px;right:5px;width:26px;aspect-ratio:3/4;border-radius:3px;background:linear-gradient(160deg,#9a9a9a,#6e6e6e);border:1.5px solid #fff;}
 .deck .hint{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);font-size:9px;color:var(--g40);white-space:nowrap;}
@@ -204,6 +204,47 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 /* floating reaction bubbles */
 .bubble{position:absolute;z-index:84;pointer-events:none;opacity:1;animation:bubblefloat 1.4s ease-out forwards;}
 @keyframes bubblefloat{to{transform:translateY(var(--dy)) translateX(var(--dx));opacity:0;}}
+
+/* ===== photo editor (after capture) ===== */
+.editor{display:flex;flex-direction:column;align-items:center;width:100%;gap:10px;padding:8px 0;}
+.editstage{position:relative;width:78%;max-width:300px;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:#000;}
+.editphoto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.editcanvas{position:absolute;inset:0;width:100%;height:100%;}
+.sticker{position:absolute;display:inline-flex;align-items:center;justify-content:center;cursor:move;touch-action:none;}
+.sticker.s-emoji .stk-body{font-size:40px;line-height:1;}
+.sticker.s-text .stk-body{font-size:22px;font-weight:800;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,.55);white-space:nowrap;}
+.sticker.s-datetime .stk-body{font-size:12px;font-weight:700;color:#fff;background:rgba(0,0,0,.42);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);padding:4px 10px;border-radius:20px;white-space:nowrap;}
+.sticker.selected{outline:1.5px dashed rgba(255,255,255,.85);outline-offset:3px;border-radius:6px;}
+.stk-del,.stk-size{position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;color:#222;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.35);}
+.stk-del{top:-11px;left:-11px;cursor:pointer;}
+.stk-size{bottom:-11px;right:-11px;cursor:nwse-resize;touch-action:none;}
+
+.emoji-pick{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;width:78%;max-width:300px;background:#222;border-radius:12px;padding:10px;max-height:120px;overflow-y:auto;}
+.emoji-pick span{font-size:24px;cursor:pointer;}
+
+.draw-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:center;width:78%;max-width:300px;background:#222;border-radius:12px;padding:8px 10px;}
+.dt-colors{display:flex;gap:6px;}
+.dt-color{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 0 0 1px rgba(0,0,0,.2) inset;}
+.dt-color.on{border-color:#fff;}
+.dt-sizes{display:flex;gap:6px;align-items:center;}
+.dt-size{width:26px;height:26px;border-radius:50%;background:#3a3a3a;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.dt-size.on{background:#5a5a5a;}
+.dt-size i{display:block;background:#fff;border-radius:50%;}
+.dt-btn{background:#3a3a3a;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
+.dt-btn:disabled{opacity:.4;cursor:default;}
+.dt-btn.done{background:#fff;color:#181818;}
+
+.text-input{display:flex;gap:8px;width:78%;max-width:300px;}
+.text-input input{flex:1;border:none;border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;}
+.text-input button{background:#fff;color:#181818;border:none;border-radius:10px;padding:0 14px;font-weight:800;cursor:pointer;font-family:inherit;}
+
+.voice-bar{display:flex;align-items:center;gap:8px;color:#fff;font-size:12px;background:#222;border-radius:10px;padding:8px 10px;width:78%;max-width:300px;flex-wrap:wrap;justify-content:center;}
+.voice-bar audio{height:32px;max-width:160px;}
+.voice-bar button{background:#3a3a3a;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit;}
+
+.ul-tools .tg.on{opacity:1;}
+.ul-tools .tg.on .ic{transform:scale(1.12);}
+.ul-tools .tg.rec,.ul-tools .tg.rec .ic{color:#FF3B30;opacity:1;}
 
 /* ===================================================================
    Mobile: drop the desktop "device mockup" framing and let the app fill

@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+
+export type PhotoEditorHandle = { getComposite: () => Promise<string> };
 
 /* ===================================================================
    PhotoEditor — Instagram-style editing on a freshly captured photo:
@@ -9,7 +11,9 @@ import { useEffect, useRef, useState } from "react";
    captured image src and a toast() for feedback.
    =================================================================== */
 
-type StickerType = "emoji" | "text" | "datetime";
+// "pill" types (time/weather/voice) render as a white rounded chip; emoji/text
+// render as their raw content.
+type StickerType = "emoji" | "text" | "time" | "weather" | "voice";
 type Sticker = {
   id: number;
   type: StickerType;
@@ -25,25 +29,35 @@ type Tool = "none" | "emoji" | "draw" | "text" | "voice";
 const EMOJIS = ["😀", "😂", "😍", "🥰", "😎", "😭", "👍", "🙏", "🎉", "❤️", "🔥", "✨", "🌟", "🌸", "🐶", "🐱", "🍰", "☕️", "🌈", "⭐️", "🌻", "🍙"];
 const PEN_COLORS = ["#FFFFFF", "#1A1A1A", "#FF3B30", "#FFCC00", "#34C759", "#0A84FF", "#FF2D55"];
 const PEN_SIZES = [4, 8, 16];
+// mock weather for the prototype (would come from a weather API + geolocation)
+const MOCK_WEATHER = "🌧️ 대전·18°";
 
-function nowStamp() {
+function nowTime() {
   const d = new Date();
-  const date = `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}`;
   const h = d.getHours();
   const ampm = h < 12 ? "오전" : "오후";
   let hh = h % 12;
   if (hh === 0) hh = 12;
   const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${date} · ${ampm} ${hh}:${mm}`;
+  return `${ampm} ${hh}:${mm}`;
 }
 
-export default function PhotoEditor({
-  src,
-  toast,
-}: {
-  src: string;
-  toast: (m: string) => void;
-}) {
+function fmtDur(sec: number) {
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+const PhotoEditor = forwardRef<PhotoEditorHandle, { src: string; toast: (m: string) => void }>(
+  function PhotoEditor({ src, toast }, ref) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -65,11 +79,14 @@ export default function PhotoEditor({
   const chunksRef = useRef<BlobPart[]>([]);
   const [recording, setRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [recSec, setRecSec] = useState(0);
+  const recTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // default date/time sticker on mount
+  // default stickers on mount: time (top-left) + weather (top-right) pills
   useEffect(() => {
     setStickers([
-      { id: idRef.current++, type: "datetime", content: nowStamp(), x: 50, y: 88, scale: 1 },
+      { id: idRef.current++, type: "time", content: nowTime(), x: 21, y: 9, scale: 1 },
+      { id: idRef.current++, type: "weather", content: MOCK_WEATHER, x: 79, y: 9, scale: 1 },
     ]);
   }, []);
 
@@ -202,11 +219,8 @@ export default function PhotoEditor({
   };
 
   // ---- voice ----
-  const toggleVoice = async () => {
-    if (recording) {
-      recorderRef.current?.stop();
-      return;
-    }
+  const recSecRef = useRef(0);
+  const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const rec = new MediaRecorder(stream);
@@ -216,29 +230,154 @@ export default function PhotoEditor({
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach((t) => t.stop());
+        if (recTimer.current) clearInterval(recTimer.current);
+        const dur = recSecRef.current;
         setRecording(false);
+        // drop a "▶ m:ss" voice pill on the photo (bottom-left, like the spec)
+        setStickers((arr) => [
+          ...arr.filter((s) => s.type !== "voice"),
+          { id: idRef.current++, type: "voice", content: `▶ ${fmtDur(dur)}`, x: 22, y: 90, scale: 1 },
+        ]);
         toast("음성이 첨부됐어요");
       };
       recorderRef.current = rec;
       rec.start();
+      setRecSec(0);
+      recSecRef.current = 0;
+      if (recTimer.current) clearInterval(recTimer.current);
+      recTimer.current = setInterval(() => {
+        recSecRef.current += 1;
+        setRecSec(recSecRef.current);
+      }, 1000);
       setRecording(true);
       setTool("voice");
     } catch {
       toast("마이크 권한이 필요해요");
     }
   };
+  const stopRecording = () => recorderRef.current?.stop();
+  const reRecord = () => {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    setAudioUrl(null);
+    setStickers((arr) => arr.filter((s) => s.type !== "voice"));
+    startRecording();
+  };
+  const deleteVoice = () => {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    setAudioUrl(null);
+    setStickers((arr) => arr.filter((s) => s.type !== "voice"));
+    toast("음성을 삭제했어요");
+  };
   useEffect(() => {
     return () => {
       if (recorderRef.current && recorderRef.current.state !== "inactive") recorderRef.current.stop();
+      if (recTimer.current) clearInterval(recTimer.current);
       if (audioUrl) URL.revokeObjectURL(audioUrl);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // expose a flattened composite (photo + drawing + stickers) to the parent
+  useImperativeHandle(
+    ref,
+    () => ({
+      getComposite: async () => {
+        const COMPW = 600,
+          COMPH = 800;
+        const out = document.createElement("canvas");
+        out.width = COMPW;
+        out.height = COMPH;
+        const ctx = out.getContext("2d");
+        if (!ctx) return src;
+        const img = await new Promise<HTMLImageElement | null>((res) => {
+          const im = new Image();
+          im.onload = () => res(im);
+          im.onerror = () => res(null);
+          im.src = src;
+        });
+        if (img) {
+          const ir = img.naturalWidth / img.naturalHeight,
+            tr = COMPW / COMPH;
+          let sw, sh, sx, sy;
+          if (ir > tr) {
+            sh = img.naturalHeight;
+            sw = sh * tr;
+            sx = (img.naturalWidth - sw) / 2;
+            sy = 0;
+          } else {
+            sw = img.naturalWidth;
+            sh = sw / tr;
+            sx = 0;
+            sy = (img.naturalHeight - sh) / 2;
+          }
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, COMPW, COMPH);
+        } else {
+          ctx.fillStyle = "#3a3a3a";
+          ctx.fillRect(0, 0, COMPW, COMPH);
+        }
+        // drawing strokes (canvas px -> composite px)
+        const cv = canvasRef.current;
+        if (cv && cv.width) {
+          const fx = COMPW / cv.width,
+            fy = COMPH / cv.height;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          for (const s of strokesRef.current) {
+            ctx.strokeStyle = s.color;
+            ctx.lineWidth = s.size * fx;
+            ctx.beginPath();
+            s.points.forEach((p, i) => (i ? ctx.lineTo(p.x * fx, p.y * fy) : ctx.moveTo(p.x * fx, p.y * fy)));
+            ctx.stroke();
+          }
+        }
+        // stickers
+        const stageW = stageRef.current?.clientWidth || 300;
+        const f = COMPW / stageW;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        for (const s of stickers) {
+          const cx = (s.x / 100) * COMPW,
+            cy = (s.y / 100) * COMPH;
+          if (s.type === "emoji") {
+            ctx.font = `${40 * s.scale * f}px sans-serif`;
+            ctx.fillStyle = "#fff";
+            ctx.fillText(s.content, cx, cy);
+          } else if (s.type === "text") {
+            ctx.font = `800 ${22 * s.scale * f}px sans-serif`;
+            ctx.fillStyle = "#fff";
+            ctx.shadowColor = "rgba(0,0,0,.55)";
+            ctx.shadowBlur = 6 * f;
+            ctx.fillText(s.content, cx, cy);
+            ctx.shadowBlur = 0;
+          } else {
+            // pill (time / weather / voice): white chip, dark text
+            const fs = 12 * s.scale * f;
+            ctx.font = `700 ${fs}px sans-serif`;
+            const padX = 11 * s.scale * f,
+              padY = 6 * s.scale * f;
+            const tw = ctx.measureText(s.content).width;
+            const pw = tw + padX * 2,
+              ph = fs + padY * 2,
+              r = ph / 2;
+            ctx.fillStyle = "rgba(255,255,255,.92)";
+            roundRect(ctx, cx - pw / 2, cy - ph / 2, pw, ph, r);
+            ctx.fill();
+            ctx.fillStyle = "#1a1a1a";
+            ctx.fillText(s.content, cx, cy + 1);
+          }
+        }
+        return out.toDataURL("image/jpeg", 0.9);
+      },
+    }),
+    [stickers, src],
+  );
+
   const pickTool = (t: Tool) => {
     setSelectedId(null);
     if (t === "voice") {
-      toggleVoice();
+      if (recording) stopRecording();
+      else if (audioUrl) setTool((cur) => (cur === "voice" ? "none" : "voice"));
+      else startRecording();
       return;
     }
     setTool((cur) => (cur === t ? "none" : t));
@@ -373,18 +512,19 @@ export default function PhotoEditor({
         </div>
       )}
 
-      {audioUrl && (
+      {recording && (
         <div className="voice-bar">
-          🎤 음성 첨부됨
-          <audio src={audioUrl} controls />
-          <button
-            onClick={() => {
-              setAudioUrl(null);
-              toast("음성을 삭제했어요");
-            }}
-          >
-            삭제
+          <span className="rec-dot" /> 녹음 중 {fmtDur(recSec)}
+          <button className="vb-stop" onClick={stopRecording}>
+            ■ 멈춤
           </button>
+        </div>
+      )}
+      {!recording && audioUrl && (
+        <div className="voice-bar">
+          <audio src={audioUrl} controls />
+          <button onClick={reRecord}>↻ 다시 녹음</button>
+          <button onClick={deleteVoice}>삭제</button>
         </div>
       )}
 
@@ -402,11 +542,16 @@ export default function PhotoEditor({
           <span className="ic">T</span>
           <span className="tx">텍스트</span>
         </div>
-        <div className={"tg" + (recording ? " rec" : "")} onClick={() => pickTool("voice")}>
+        <div
+          className={"tg" + (recording ? " rec" : "") + (tool === "voice" ? " on" : "")}
+          onClick={() => pickTool("voice")}
+        >
           <span className="ic">🎤</span>
-          <span className="tx">{recording ? "정지" : "음성"}</span>
+          <span className="tx">{recording ? "멈춤" : audioUrl ? "음성✓" : "음성"}</span>
         </div>
       </div>
     </div>
   );
-}
+});
+
+export default PhotoEditor;

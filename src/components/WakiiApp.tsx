@@ -1,7 +1,43 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import PhotoEditor from "./PhotoEditor";
+import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import PhotoEditor, { type PhotoEditorHandle } from "./PhotoEditor";
+
+// WebGL gallery is client-only (uses window / WebGL at runtime)
+const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false });
+
+// role shown on each card by its position in the deck
+const roleLabel = (i: number) => (i === 0 ? "작성자" : `${i}차 반응자`);
+
+// render a placeholder card face (gradient + overlay emoji) to a data URL so
+// cards without a real photo can still feed the image-based CircularGallery
+function makeCardImage(card: Card): string {
+  const w = 600,
+    h = 800;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+  const g = ctx.createLinearGradient(0, 0, w, h);
+  if (card.mine) {
+    g.addColorStop(0, "#6a6a6a");
+    g.addColorStop(1, "#3a3a3a");
+  } else {
+    g.addColorStop(0, "#8a8a8a");
+    g.addColorStop(1, "#5e5e5e");
+  }
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  if (card.ov) {
+    ctx.font = "240px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(card.ov, w / 2, h / 2);
+  }
+  return canvas.toDataURL("image/png");
+}
 
 /* ===================================================================
    wakii — full prototype, ported from khux-prototype-full.html to React.
@@ -17,6 +53,7 @@ type Card = {
   date: string;
   ov: string;
   reply?: boolean;
+  img?: string; // captured + edited photo (data URL) once shared
 };
 type Deck = { label: string; when: string; isMission: boolean; cards: Card[] };
 type RoomsData = Record<string, Deck[]>;
@@ -125,17 +162,14 @@ export default function WakiiApp() {
   const [currentRoom, setCurrentRoom] = useState("엄마아빠");
   const [currentRoomEmoji, setCurrentRoomEmoji] = useState("🏠");
   const [openDeckIdx, setOpenDeckIdx] = useState<number | null>(null);
-  const [activeByDeck, setActiveByDeck] = useState<Record<number, number>>({});
+  const [galReact, setGalReact] = useState(false); // reaction row in the deck gallery
   const [roomViewMode, setRoomViewMode] = useState<"deck" | "review">("deck");
   const roomScreenRef = useRef<HTMLDivElement>(null);
 
-  // emoji react bar
-  const [emojiShown, setEmojiShown] = useState(false);
-  const [emojiBottom, setEmojiBottom] = useState(0);
+  // reaction bubbles (shown in the deck gallery)
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const bubbleId = useRef(0);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const emojibarRef = useRef<HTMLDivElement>(null);
 
   // upload
   const [uploadShow, setUploadShow] = useState(false);
@@ -152,6 +186,7 @@ export default function WakiiApp() {
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null); // camera capture fallback
   const galleryInputRef = useRef<HTMLInputElement>(null); // pick from library
+  const editorRef = useRef<PhotoEditorHandle>(null);
 
   // recap
   const [recapShow, setRecapShow] = useState(false);
@@ -171,7 +206,6 @@ export default function WakiiApp() {
     setCurrentRoom(name);
     setCurrentRoomEmoji(emoji);
     setOpenDeckIdx(null);
-    setActiveByDeck({});
     setRoomViewMode("deck");
     setScreen("room");
     if (roomScreenRef.current) roomScreenRef.current.scrollTop = 0;
@@ -179,12 +213,35 @@ export default function WakiiApp() {
 
   // ---------- room board ----------
   const decks = rooms[currentRoom];
+  const openDeck = openDeckIdx != null ? decks?.[openDeckIdx] : null;
 
-  const toggleDeck = (di: number) =>
-    setOpenDeckIdx((cur) => (cur === di ? null : di));
+  // cards for the open deck, as image+label items for the circular gallery
+  const galleryItems = useMemo(() => {
+    if (openDeckIdx == null) return [];
+    const deck = rooms[currentRoom]?.[openDeckIdx];
+    if (!deck) return [];
+    return deck.cards.map((c, i) => ({
+      image: c.img || makeCardImage(c),
+      text: deck.isMission ? c.who : roleLabel(i),
+    }));
+  }, [openDeckIdx, currentRoom, rooms]);
 
-  const setActive = (di: number, i: number) =>
-    setActiveByDeck((m) => ({ ...m, [di]: i }));
+  // mock DB: persist rooms (incl. shared photos) to localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("wakii.rooms");
+      if (saved) setRooms(JSON.parse(saved));
+    } catch {
+      /* ignore corrupt/unavailable storage */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem("wakii.rooms", JSON.stringify(rooms));
+    } catch {
+      /* quota or unavailable — fine for the prototype */
+    }
+  }, [rooms]);
 
   const addReply = (di: number) => {
     setRooms((prev) => {
@@ -202,14 +259,7 @@ export default function WakiiApp() {
   };
 
   // ---------- emoji react ----------
-  const showEmoji = (deckEl: HTMLElement) => {
-    const vp = viewportRef.current?.getBoundingClientRect();
-    const r = deckEl.getBoundingClientRect();
-    if (vp) setEmojiBottom(vp.bottom - r.top + 4);
-    setEmojiShown(true);
-  };
   const pickEmoji = (e: string) => {
-    setEmojiShown(false);
     spawnBubble(e);
     toast(e + " 반응을 남겼어요");
   };
@@ -339,10 +389,34 @@ export default function WakiiApp() {
   };
   const toggleShare = (idx: number) =>
     setShareSel((s) => s.map((v, i) => (i === idx ? !v : v)));
-  const doShare = () => {
+
+  // add a freshly shared photo as a new (newest-first) deck in a room
+  const addPhotoDeck = (roomName: string, img: string) => {
+    const d = new Date();
+    const date = `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}`;
+    setRooms((prev) => {
+      const list = prev[roomName] ? [...prev[roomName]] : [];
+      list.unshift({
+        label: "나",
+        when: "오늘",
+        isMission: false,
+        cards: [{ who: "나", mine: true, date, ov: "", img }],
+      });
+      return { ...prev, [roomName]: list };
+    });
+  };
+
+  const doShare = async () => {
+    const img = (await editorRef.current?.getComposite()) || capturedSrc || undefined;
+    const shareRooms = ["엄마아빠", "언니", "동생"];
+    const targets =
+      uploadMode === "room"
+        ? [currentRoom]
+        : shareRooms.filter((_, i) => shareSel[i]);
+    if (img) targets.forEach((r) => addPhotoDeck(r, img));
     closeUpload();
     go("home");
-    toast("공유했어요 · 홈으로");
+    toast("공유했어요 · 덱에 올라갔어요");
   };
 
   // ---------- walk ----------
@@ -400,16 +474,7 @@ export default function WakiiApp() {
           <span>▮▮▮ ▮▮</span>
         </div>
 
-        <div
-          className="viewport"
-          ref={viewportRef}
-          onClick={(ev) => {
-            const t = ev.target as HTMLElement;
-            if (emojibarRef.current && !emojibarRef.current.contains(t) && !t.closest(".b-react")) {
-              setEmojiShown(false);
-            }
-          }}
-        >
+        <div className="viewport" ref={viewportRef}>
           {/* ===== HOME ===== */}
           <div className={"screen" + (screen === "home" ? " active" : "")} id="s-home">
             <div className="mission">
@@ -493,7 +558,7 @@ export default function WakiiApp() {
                 className={roomViewMode === "review" ? "on" : ""}
                 onClick={() => setRoomViewMode("review")}
               >
-                돌아보기
+                Recap
               </span>
             </div>
 
@@ -501,109 +566,51 @@ export default function WakiiApp() {
               <div className="board">
                 {decks.map((deck, di) => {
                   const n = deck.cards.length;
-                  const open = openDeckIdx === di;
-                  const active = open ? activeByDeck[di] ?? n - 1 : n - 1;
+                  const names = Array.from(new Set(deck.cards.map((c) => c.who)));
                   return (
-                    <div key={di} className={"deckwrap" + (open ? " open" : "")}>
+                    <div key={di} className="deckwrap">
                       <div className="decklabel">
-                        <b>{deck.label}</b>
-                        {deck.isMission ? "의 미션" : "가 시작"} · {deck.when}
+                        {deck.isMission ? (
+                          <b className="mission-names">📷 {names.join(" · ")}</b>
+                        ) : (
+                          <>
+                            <b>{deck.label}</b>가 시작 · {deck.when}
+                          </>
+                        )}
                         <span className="cnt">{n}장</span>
                       </div>
 
-                      <div
-                        className={"deck" + (open ? " open" : "")}
-                        onClick={() => toggleDeck(di)}
-                      >
+                      {/* closed stack — tap to open the circular gallery */}
+                      <div className="deck" onClick={() => setOpenDeckIdx(di)}>
                         {deck.cards.map((c, i) => {
-                          const style: React.CSSProperties = {};
-                          if (open) {
-                            const rel = i - active;
-                            const abs = Math.abs(rel);
-                            const ang = rel * 26;
-                            const x = rel * 56;
-                            const z = -abs * 82;
-                            const scale = abs === 0 ? 1.14 : Math.max(0.7, 1 - abs * 0.14);
-                            style.transform = `translateX(calc(-50% + ${x}px)) translateZ(${z}px) rotateY(${-ang}deg) scale(${scale})`;
-                            style.zIndex = 50 - abs;
-                            style.opacity = abs > 2 ? 0 : 1;
-                            style.cursor = "pointer";
-                          } else {
-                            const depth = n - 1 - i;
-                            style.transform = `translateX(calc(-50% + ${depth * -4}px)) translateY(${depth * 5}px) scale(${1 - depth * 0.03})`;
-                            style.zIndex = 10 + i;
-                            style.opacity = depth > 3 ? 0 : 1;
+                          const depth = n - 1 - i;
+                          const style: React.CSSProperties = {
+                            transform: `translateX(calc(-50% + ${depth * -4}px)) translateY(${depth * 5}px) scale(${1 - depth * 0.03})`,
+                            zIndex: 10 + i,
+                            opacity: depth > 3 ? 0 : 1,
+                          };
+                          if (c.img) {
+                            style.backgroundImage = `url(${c.img})`;
+                            style.backgroundSize = "cover";
+                            style.backgroundPosition = "center";
                           }
                           return (
                             <div
                               key={i}
-                              className={"card" + (c.mine ? " mine" : "")}
+                              className={"card" + (c.mine ? " mine" : "") + (deck.isMission ? " mission" : "")}
                               style={style}
-                              onClick={(e) => {
-                                if (open && i !== active) {
-                                  e.stopPropagation();
-                                  setActive(di, i);
-                                }
-                              }}
                             >
-                              <div className="meta">{c.who}</div>
-                              {c.ov && <div className="ov">{c.ov}</div>}
+                              <div className="meta">{deck.isMission ? c.who : roleLabel(i)}</div>
+                              {!c.img && c.ov && <div className="ov">{c.ov}</div>}
                               <div className="seq">{i + 1}</div>
                               {c.reply && <div className="reporig" />}
                             </div>
                           );
                         })}
-                        <div className="hint">
-                          {open
-                            ? n > 1
-                              ? "좌우 카드를 탭해 넘겨보세요"
-                              : ""
-                            : n > 1
-                              ? "탭하면 둘러보기 ›"
-                              : "탭해서 보기 ›"}
-                        </div>
+                        <div className="hint">탭하면 둘러보기 ›</div>
                       </div>
 
-                      {deck.isMission && (
-                        <div className="missionchip">
-                          📷 오늘의 풍경 공유 · 답장 없이 반응만
-                        </div>
-                      )}
-
-                      <div className="deckacts">
-                        <button
-                          className="b-react"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const deckEl = (e.currentTarget.closest(".deckwrap") as HTMLElement)?.querySelector(
-                              ".deck",
-                            ) as HTMLElement;
-                            if (deckEl) showEmoji(deckEl);
-                          }}
-                        >
-                          🙂 반응
-                        </button>
-                        {!deck.isMission && (
-                          <button
-                            className="b-reply"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addReply(di);
-                            }}
-                          >
-                            📷 답장
-                          </button>
-                        )}
-                        <button
-                          className="b-close"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenDeckIdx(null);
-                          }}
-                        >
-                          닫기
-                        </button>
-                      </div>
+                      {deck.isMission && <div className="missionchip">{deck.label}</div>}
                     </div>
                   );
                 })}
@@ -828,7 +835,7 @@ export default function WakiiApp() {
               {/* after capture: full Instagram-style editor (skipped for the
                   mission flow, which auto-completes) */}
               {shotTaken && capturedSrc && uploadMode !== "mission" && (
-                <PhotoEditor src={capturedSrc} toast={toast} />
+                <PhotoEditor ref={editorRef} src={capturedSrc} toast={toast} />
               )}
               {shotTaken && capturedSrc && uploadMode === "mission" && (
                 <div className="vf">
@@ -906,38 +913,6 @@ export default function WakiiApp() {
             <div className="rc-ai">AI가 이 여정에서 반응 많았던 짤을 골랐어요</div>
           </div>
 
-          {/* reaction emoji bar */}
-          <div
-            className={"emojibar" + (emojiShown ? " show" : "")}
-            ref={emojibarRef}
-            style={{ bottom: emojiBottom }}
-          >
-            {["❤️", "🙂", "👍", "😢", "😮"].map((e) => (
-              <span key={e} onClick={() => pickEmoji(e)}>
-                {e}
-              </span>
-            ))}
-          </div>
-
-          {/* floating reaction bubbles */}
-          {bubbles.map((b) => (
-            <div
-              key={b.id}
-              className="bubble"
-              style={
-                {
-                  left: b.left + "%",
-                  bottom: 120,
-                  fontSize: b.size,
-                  ["--dx" as string]: b.dx + "px",
-                  ["--dy" as string]: b.dy + "px",
-                } as React.CSSProperties
-              }
-            >
-              {b.emoji}
-            </div>
-          ))}
-
           {/* toast */}
           <div className={"toast" + (toastShown ? " show" : "")}>{toastMsg}</div>
         </div>
@@ -961,6 +936,81 @@ export default function WakiiApp() {
             <span className="nl">마이</span>
           </div>
         </div>
+
+        {/* ===== deck circular gallery (opens over everything, dark/blur bg) ===== */}
+        {openDeck && (
+          <div className="deckgallery" onClick={() => setOpenDeckIdx(null)}>
+            <div className="dg-top" onClick={(e) => e.stopPropagation()}>
+              <b>
+                {openDeck.isMission ? "📷 " : ""}
+                {openDeck.label}
+              </b>
+              <span className="dg-x" onClick={() => setOpenDeckIdx(null)}>
+                ✕
+              </span>
+            </div>
+
+            <div className="dg-stage" onClick={(e) => e.stopPropagation()}>
+              <CircularGallery
+                items={galleryItems}
+                bend={3}
+                textColor="#ffffff"
+                borderRadius={0.06}
+                font="600 30px sans-serif"
+                fontUrl={undefined}
+                scrollEase={0.03}
+              />
+              {/* floating reaction bubbles */}
+              {bubbles.map((b) => (
+                <div
+                  key={b.id}
+                  className="bubble"
+                  style={
+                    {
+                      left: b.left + "%",
+                      bottom: 80,
+                      fontSize: b.size,
+                      ["--dx" as string]: b.dx + "px",
+                      ["--dy" as string]: b.dy + "px",
+                    } as React.CSSProperties
+                  }
+                >
+                  {b.emoji}
+                </div>
+              ))}
+            </div>
+
+            {galReact && (
+              <div className="dg-emojis" onClick={(e) => e.stopPropagation()}>
+                {["❤️", "🙂", "👍", "😢", "😮"].map((e) => (
+                  <span
+                    key={e}
+                    onClick={() => {
+                      setGalReact(false);
+                      pickEmoji(e);
+                    }}
+                  >
+                    {e}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="dg-acts" onClick={(e) => e.stopPropagation()}>
+              <button className="b-react" onClick={() => setGalReact((v) => !v)}>
+                🙂 반응
+              </button>
+              {!openDeck.isMission && (
+                <button className="b-reply" onClick={() => openDeckIdx != null && addReply(openDeckIdx)}>
+                  📷 답장
+                </button>
+              )}
+              <button className="b-close" onClick={() => setOpenDeckIdx(null)}>
+                닫기
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="hintline">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import PhotoEditor, { type PhotoEditorHandle } from "./PhotoEditor";
 import type { Card, Deck, RoomsData } from "@/lib/types";
@@ -13,33 +13,110 @@ const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false 
 // role shown on each card by its position in the deck
 const roleLabel = (i: number) => (i === 0 ? "작성자" : `${i}차 반응자`);
 
-// render a placeholder card face (gradient + overlay emoji) to a data URL so
-// cards without a real photo can still feed the image-based CircularGallery
-function makeCardImage(card: Card): string {
+function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function loadImg(src: string, crossOrigin = false): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    if (crossOrigin) im.crossOrigin = "anonymous";
+    im.onload = () => res(im);
+    im.onerror = rej;
+    im.src = src;
+  });
+}
+
+// draw a small profile (initial) + name chip at the top-left of a card
+function drawAuthorChip(ctx: CanvasRenderingContext2D, name: string) {
+  const ax = 24,
+    ay = 24,
+    av = 56;
+  ctx.font = "600 30px 'Apple SD Gothic Neo', sans-serif";
+  ctx.textBaseline = "middle";
+  const nameW = ctx.measureText(name).width;
+  const pillW = av + 12 + nameW + 22;
+  ctx.fillStyle = "rgba(0,0,0,.4)";
+  roundRectPath(ctx, ax, ay, pillW, av, av / 2);
+  ctx.fill();
+  // avatar
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.arc(ax + av / 2, ay + av / 2, av / 2 - 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#1a1a1a";
+  ctx.textAlign = "center";
+  ctx.font = "700 28px 'Apple SD Gothic Neo', sans-serif";
+  ctx.fillText(name.slice(0, 1), ax + av / 2, ay + av / 2 + 1);
+  // name
+  ctx.fillStyle = "#fff";
+  ctx.textAlign = "left";
+  ctx.font = "600 30px 'Apple SD Gothic Neo', sans-serif";
+  ctx.fillText(name, ax + av + 10, ay + av / 2 + 1);
+}
+
+// build a gallery card image (photo or placeholder) with the author chip
+// baked into the top-left. Falls back to the raw photo if it can't be drawn
+// to canvas (cross-origin taint).
+async function buildGalleryImage(card: Card): Promise<string> {
   const w = 600,
     h = 800;
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return "";
-  const g = ctx.createLinearGradient(0, 0, w, h);
-  if (card.mine) {
-    g.addColorStop(0, "#6a6a6a");
-    g.addColorStop(1, "#3a3a3a");
+  if (!ctx) return card.img || "";
+  if (card.img) {
+    try {
+      const img = await loadImg(card.img, true);
+      const ir = img.naturalWidth / img.naturalHeight,
+        tr = w / h;
+      let sw, sh, sx, sy;
+      if (ir > tr) {
+        sh = img.naturalHeight;
+        sw = sh * tr;
+        sx = (img.naturalWidth - sw) / 2;
+        sy = 0;
+      } else {
+        sw = img.naturalWidth;
+        sh = sw / tr;
+        sx = 0;
+        sy = (img.naturalHeight - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+    } catch {
+      return card.img; // tainted — show the photo without the overlay
+    }
   } else {
-    g.addColorStop(0, "#8a8a8a");
-    g.addColorStop(1, "#5e5e5e");
+    const g = ctx.createLinearGradient(0, 0, w, h);
+    if (card.mine) {
+      g.addColorStop(0, "#6a6a6a");
+      g.addColorStop(1, "#3a3a3a");
+    } else {
+      g.addColorStop(0, "#8a8a8a");
+      g.addColorStop(1, "#5e5e5e");
+    }
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    if (card.ov) {
+      ctx.font = "240px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(card.ov, w / 2, h / 2);
+    }
   }
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
-  if (card.ov) {
-    ctx.font = "240px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(card.ov, w / 2, h / 2);
+  drawAuthorChip(ctx, card.who || "나");
+  try {
+    return canvas.toDataURL("image/jpeg", 0.9);
+  } catch {
+    return card.img || "";
   }
-  return canvas.toDataURL("image/png");
 }
 
 /* ===================================================================
@@ -133,7 +210,7 @@ const stepsByDay: Record<number, number> = {
   1: 5400, 5: 7100, 8: 3200, 11: 8800, 12: 6600, 13: 4100, 17: 9200, 23: 5800, 24: 6200, 25: 7400, 26: 6200,
 };
 
-type Bubble = { id: number; emoji: string; left: number; size: number; dx: number; dy: number };
+type Bubble = { id: number; emoji: string; left: number; size: number; dx: number; dy: number; dur: number; delay: number };
 type UploadMode = "new" | "mission" | "room";
 
 export default function WakiiApp() {
@@ -175,7 +252,8 @@ export default function WakiiApp() {
   const [uploadMode, setUploadMode] = useState<UploadMode>("new");
   const [shotTaken, setShotTaken] = useState(false);
   const [shareShow, setShareShow] = useState(false);
-  const [shareSel, setShareSel] = useState([true, false, false]);
+  const [shareTargets, setShareTargets] = useState<string[]>([]);
+  const [recentRooms, setRecentRooms] = useState<string[]>(walkRooms.map((r) => r.nm));
 
   // camera
   const [cameraActive, setCameraActive] = useState(false);
@@ -214,15 +292,33 @@ export default function WakiiApp() {
   const decks = rooms[currentRoom];
   const openDeck = openDeckIdx != null ? decks?.[openDeckIdx] : null;
 
-  // cards for the open deck, as image+label items for the circular gallery
-  const galleryItems = useMemo(() => {
-    if (openDeckIdx == null) return [];
+  // cards for the open deck, as image+label items for the circular gallery.
+  // Built async because the author chip is composited onto each card image.
+  const [galleryItems, setGalleryItems] = useState<{ image: string; text: string }[]>([]);
+  useEffect(() => {
+    if (openDeckIdx == null) {
+      setGalleryItems([]);
+      return;
+    }
     const deck = rooms[currentRoom]?.[openDeckIdx];
-    if (!deck) return [];
-    return deck.cards.map((c, i) => ({
-      image: c.img || makeCardImage(c),
-      text: deck.isMission ? c.who : roleLabel(i),
-    }));
+    if (!deck) {
+      setGalleryItems([]);
+      return;
+    }
+    let cancelled = false;
+    Promise.all(
+      deck.cards.map((c, i) =>
+        buildGalleryImage(c).then((image) => ({
+          image,
+          text: deck.isMission ? c.who : roleLabel(i),
+        })),
+      ),
+    ).then((items) => {
+      if (!cancelled) setGalleryItems(items);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [openDeckIdx, currentRoom, rooms]);
 
   // load the saved name on mount (prompt for it the first time)
@@ -246,6 +342,16 @@ export default function WakiiApp() {
       /* ignore */
     }
   };
+
+  // remember recently-shared room order (for the share sheet)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("wakii.recentRooms");
+      if (saved) setRecentRooms(JSON.parse(saved));
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   // ── backend (Supabase) vs mock (localStorage) ──────────────────────
   const refreshRoom = useCallback(
@@ -315,20 +421,25 @@ export default function WakiiApp() {
     }
   };
   const spawnBubble = (e: string) => {
+    // iMessage-style: many emojis rising from across the whole bottom edge,
+    // over a longer (~2x) duration.
     const made: Bubble[] = [];
-    for (let i = 0; i < 5; i++) {
+    const count = 16;
+    for (let i = 0; i < count; i++) {
       made.push({
         id: bubbleId.current++,
         emoji: e,
-        left: 40 + Math.random() * 40,
-        size: 16 + Math.random() * 12,
-        dx: (Math.random() - 0.5) * 60,
-        dy: -(200 + Math.random() * 120),
+        left: 4 + Math.random() * 92,
+        size: 20 + Math.random() * 18,
+        dx: (Math.random() - 0.5) * 90,
+        dy: -(360 + Math.random() * 300),
+        dur: 2.4 + Math.random() * 1.6,
+        delay: Math.random() * 0.6,
       });
     }
     setBubbles((b) => [...b, ...made]);
     const ids = made.map((m) => m.id);
-    setTimeout(() => setBubbles((b) => b.filter((x) => !ids.includes(x.id))), 1500);
+    setTimeout(() => setBubbles((b) => b.filter((x) => !ids.includes(x.id))), 4600);
   };
 
   // ---------- upload / camera ----------
@@ -377,12 +488,6 @@ export default function WakiiApp() {
   const afterCapture = () => {
     setShotTaken(true);
     stopCamera();
-    if (uploadMode === "mission") {
-      setTimeout(() => {
-        closeUpload();
-        toast("미션 완수! 1/4 → 2/4");
-      }, 500);
-    }
   };
 
   const openUpload = (mode: UploadMode) => {
@@ -390,6 +495,8 @@ export default function WakiiApp() {
     setShotTaken(false);
     setCapturedSrc(null);
     setShareShow(false);
+    // preselect: current room for the in-room camera, else the most recent room
+    setShareTargets(mode === "room" ? [currentRoom] : recentRooms.slice(0, 1));
     setUploadShow(true);
   };
   const closeUpload = () => {
@@ -438,8 +545,28 @@ export default function WakiiApp() {
     };
     reader.readAsDataURL(f);
   };
-  const toggleShare = (idx: number) =>
-    setShareSel((s) => s.map((v, i) => (i === idx ? !v : v)));
+  const toggleShare = (room: string) =>
+    setShareTargets((s) => (s.includes(room) ? s.filter((r) => r !== room) : [...s, room]));
+
+  // rooms ordered by most-recently shared (for the share sheet)
+  const orderedRooms = [
+    ...recentRooms,
+    ...walkRooms.map((r) => r.nm).filter((n) => !recentRooms.includes(n)),
+  ]
+    .map((nm) => walkRooms.find((r) => r.nm === nm))
+    .filter((r): r is (typeof walkRooms)[number] => Boolean(r));
+
+  const bumpRecent = (targets: string[]) => {
+    setRecentRooms((prev) => {
+      const next = [...targets, ...prev.filter((r) => !targets.includes(r))];
+      try {
+        localStorage.setItem("wakii.recentRooms", JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
 
   // add a freshly shared photo as a new (newest-first) deck in a room
   const addPhotoDeck = (roomName: string, img: string) => {
@@ -448,10 +575,10 @@ export default function WakiiApp() {
     setRooms((prev) => {
       const list = prev[roomName] ? [...prev[roomName]] : [];
       list.unshift({
-        label: "나",
+        label: author,
         when: "오늘",
         isMission: false,
-        cards: [{ who: "나", mine: true, date, ov: "", img }],
+        cards: [{ who: author, mine: true, date, ov: "", img }],
       });
       return { ...prev, [roomName]: list };
     });
@@ -459,9 +586,7 @@ export default function WakiiApp() {
 
   const doShare = async () => {
     const img = (await editorRef.current?.getComposite()) || capturedSrc || undefined;
-    const shareRooms = ["엄마아빠", "언니", "동생"];
-    const targets =
-      uploadMode === "room" ? [currentRoom] : shareRooms.filter((_, i) => shareSel[i]);
+    const targets = shareTargets.length ? shareTargets : [currentRoom];
     if (img) {
       if (hasSupabase) {
         try {
@@ -475,6 +600,7 @@ export default function WakiiApp() {
         targets.forEach((r) => addPhotoDeck(r, img));
       }
     }
+    bumpRecent(targets);
     closeUpload();
     go("home");
     toast("공유했어요 · 덱에 올라갔어요");
@@ -895,21 +1021,9 @@ export default function WakiiApp() {
                   )}
                 </>
               )}
-              {/* after capture: full Instagram-style editor (skipped for the
-                  mission flow, which auto-completes) */}
-              {shotTaken && capturedSrc && uploadMode !== "mission" && (
+              {/* after capture: full Instagram-style editor (all modes) */}
+              {shotTaken && capturedSrc && (
                 <PhotoEditor ref={editorRef} src={capturedSrc} toast={toast} />
-              )}
-              {shotTaken && capturedSrc && uploadMode === "mission" && (
-                <div className="vf">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={capturedSrc}
-                    alt="촬영한 사진"
-                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                  <div className="ratio">3:4</div>
-                </div>
               )}
             </div>
             {/* hidden capture targets — used when a live stream isn't available
@@ -935,25 +1049,28 @@ export default function WakiiApp() {
                 →
               </div>
             )}
-            {/* share */}
-            <div className={"sharesheet" + (shareShow ? " show" : "")}>
-              <div className="ss-panel">
+            {/* share — bottom sheet, rooms ordered by most-recently shared */}
+            <div className={"sharesheet" + (shareShow ? " show" : "")} onClick={() => setShareShow(false)}>
+              <div className="ss-panel" onClick={(e) => e.stopPropagation()}>
                 <div className="grip" />
                 <h4>어디에 공유할까요?</h4>
-                {["🏠 엄마아빠", "👩 언니", "🐣 동생"].map((label, i) => (
-                  <div
-                    key={i}
-                    className={"ss-room" + (shareSel[i] ? " sel" : "")}
-                    onClick={() => toggleShare(i)}
-                  >
-                    {label}{" "}
-                    <span className="ck" style={shareSel[i] ? undefined : { color: "var(--g25)" }}>
-                      {shareSel[i] ? "✓" : "○"}
-                    </span>
-                  </div>
-                ))}
+                {orderedRooms.map((r) => {
+                  const on = shareTargets.includes(r.nm);
+                  return (
+                    <div
+                      key={r.nm}
+                      className={"ss-room" + (on ? " sel" : "")}
+                      onClick={() => toggleShare(r.nm)}
+                    >
+                      {r.e} {r.nm}{" "}
+                      <span className="ck" style={on ? undefined : { color: "var(--g25)" }}>
+                        {on ? "✓" : "○"}
+                      </span>
+                    </div>
+                  );
+                })}
                 <button className="ss-go" onClick={doShare}>
-                  공유
+                  공유 ({shareTargets.length})
                 </button>
               </div>
             </div>
@@ -1031,8 +1148,10 @@ export default function WakiiApp() {
                   style={
                     {
                       left: b.left + "%",
-                      bottom: 80,
+                      bottom: 4,
                       fontSize: b.size,
+                      animationDuration: b.dur + "s",
+                      animationDelay: b.delay + "s",
                       ["--dx" as string]: b.dx + "px",
                       ["--dy" as string]: b.dy + "px",
                     } as React.CSSProperties

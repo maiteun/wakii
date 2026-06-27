@@ -210,9 +210,11 @@ class Media {
     bend,
     textColor,
     borderRadius = 0,
-    font
+    font,
+    loop = true
   }) {
     this.extra = 0;
+    this.loop = loop;
     this.geometry = geometry;
     this.gl = gl;
     this.image = image;
@@ -356,11 +358,11 @@ class Media {
     const viewportOffset = this.viewport.width / 2;
     this.isBefore = this.plane.position.x + planeOffset < -viewportOffset;
     this.isAfter = this.plane.position.x - planeOffset > viewportOffset;
-    if (direction === "right" && this.isBefore) {
+    if (this.loop && direction === "right" && this.isBefore) {
       this.extra -= this.widthTotal;
       this.isBefore = this.isAfter = false;
     }
-    if (direction === "left" && this.isAfter) {
+    if (this.loop && direction === "left" && this.isAfter) {
       this.extra += this.widthTotal;
       this.isBefore = this.isAfter = false;
     }
@@ -394,12 +396,14 @@ class App {
       borderRadius = 0,
       font = "bold 30px Figtree",
       scrollSpeed = 2,
-      scrollEase = 0.05
+      scrollEase = 0.05,
+      loop = true
     } = {}
   ) {
     document.documentElement.classList.remove("no-js");
     this.container = container;
     this.scrollSpeed = scrollSpeed;
+    this.loop = loop;
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
     this.onCheckDebounce = debounce(this.onCheck, 200);
     this.createRenderer();
@@ -408,8 +412,18 @@ class App {
     this.onResize();
     this.createGeometry();
     this.createMedias(items, bend, textColor, borderRadius, font);
+    // non-looping: start on the last (newest) item; you swipe back toward the
+    // first (original author) and it stops there.
+    if (!this.loop && this.medias && this.medias.length) {
+      const max = this.medias[0].width * (this.medias.length - 1);
+      this.scroll.current = this.scroll.target = max;
+    }
     this.update();
     this.addEventListeners();
+  }
+  maxScroll() {
+    if (!this.medias || !this.medias.length) return 0;
+    return this.medias[0].width * (this.medias.length - 1);
   }
   createRenderer() {
     this.renderer = new Renderer({
@@ -451,7 +465,8 @@ class App {
       { image: `https://picsum.photos/seed/12/800/600?grayscale`, text: "Palm Trees" }
     ];
     const galleryItems = items && items.length ? items : defaultItems;
-    this.mediasImages = galleryItems.concat(galleryItems);
+    // duplicate only when looping; bounded galleries use the items as-is
+    this.mediasImages = this.loop ? galleryItems.concat(galleryItems) : galleryItems;
     this.medias = this.mediasImages.map((data, index) => {
       return new Media({
         geometry: this.planeGeometry,
@@ -467,7 +482,8 @@ class App {
         bend,
         textColor,
         borderRadius,
-        font
+        font,
+        loop: this.loop
       });
     });
   }
@@ -522,6 +538,7 @@ class App {
     const itemIndex = Math.round(Math.abs(this.scroll.target) / width);
     const item = width * itemIndex;
     this.scroll.target = this.scroll.target < 0 ? -item : item;
+    if (!this.loop) this.scroll.target = Math.max(0, Math.min(this.maxScroll(), this.scroll.target));
   }
   onResize() {
     this.screen = {
@@ -541,6 +558,7 @@ class App {
     }
   }
   update() {
+    if (!this.loop) this.scroll.target = Math.max(0, Math.min(this.maxScroll(), this.scroll.target));
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
     const direction = this.scroll.current > this.scroll.last ? "right" : "left";
     if (this.medias) {
@@ -599,7 +617,8 @@ export default function CircularGallery({
   font = "bold 30px Figtree",
   fontUrl,
   scrollSpeed = 2,
-  scrollEase = 0.05
+  scrollEase = 0.05,
+  loop = true
 }) {
   const containerRef = useRef(null);
   useEffect(() => {
@@ -615,7 +634,8 @@ export default function CircularGallery({
         borderRadius,
         font: resolvedFont,
         scrollSpeed,
-        scrollEase
+        scrollEase,
+        loop
       });
     });
 
@@ -623,7 +643,7 @@ export default function CircularGallery({
       isMounted = false;
       if (app) app.destroy();
     };
-  }, [items, bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase]);
+  }, [items, bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase, loop]);
   return (
     <div
       className="circular-gallery"

@@ -256,13 +256,11 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .dg-top b{font-size:15px;font-weight:800;}
 .dg-top .dg-x{margin-left:auto;font-size:20px;cursor:pointer;opacity:.85;}
 .dg-stage{position:relative;flex:1;min-height:0;}
-/* reaction palette */
-.rx-bar{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:8px 10px;}
-.rx-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,.14);border:none;border-radius:14px;padding:9px 10px;min-width:54px;cursor:pointer;color:#fff;font-family:inherit;user-select:none;touch-action:none;transition:transform .12s,background .12s;}
-.rx-btn:active{transform:scale(.92);background:rgba(255,255,255,.28);}
-.rx-btn .rx-emoji{font-size:24px;line-height:1;}
-.rx-btn .rx-label{font-size:9px;font-weight:700;opacity:.85;}
-.rx-text .rx-emoji{filter:grayscale(1);}
+/* reaction palette — emojis + 텍스트 all on one row */
+.rx-bar{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:nowrap;padding:8px 10px;}
+.rx-btn{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);border:none;border-radius:50%;width:46px;height:46px;font-size:24px;line-height:1;cursor:pointer;color:#fff;font-family:inherit;user-select:none;touch-action:none;transition:transform .12s,background .12s;flex:0 0 auto;}
+.rx-btn:active{transform:scale(.9);background:rgba(255,255,255,.28);}
+.rx-text{filter:grayscale(1);}
 .rx-textinput{display:flex;gap:8px;justify-content:center;padding:6px 14px;}
 .rx-textinput input{flex:1;max-width:240px;border:none;border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;}
 .rx-textinput button{background:#fff;color:#181818;border:none;border-radius:11px;padding:0 16px;font-weight:800;font-family:inherit;cursor:pointer;}

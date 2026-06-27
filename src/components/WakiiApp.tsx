@@ -14,6 +14,9 @@ const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false 
 // role shown on each card by its position in the deck
 const roleLabel = (i: number) => (i === 0 ? "작성자" : `${i}차 반응자`);
 
+// today's mission, noun-ified for the mission deck label/footer
+const MISSION_NAME = "오늘의 풍경";
+
 // reaction palette (long-press an emoji → instant photo reply)
 const REACTIONS = [
   { emoji: "❤️", label: "하트" },
@@ -33,110 +36,34 @@ const AI_PHRASES: { text: string; motion: MotionKind }[] = [
   { text: "보고싶어", motion: "float" },
 ];
 
-function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-function loadImg(src: string, crossOrigin = false): Promise<HTMLImageElement> {
-  return new Promise((res, rej) => {
-    const im = new Image();
-    if (crossOrigin) im.crossOrigin = "anonymous";
-    im.onload = () => res(im);
-    im.onerror = rej;
-    im.src = src;
-  });
-}
-
-// draw a small profile (initial) + name chip at the top-left of a card
-function drawAuthorChip(ctx: CanvasRenderingContext2D, name: string) {
-  const ax = 24,
-    ay = 24,
-    av = 56;
-  ctx.font = "600 30px 'Apple SD Gothic Neo', sans-serif";
-  ctx.textBaseline = "middle";
-  const nameW = ctx.measureText(name).width;
-  const pillW = av + 12 + nameW + 22;
-  ctx.fillStyle = "rgba(0,0,0,.4)";
-  roundRectPath(ctx, ax, ay, pillW, av, av / 2);
-  ctx.fill();
-  // avatar
-  ctx.fillStyle = "#fff";
-  ctx.beginPath();
-  ctx.arc(ax + av / 2, ay + av / 2, av / 2 - 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#1a1a1a";
-  ctx.textAlign = "center";
-  ctx.font = "700 28px 'Apple SD Gothic Neo', sans-serif";
-  ctx.fillText(name.slice(0, 1), ax + av / 2, ay + av / 2 + 1);
-  // name
-  ctx.fillStyle = "#fff";
-  ctx.textAlign = "left";
-  ctx.font = "600 30px 'Apple SD Gothic Neo', sans-serif";
-  ctx.fillText(name, ax + av + 10, ay + av / 2 + 1);
-}
-
-// build a gallery card image (photo or placeholder) with the author chip
-// baked into the top-left. Falls back to the raw photo if it can't be drawn
-// to canvas (cross-origin taint).
-async function buildGalleryImage(card: Card): Promise<string> {
+// gallery card image: real photos pass through as-is; cards without a photo
+// get a gradient placeholder. The author shows as the label below the card.
+function buildGalleryImage(card: Card): string {
+  if (card.img) return card.img;
   const w = 600,
     h = 800;
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return card.img || "";
-  if (card.img) {
-    try {
-      const img = await loadImg(card.img, true);
-      const ir = img.naturalWidth / img.naturalHeight,
-        tr = w / h;
-      let sw, sh, sx, sy;
-      if (ir > tr) {
-        sh = img.naturalHeight;
-        sw = sh * tr;
-        sx = (img.naturalWidth - sw) / 2;
-        sy = 0;
-      } else {
-        sw = img.naturalWidth;
-        sh = sw / tr;
-        sx = 0;
-        sy = (img.naturalHeight - sh) / 2;
-      }
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
-    } catch {
-      return card.img; // tainted — show the photo without the overlay
-    }
+  if (!ctx) return "";
+  const g = ctx.createLinearGradient(0, 0, w, h);
+  if (card.mine) {
+    g.addColorStop(0, "#6a6a6a");
+    g.addColorStop(1, "#3a3a3a");
   } else {
-    const g = ctx.createLinearGradient(0, 0, w, h);
-    if (card.mine) {
-      g.addColorStop(0, "#6a6a6a");
-      g.addColorStop(1, "#3a3a3a");
-    } else {
-      g.addColorStop(0, "#8a8a8a");
-      g.addColorStop(1, "#5e5e5e");
-    }
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-    if (card.ov) {
-      ctx.font = "240px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(card.ov, w / 2, h / 2);
-    }
+    g.addColorStop(0, "#8a8a8a");
+    g.addColorStop(1, "#5e5e5e");
   }
-  drawAuthorChip(ctx, card.who || "나");
-  try {
-    return canvas.toDataURL("image/jpeg", 0.9);
-  } catch {
-    return card.img || "";
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  if (card.ov) {
+    ctx.font = "240px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(card.ov, w / 2, h / 2);
   }
+  return canvas.toDataURL("image/png");
 }
 
 /* ===================================================================
@@ -333,20 +260,8 @@ export default function WakiiApp() {
       setGalleryItems([]);
       return;
     }
-    let cancelled = false;
-    Promise.all(
-      deck.cards.map((c, i) =>
-        buildGalleryImage(c).then((image) => ({
-          image,
-          text: deck.isMission ? c.who : roleLabel(i),
-        })),
-      ),
-    ).then((items) => {
-      if (!cancelled) setGalleryItems(items);
-    });
-    return () => {
-      cancelled = true;
-    };
+    // author shown as the label below each card
+    setGalleryItems(deck.cards.map((c) => ({ image: buildGalleryImage(c), text: c.who })));
   }, [openDeckIdx, currentRoom, rooms]);
 
   // load the saved name on mount (prompt for it the first time)
@@ -650,15 +565,15 @@ export default function WakiiApp() {
   };
 
   // add a freshly shared photo as a new (newest-first) deck in a room
-  const addPhotoDeck = (roomName: string, img: string) => {
+  const addPhotoDeck = (roomName: string, img: string, isMission: boolean) => {
     const d = new Date();
     const date = `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}`;
     setRooms((prev) => {
       const list = prev[roomName] ? [...prev[roomName]] : [];
       list.unshift({
-        label: author,
+        label: isMission ? MISSION_NAME : author,
         when: "오늘",
-        isMission: false,
+        isMission,
         cards: [{ who: author, mine: true, date, ov: "", img }],
       });
       return { ...prev, [roomName]: list };
@@ -668,23 +583,26 @@ export default function WakiiApp() {
   const doShare = async () => {
     const img = (await editorRef.current?.getComposite()) || capturedSrc || undefined;
     const targets = shareTargets.length ? shareTargets : [currentRoom];
+    const isMission = uploadMode === "mission";
     if (img) {
       if (hasSupabase) {
         try {
           const url = await uploadPhoto(img);
-          await Promise.all(targets.map((r) => createPhotoDeck(r, author, url)));
+          await Promise.all(
+            targets.map((r) => createPhotoDeck(r, author, url, { isMission, label: isMission ? MISSION_NAME : author })),
+          );
           refreshRoom(currentRoom);
         } catch {
           toast("업로드 실패 — 잠시 후 다시 시도해주세요");
         }
       } else {
-        targets.forEach((r) => addPhotoDeck(r, img));
+        targets.forEach((r) => addPhotoDeck(r, img, isMission));
       }
     }
     bumpRecent(targets);
     closeUpload();
     go("home");
-    toast("공유했어요 · 덱에 올라갔어요");
+    toast(isMission ? "미션 완수! 덱에 올라갔어요" : "공유했어요 · 덱에 올라갔어요");
   };
 
   // ---------- walk ----------
@@ -902,8 +820,16 @@ export default function WakiiApp() {
                       <div className="daydate">{date}</div>
                       <div className="daygrid">
                         {groups[date].map((c, i) => (
-                          <div key={i} className={"gcell " + (c.mine ? "mine" : "")}>
-                            {c.ov && <div className="gov">{c.ov}</div>}
+                          <div
+                            key={i}
+                            className={"gcell " + (c.mine ? "mine" : "")}
+                            style={
+                              c.img
+                                ? { backgroundImage: `url(${c.img})`, backgroundSize: "cover", backgroundPosition: "center" }
+                                : undefined
+                            }
+                          >
+                            {!c.img && c.ov && <div className="gov">{c.ov}</div>}
                           </div>
                         ))}
                       </div>
@@ -1220,6 +1146,7 @@ export default function WakiiApp() {
                 font="600 30px sans-serif"
                 fontUrl={undefined}
                 scrollEase={0.03}
+                loop={false}
               />
               {/* floating reaction bubbles */}
               {bubbles.map((b) => (
@@ -1284,8 +1211,7 @@ export default function WakiiApp() {
                     }
                     onPointerLeave={() => pressTimer.current && clearTimeout(pressTimer.current)}
                   >
-                    <span className="rx-emoji">{r.emoji}</span>
-                    <span className="rx-label">{r.label}</span>
+                    {r.emoji}
                   </button>
                 ))}
                 <button
@@ -1304,8 +1230,7 @@ export default function WakiiApp() {
                   }
                   onPointerLeave={() => pressTimer.current && clearTimeout(pressTimer.current)}
                 >
-                  <span className="rx-emoji">💬</span>
-                  <span className="rx-label">텍스트</span>
+                  💬
                 </button>
               </div>
             )}

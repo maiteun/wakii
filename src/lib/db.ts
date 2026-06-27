@@ -41,11 +41,16 @@ export async function uploadPhoto(dataUrl: string): Promise<string> {
 }
 
 // Insert a new deck + its first card.
-export async function createPhotoDeck(room: string, author: string, imageUrl: string) {
+export async function createPhotoDeck(
+  room: string,
+  author: string,
+  imageUrl: string,
+  opts?: { isMission?: boolean; label?: string },
+) {
   if (!supabase) return;
   const { data: deck, error } = await supabase
     .from("decks")
-    .insert({ room, label: author, is_mission: false })
+    .insert({ room, label: opts?.label ?? author, is_mission: opts?.isMission ?? false })
     .select()
     .single();
   if (error) throw error;

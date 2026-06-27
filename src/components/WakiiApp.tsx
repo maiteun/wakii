@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import PhotoEditor, { type PhotoEditorHandle } from "./PhotoEditor";
+import type { Card, Deck, RoomsData } from "@/lib/types";
+import { hasSupabase } from "@/lib/supabase";
+import { listRoom, subscribeRoom, uploadPhoto, createPhotoDeck, addReplyCard, addReaction } from "@/lib/db";
 
 // WebGL gallery is client-only (uses window / WebGL at runtime)
 const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false });
@@ -47,16 +50,6 @@ function makeCardImage(card: Card): string {
 
 type ScreenId = "home" | "room" | "walk" | "my";
 
-type Card = {
-  who: string;
-  mine: boolean;
-  date: string;
-  ov: string;
-  reply?: boolean;
-  img?: string; // captured + edited photo (data URL) once shared
-};
-type Deck = { label: string; when: string; isMission: boolean; cards: Card[] };
-type RoomsData = Record<string, Deck[]>;
 
 const overlays = ["🌅", "☕️", "🐶", "🍱", "🌷", "🌧️", "🌻", "🍙", ""];
 
@@ -157,8 +150,14 @@ export default function WakiiApp() {
     toastTimer.current = setTimeout(() => setToastShown(false), 1700);
   };
 
-  // rooms
-  const [rooms, setRooms] = useState<RoomsData>(initialRooms);
+  // identity — name only for now (Kakao login later)
+  const [name, setName] = useState("");
+  const [needName, setNeedName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const author = name || "나";
+
+  // rooms — start empty on the backend (real data); seeded demo only in mock mode
+  const [rooms, setRooms] = useState<RoomsData>(hasSupabase ? {} : initialRooms);
   const [currentRoom, setCurrentRoom] = useState("엄마아빠");
   const [currentRoomEmoji, setCurrentRoomEmoji] = useState("🏠");
   const [openDeckIdx, setOpenDeckIdx] = useState<number | null>(null);
@@ -226,8 +225,49 @@ export default function WakiiApp() {
     }));
   }, [openDeckIdx, currentRoom, rooms]);
 
-  // mock DB: persist rooms (incl. shared photos) to localStorage
+  // load the saved name on mount (prompt for it the first time)
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("wakii.name");
+      if (saved) setName(saved);
+      else setNeedName(true);
+    } catch {
+      setNeedName(true);
+    }
+  }, []);
+  const saveName = () => {
+    const v = nameDraft.trim();
+    if (!v) return;
+    setName(v);
+    setNeedName(false);
+    try {
+      localStorage.setItem("wakii.name", v);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // ── backend (Supabase) vs mock (localStorage) ──────────────────────
+  const refreshRoom = useCallback(
+    (room: string) => {
+      listRoom(room, name)
+        .then((decks) => setRooms((r) => ({ ...r, [room]: decks })))
+        .catch(() => {});
+    },
+    [name],
+  );
+
+  // fetch + live-subscribe the current room when backed by Supabase
+  useEffect(() => {
+    if (!hasSupabase) return;
+    refreshRoom(currentRoom);
+    const unsub = subscribeRoom(currentRoom, () => refreshRoom(currentRoom));
+    return unsub;
+  }, [currentRoom, refreshRoom]);
+
+  // mock DB fallback: persist rooms to localStorage
+  useEffect(() => {
+    if (hasSupabase) return;
     try {
       const saved = localStorage.getItem("wakii.rooms");
       if (saved) setRooms(JSON.parse(saved));
@@ -236,6 +276,7 @@ export default function WakiiApp() {
     }
   }, []);
   useEffect(() => {
+    if (hasSupabase) return;
     try {
       localStorage.setItem("wakii.rooms", JSON.stringify(rooms));
     } catch {
@@ -244,10 +285,16 @@ export default function WakiiApp() {
   }, [rooms]);
 
   const addReply = (di: number) => {
+    const deck = rooms[currentRoom]?.[di];
+    if (hasSupabase) {
+      if (deck?.id) addReplyCard(deck.id, author, null).then(() => refreshRoom(currentRoom));
+      toast("답장을 남겼어요");
+      return;
+    }
     setRooms((prev) => {
       const next: RoomsData = { ...prev, [currentRoom]: prev[currentRoom].map((d) => ({ ...d, cards: [...d.cards] })) };
       next[currentRoom][di].cards.push({
-        who: "나",
+        who: author,
         mine: true,
         date: "2026. 6. 26",
         ov: overlays[Math.floor(Math.random() * overlays.length)],
@@ -262,6 +309,10 @@ export default function WakiiApp() {
   const pickEmoji = (e: string) => {
     spawnBubble(e);
     toast(e + " 반응을 남겼어요");
+    if (hasSupabase) {
+      const cardId = openDeck?.cards[0]?.id;
+      if (cardId) addReaction(cardId, author, e).then(() => refreshRoom(currentRoom));
+    }
   };
   const spawnBubble = (e: string) => {
     const made: Bubble[] = [];
@@ -410,10 +461,20 @@ export default function WakiiApp() {
     const img = (await editorRef.current?.getComposite()) || capturedSrc || undefined;
     const shareRooms = ["엄마아빠", "언니", "동생"];
     const targets =
-      uploadMode === "room"
-        ? [currentRoom]
-        : shareRooms.filter((_, i) => shareSel[i]);
-    if (img) targets.forEach((r) => addPhotoDeck(r, img));
+      uploadMode === "room" ? [currentRoom] : shareRooms.filter((_, i) => shareSel[i]);
+    if (img) {
+      if (hasSupabase) {
+        try {
+          const url = await uploadPhoto(img);
+          await Promise.all(targets.map((r) => createPhotoDeck(r, author, url)));
+          refreshRoom(currentRoom);
+        } catch {
+          toast("업로드 실패 — 잠시 후 다시 시도해주세요");
+        }
+      } else {
+        targets.forEach((r) => addPhotoDeck(r, img));
+      }
+    }
     closeUpload();
     go("home");
     toast("공유했어요 · 덱에 올라갔어요");
@@ -564,9 +625,10 @@ export default function WakiiApp() {
 
             {roomViewMode === "deck" && (
               <div className="board">
-                {decks.map((deck, di) => {
+                {(decks || []).map((deck, di) => {
                   const n = deck.cards.length;
                   const names = Array.from(new Set(deck.cards.map((c) => c.who)));
+                  const rxTotal = deck.cards.reduce((s, c) => s + (c.reactions?.length || 0), 0);
                   return (
                     <div key={di} className="deckwrap">
                       <div className="decklabel">
@@ -577,6 +639,7 @@ export default function WakiiApp() {
                             <b>{deck.label}</b>가 시작 · {deck.when}
                           </>
                         )}
+                        {rxTotal > 0 && <span className="rxcnt">🙂 {rxTotal}</span>}
                         <span className="cnt">{n}장</span>
                       </div>
 
@@ -621,7 +684,7 @@ export default function WakiiApp() {
               <div className="review">
                 {(() => {
                   const all: Card[] = [];
-                  decks.forEach((d) => d.cards.forEach((c) => all.push(c)));
+                  (decks || []).forEach((d) => d.cards.forEach((c) => all.push(c)));
                   const groups: Record<string, Card[]> = {};
                   all.forEach((c) => {
                     (groups[c.date] = groups[c.date] || []).push(c);
@@ -1007,6 +1070,26 @@ export default function WakiiApp() {
               )}
               <button className="b-close" onClick={() => setOpenDeckIdx(null)}>
                 닫기
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* first-run name prompt */}
+        {needName && (
+          <div className="namemodal">
+            <div className="nm-panel">
+              <div className="nm-title">이름을 알려주세요</div>
+              <div className="nm-sub">가족 방에 이 이름으로 표시돼요</div>
+              <input
+                autoFocus
+                value={nameDraft}
+                placeholder="예) 줄리"
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && saveName()}
+              />
+              <button className="nm-go" onClick={saveName}>
+                시작하기
               </button>
             </div>
           </div>

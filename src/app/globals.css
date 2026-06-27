@@ -180,6 +180,25 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .myitem .mi{width:18px;text-align:center;filter:grayscale(1);}
 .myitem .chev{margin-left:auto;color:var(--g25);}
 
+/* step report */
+.report{margin:8px 16px 4px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;}
+.report-head{display:flex;align-items:center;gap:10px;}
+.report-head h4{font-size:13px;font-weight:800;}
+.report-toggle{margin-left:auto;display:flex;background:var(--g08);border-radius:9px;padding:2px;}
+.report-toggle span{font-size:10px;font-weight:700;color:var(--g40);padding:5px 10px;border-radius:7px;cursor:pointer;}
+.report-toggle span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.report-stats{display:flex;gap:10px;margin:12px 0;}
+.rs-item{flex:1;background:var(--g04);border-radius:11px;padding:10px 12px;}
+.rs-num{font-size:18px;font-weight:800;}
+.rs-lbl{font-size:10px;color:var(--g55);margin-top:2px;}
+.report-chart{display:flex;align-items:flex-end;gap:6px;height:92px;padding-top:6px;}
+.report-chart.dense{gap:2px;}
+.rc-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+.rc-bar{width:68%;min-height:3px;background:var(--ink);border-radius:4px 4px 0 0;transition:height .3s;}
+.report-chart.dense .rc-bar{width:84%;border-radius:2px 2px 0 0;}
+.rc-lbl{font-size:8px;color:var(--g40);margin-top:4px;font-weight:600;}
+.report-chart.dense .rc-lbl{display:none;}
+
 /* ===== glass nav ===== */
 .nav{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,.38));backdrop-filter:blur(22px) saturate(1.8);-webkit-backdrop-filter:blur(22px) saturate(1.8);border:1px solid rgba(255,255,255,.65);border-radius:28px;padding:7px 9px;box-shadow:0 10px 30px rgba(0,0,0,.18),inset 0 1px 1px rgba(255,255,255,.75),inset 0 -1px 2px rgba(255,255,255,.25);z-index:70;}
 .nav .tab{display:flex;flex-direction:column;align-items:center;gap:2px;width:50px;padding:5px 0;cursor:pointer;border-radius:16px;}

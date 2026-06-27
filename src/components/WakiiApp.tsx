@@ -230,6 +230,8 @@ export default function WakiiApp() {
 
   // calendar
   const [calSel, setCalSel] = useState<number | null>(null);
+  // step report range
+  const [stepRange, setStepRange] = useState<"week" | "month">("week");
 
   // ---------- navigation ----------
   const go = (id: ScreenId) => setScreen(id);
@@ -645,6 +647,25 @@ export default function WakiiApp() {
     return { day: calSel, up, steps };
   })();
 
+  // ---------- step report (this week / this month) ----------
+  const weekCols = [
+    { d: 22, lbl: "월" },
+    { d: 23, lbl: "화" },
+    { d: 24, lbl: "수" },
+    { d: 25, lbl: "목" },
+    { d: 26, lbl: "금" },
+    { d: 27, lbl: "토" },
+    { d: 28, lbl: "일" },
+  ];
+  const reportCols =
+    stepRange === "week"
+      ? weekCols.map((c) => ({ ...c, v: stepsByDay[c.d] || 0 }))
+      : Array.from({ length: 30 }, (_, i) => ({ d: i + 1, lbl: String(i + 1), v: stepsByDay[i + 1] || 0 }));
+  const reportTotal = reportCols.reduce((s, c) => s + c.v, 0);
+  const reportActive = reportCols.filter((c) => c.v > 0).length || 1;
+  const reportAvg = Math.round(reportTotal / reportActive);
+  const reportMax = Math.max(1, ...reportCols.map((c) => c.v));
+
   return (
     <>
       <div className="head">
@@ -791,7 +812,19 @@ export default function WakiiApp() {
                               <div className="meta">{deck.isMission ? c.who : roleLabel(i)}</div>
                               {!c.img && c.ov && <div className="ov">{c.ov}</div>}
                               <div className="seq">{i + 1}</div>
-                              {c.reply && <div className="reporig" />}
+                              {c.reply &&
+                                (deck.cards[i - 1]?.img ? (
+                                  <div
+                                    className="reporig"
+                                    style={{
+                                      backgroundImage: `url(${deck.cards[i - 1].img})`,
+                                      backgroundSize: "cover",
+                                      backgroundPosition: "center",
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="reporig" />
+                                ))}
                             </div>
                           );
                         })}
@@ -974,13 +1007,40 @@ export default function WakiiApp() {
                 </div>
               </div>
             )}
+            {/* step report */}
+            <div className="report">
+              <div className="report-head">
+                <h4>걸음 레포트</h4>
+                <div className="report-toggle">
+                  <span className={stepRange === "week" ? "on" : ""} onClick={() => setStepRange("week")}>
+                    이번 주
+                  </span>
+                  <span className={stepRange === "month" ? "on" : ""} onClick={() => setStepRange("month")}>
+                    이번 달
+                  </span>
+                </div>
+              </div>
+              <div className="report-stats">
+                <div className="rs-item">
+                  <div className="rs-num">{reportTotal.toLocaleString()}</div>
+                  <div className="rs-lbl">총 걸음</div>
+                </div>
+                <div className="rs-item">
+                  <div className="rs-num">{reportAvg.toLocaleString()}</div>
+                  <div className="rs-lbl">하루 평균</div>
+                </div>
+              </div>
+              <div className={"report-chart" + (stepRange === "month" ? " dense" : "")}>
+                {reportCols.map((c) => (
+                  <div key={c.d} className="rc-col">
+                    <div className="rc-bar" style={{ height: Math.round((c.v / reportMax) * 100) + "%" }} />
+                    <div className="rc-lbl">{c.lbl}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="mylist">
-              <div className="myitem" onClick={() => toast("프로필 사진 = 걸음 맵 마커로 쓰여요")}>
-                <span className="mi">📷</span> 프로필 사진 <span className="chev">›</span>
-              </div>
-              <div className="myitem" onClick={() => toast("방·가족 관리")}>
-                <span className="mi">🏠</span> 방 관리 <span className="chev">›</span>
-              </div>
               <div className="myitem" onClick={() => toast("알림 설정")}>
                 <span className="mi">🔔</span> 알림 <span className="chev">›</span>
               </div>

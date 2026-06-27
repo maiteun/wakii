@@ -4,6 +4,17 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "wakii",
   description: "wakii — 가족과 함께 사진을 남기고 걷는 앱",
+  applicationName: "wakii",
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/icon-180.png",
+  },
+  // installable, full-screen launch on iOS ("add to home screen")
+  appleWebApp: {
+    capable: true,
+    title: "wakii",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {

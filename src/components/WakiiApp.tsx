@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /* ===================================================================
    wakii — full prototype, ported from khux-prototype-full.html to React.
@@ -143,6 +143,15 @@ export default function WakiiApp() {
   const [shareShow, setShareShow] = useState(false);
   const [shareSel, setShareSel] = useState([true, false, false]);
 
+  // camera
+  const [cameraActive, setCameraActive] = useState(false);
+  const [capturedSrc, setCapturedSrc] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null); // camera capture fallback
+  const galleryInputRef = useRef<HTMLInputElement>(null); // pick from library
+
   // recap
   const [recapShow, setRecapShow] = useState(false);
   const [recapTitle, setRecapTitle] = useState("나일강 종주 완주!");
@@ -220,25 +229,112 @@ export default function WakiiApp() {
     setTimeout(() => setBubbles((b) => b.filter((x) => !ids.includes(x.id))), 1500);
   };
 
-  // ---------- upload ----------
-  const openUpload = (mode: UploadMode) => {
-    setUploadMode(mode);
-    setShotTaken(false);
-    setShareShow(false);
-    setUploadShow(true);
+  // ---------- upload / camera ----------
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraActive(false);
   };
-  const closeUpload = () => {
-    setUploadShow(false);
-    setShareShow(false);
-  };
-  const shoot = () => {
+
+  // start the live camera whenever the upload overlay is open and no shot
+  // has been taken yet. Falls back silently (cameraActive=false) when the
+  // device/browser can't grant a live stream — the shutter then opens the
+  // native camera / file picker instead.
+  useEffect(() => {
+    if (!uploadShow || shotTaken) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => {});
+        }
+        setCameraActive(true);
+      } catch {
+        setCameraActive(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      stopCamera();
+    };
+  }, [uploadShow, shotTaken]);
+
+  const afterCapture = () => {
     setShotTaken(true);
+    stopCamera();
     if (uploadMode === "mission") {
       setTimeout(() => {
         closeUpload();
         toast("미션 완수! 1/4 → 2/4");
       }, 500);
     }
+  };
+
+  const openUpload = (mode: UploadMode) => {
+    setUploadMode(mode);
+    setShotTaken(false);
+    setCapturedSrc(null);
+    setShareShow(false);
+    setUploadShow(true);
+  };
+  const closeUpload = () => {
+    stopCamera();
+    setUploadShow(false);
+    setShareShow(false);
+    setShotTaken(false);
+    setCapturedSrc(null);
+  };
+  const shoot = () => {
+    const v = videoRef.current;
+    if (cameraActive && v && v.videoWidth) {
+      // grab the current frame, centre-cropped to the 3:4 viewfinder
+      const vw = v.videoWidth,
+        vh = v.videoHeight;
+      const ratio = 3 / 4;
+      let sw = vw,
+        sh = vw / ratio;
+      if (sh > vh) {
+        sh = vh;
+        sw = vh * ratio;
+      }
+      const sx = (vw - sw) / 2,
+        sy = (vh - sh) / 2;
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.width = sw;
+        canvas.height = sh;
+        canvas.getContext("2d")?.drawImage(v, sx, sy, sw, sh, 0, 0, sw, sh);
+        setCapturedSrc(canvas.toDataURL("image/jpeg", 0.9));
+      }
+      afterCapture();
+    } else {
+      // no live camera → let the OS take the photo
+      fileInputRef.current?.click();
+    }
+  };
+  const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCapturedSrc(reader.result as string);
+      afterCapture();
+    };
+    reader.readAsDataURL(f);
   };
   const toggleShare = (idx: number) =>
     setShareSel((s) => s.map((v, i) => (i === idx ? !v : v)));
@@ -708,6 +804,30 @@ export default function WakiiApp() {
             <div className="ul-stage">
               {uploadMode === "mission" && <div className="ul-prompt">💡 오늘의 미션 촬영</div>}
               <div className="vf">
+                {!shotTaken && (
+                  <video
+                    ref={videoRef}
+                    playsInline
+                    muted
+                    autoPlay
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: cameraActive ? "block" : "none",
+                    }}
+                  />
+                )}
+                {shotTaken && capturedSrc && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={capturedSrc}
+                    alt="촬영한 사진"
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                )}
                 <div className="ratio">3:4</div>
                 {shotTaken && (
                   <div className="ed-stk" style={{ top: 8, right: 8 }}>
@@ -717,11 +837,29 @@ export default function WakiiApp() {
               </div>
               {!shotTaken && <div className="ul-shutter" onClick={shoot} />}
               {!shotTaken && uploadMode === "new" && (
-                <div className="ul-gallery" onClick={() => toast("갤러리 — 업로드(새 글)에서만")}>
+                <div className="ul-gallery" onClick={() => galleryInputRef.current?.click()}>
                   🖼️
                 </div>
               )}
             </div>
+            {/* hidden capture targets — used when a live stream isn't available
+                (shutter) or to pick an existing photo (gallery) */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={onPickFile}
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={onPickFile}
+            />
+            <canvas ref={canvasRef} style={{ display: "none" }} />
             {shotTaken && uploadMode !== "mission" && (
               <div className="ul-tools">
                 <div className="tg">

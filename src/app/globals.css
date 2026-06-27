@@ -207,3 +207,21 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 /* floating reaction bubbles */
 .bubble{position:absolute;z-index:84;pointer-events:none;opacity:1;animation:bubblefloat 1.4s ease-out forwards;}
 @keyframes bubblefloat{to{transform:translateY(var(--dy)) translateX(var(--dx));opacity:0;}}
+
+/* ===================================================================
+   Mobile: drop the desktop "device mockup" framing and let the app fill
+   the screen so it reads as a real installed app (used for user testing).
+   The phone-frame preview is kept only on larger (desktop) viewports.
+   =================================================================== */
+@media (max-width: 560px){
+  body{padding:0;background:var(--paper);display:block;}
+  .head,.hintline{display:none;}
+  .notch,.status{display:none;}
+  .device{
+    width:100vw;height:100vh;height:100dvh;
+    border:none;border-radius:0;box-shadow:none;
+    padding-top:env(safe-area-inset-top);
+  }
+  /* keep the glass nav clear of the home-indicator / gesture bar */
+  .nav{bottom:calc(14px + env(safe-area-inset-bottom));}
+}

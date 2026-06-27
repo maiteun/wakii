@@ -29,8 +29,8 @@ type Tool = "none" | "emoji" | "draw" | "text" | "voice";
 const EMOJIS = ["😀", "😂", "😍", "🥰", "😎", "😭", "👍", "🙏", "🎉", "❤️", "🔥", "✨", "🌟", "🌸", "🐶", "🐱", "🍰", "☕️", "🌈", "⭐️", "🌻", "🍙"];
 const PEN_COLORS = ["#FFFFFF", "#1A1A1A", "#FF3B30", "#FFCC00", "#34C759", "#0A84FF", "#FF2D55"];
 const PEN_SIZES = [4, 8, 16];
-// mock weather for the prototype (would come from a weather API + geolocation)
-const MOCK_WEATHER = "🌧️ 대전·18°";
+// fallback shown until the live weather (Open-Meteo) resolves
+const MOCK_WEATHER = "🌤️ 서울";
 
 function nowTime() {
   const d = new Date();
@@ -56,8 +56,8 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-const PhotoEditor = forwardRef<PhotoEditorHandle, { src: string; toast: (m: string) => void }>(
-  function PhotoEditor({ src, toast }, ref) {
+const PhotoEditor = forwardRef<PhotoEditorHandle, { src: string; toast: (m: string) => void; weather: string }>(
+  function PhotoEditor({ src, toast, weather }, ref) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -86,8 +86,9 @@ const PhotoEditor = forwardRef<PhotoEditorHandle, { src: string; toast: (m: stri
   useEffect(() => {
     setStickers([
       { id: idRef.current++, type: "time", content: nowTime(), x: 21, y: 9, scale: 1 },
-      { id: idRef.current++, type: "weather", content: MOCK_WEATHER, x: 79, y: 9, scale: 1 },
+      { id: idRef.current++, type: "weather", content: weather || MOCK_WEATHER, x: 79, y: 9, scale: 1 },
     ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // size the drawing canvas to the stage

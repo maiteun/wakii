@@ -17,6 +17,20 @@ const roleLabel = (i: number) => (i === 0 ? "작성자" : `${i}차 반응자`);
 // today's mission, noun-ified for the mission deck label/footer
 const MISSION_NAME = "오늘의 풍경";
 
+// map an Open-Meteo weather code to an emoji
+function weatherEmoji(code: number): string {
+  if (code === 0) return "☀️";
+  if (code <= 2) return "⛅";
+  if (code === 3) return "☁️";
+  if (code === 45 || code === 48) return "🌫️";
+  if (code >= 51 && code <= 67) return "🌧️";
+  if (code >= 71 && code <= 77) return "❄️";
+  if (code >= 80 && code <= 82) return "🌦️";
+  if (code >= 85 && code <= 86) return "🌨️";
+  if (code >= 95) return "⛈️";
+  return "🌤️";
+}
+
 // reaction palette (long-press an emoji → instant photo reply)
 const REACTIONS = [
   { emoji: "❤️", label: "하트" },
@@ -232,6 +246,18 @@ export default function WakiiApp() {
   const [calSel, setCalSel] = useState<number | null>(null);
   // step report range
   const [stepRange, setStepRange] = useState<"week" | "month">("week");
+
+  // live weather for Seoul (Open-Meteo, no API key)
+  const [weather, setWeather] = useState("🌤️ 서울");
+  useEffect(() => {
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current_weather=true")
+      .then((r) => r.json())
+      .then((d) => {
+        const cw = d?.current_weather;
+        if (cw) setWeather(`${weatherEmoji(cw.weathercode)} 서울·${Math.round(cw.temperature)}°`);
+      })
+      .catch(() => {});
+  }, []);
 
   // ---------- navigation ----------
   const go = (id: ScreenId) => setScreen(id);
@@ -1089,7 +1115,7 @@ export default function WakiiApp() {
               )}
               {/* after capture: full Instagram-style editor (all modes) */}
               {shotTaken && capturedSrc && (
-                <PhotoEditor ref={editorRef} src={capturedSrc} toast={toast} />
+                <PhotoEditor ref={editorRef} src={capturedSrc} toast={toast} weather={weather} />
               )}
             </div>
             {/* hidden capture targets — used when a live stream isn't available

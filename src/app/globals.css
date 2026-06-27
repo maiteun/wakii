@@ -256,8 +256,47 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .dg-top b{font-size:15px;font-weight:800;}
 .dg-top .dg-x{margin-left:auto;font-size:20px;cursor:pointer;opacity:.85;}
 .dg-stage{position:relative;flex:1;min-height:0;}
-.dg-emojis{display:flex;gap:14px;justify-content:center;padding:6px 0 2px;}
-.dg-emojis span{font-size:26px;cursor:pointer;}
+/* reaction palette */
+.rx-bar{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:8px 10px;}
+.rx-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,.14);border:none;border-radius:14px;padding:9px 10px;min-width:54px;cursor:pointer;color:#fff;font-family:inherit;user-select:none;touch-action:none;transition:transform .12s,background .12s;}
+.rx-btn:active{transform:scale(.92);background:rgba(255,255,255,.28);}
+.rx-btn .rx-emoji{font-size:24px;line-height:1;}
+.rx-btn .rx-label{font-size:9px;font-weight:700;opacity:.85;}
+.rx-text .rx-emoji{filter:grayscale(1);}
+.rx-textinput{display:flex;gap:8px;justify-content:center;padding:6px 14px;}
+.rx-textinput input{flex:1;max-width:240px;border:none;border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;}
+.rx-textinput button{background:#fff;color:#181818;border:none;border-radius:11px;padding:0 16px;font-weight:800;font-family:inherit;cursor:pointer;}
+.rx-phrases{padding:6px 14px;}
+.rx-phrases-title{color:#fff;font-size:11px;font-weight:700;opacity:.85;text-align:center;margin-bottom:6px;}
+.rx-phrases-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.rx-phrases-row button{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:8px 14px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;}
+
+/* AI phrase motions */
+.motionfx{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:auto;}
+.motionfx .mfx-text{font-size:46px;font-weight:900;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.55);}
+.mfx-pulse .mfx-text{animation:mfxPulse .5s ease-in-out infinite;}
+@keyframes mfxPulse{0%,100%{transform:scale(.85);}50%{transform:scale(1.5);}}
+.mfx-float .mfx-text{animation:mfxFloat 2.6s ease-out forwards;}
+@keyframes mfxFloat{0%{transform:translateY(40px);opacity:0;}20%{opacity:1;}100%{transform:translateY(-60px);opacity:0;}}
+.mfx-sparkle .mfx-text{animation:mfxSpark 1.6s ease-in-out infinite;}
+@keyframes mfxSpark{0%,100%{transform:scale(1) rotate(-2deg);}50%{transform:scale(1.18) rotate(2deg);}}
+.motionfx .sparkle{position:absolute;font-size:24px;animation:sparkTwinkle 1.2s ease-in-out infinite;}
+@keyframes sparkTwinkle{0%,100%{opacity:.2;transform:scale(.6);}50%{opacity:1;transform:scale(1.2);}}
+.mfx-rain .mfx-text{animation:mfxSad 2.6s ease-in-out;}
+@keyframes mfxSad{0%{transform:translateY(-6px);}100%{transform:translateY(6px);}}
+.motionfx .raindrop{position:absolute;top:-12%;width:2px;height:18px;background:linear-gradient(180deg,rgba(255,255,255,0),rgba(180,200,230,.85));border-radius:2px;animation:rainFall 1.1s linear infinite;}
+@keyframes rainFall{0%{transform:translateY(-20px);opacity:0;}10%{opacity:1;}100%{transform:translateY(620px);opacity:.2;}}
+
+/* instant photo reply overlay */
+.instant{position:absolute;inset:0;z-index:120;background:#111;display:flex;flex-direction:column;}
+.instant-top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;color:#fff;}
+.instant-top .instant-x{font-size:18px;cursor:pointer;}
+.instant-top .instant-ttl{font-size:13px;font-weight:700;}
+.instant-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding-bottom:calc(20px + env(safe-area-inset-bottom));}
+.instant-vf{position:relative;width:74%;max-width:300px;aspect-ratio:3/4;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#5a5a5a,#3a3a3a);}
+.instant-vf .instant-emoji{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:88px;pointer-events:none;}
+.instant-shutter{width:64px;height:64px;border-radius:50%;border:4px solid #fff;background:rgba(255,255,255,.18);cursor:pointer;}
+
 .dg-acts{display:flex;gap:8px;justify-content:center;padding:10px 0 calc(16px + env(safe-area-inset-bottom));}
 .dg-acts button{border:none;font-family:inherit;cursor:pointer;font-weight:800;border-radius:12px;padding:10px 18px;font-size:12px;}
 .dg-acts .b-reply{background:#fff;color:var(--ink);}

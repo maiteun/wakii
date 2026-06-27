@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import PhotoEditor, { type PhotoEditorHandle } from "./PhotoEditor";
+import InstantCapture from "./InstantCapture";
 import type { Card, Deck, RoomsData } from "@/lib/types";
 import { hasSupabase } from "@/lib/supabase";
 import { listRoom, subscribeRoom, uploadPhoto, createPhotoDeck, addReplyCard, addReaction } from "@/lib/db";
@@ -12,6 +13,25 @@ const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false 
 
 // role shown on each card by its position in the deck
 const roleLabel = (i: number) => (i === 0 ? "작성자" : `${i}차 반응자`);
+
+// reaction palette (long-press an emoji → instant photo reply)
+const REACTIONS = [
+  { emoji: "❤️", label: "하트" },
+  { emoji: "🙂", label: "스마일" },
+  { emoji: "👍", label: "좋아요" },
+  { emoji: "😂", label: "슬퍼요" },
+  { emoji: "😮", label: "놀라요" },
+];
+
+// AI-suggested phrases (long-press 텍스트); each carries a motion style
+type MotionKind = "pulse" | "rain" | "sparkle" | "float";
+const AI_PHRASES: { text: string; motion: MotionKind }[] = [
+  { text: "파이팅!", motion: "pulse" },
+  { text: "예쁘다!", motion: "sparkle" },
+  { text: "슬프다", motion: "rain" },
+  { text: "최고야!", motion: "pulse" },
+  { text: "보고싶어", motion: "float" },
+];
 
 function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
@@ -128,7 +148,6 @@ async function buildGalleryImage(card: Card): Promise<string> {
 type ScreenId = "home" | "room" | "walk" | "my";
 
 
-const overlays = ["🌅", "☕️", "🐶", "🍱", "🌷", "🌧️", "🌻", "🍙", ""];
 
 const initialRooms: RoomsData = {
   엄마아빠: [
@@ -239,6 +258,15 @@ export default function WakiiApp() {
   const [currentRoomEmoji, setCurrentRoomEmoji] = useState("🏠");
   const [openDeckIdx, setOpenDeckIdx] = useState<number | null>(null);
   const [galReact, setGalReact] = useState(false); // reaction row in the deck gallery
+  const [instantEmoji, setInstantEmoji] = useState<string | null>(null); // emoji long-press → instant photo reply
+  const [replyDeckIdx, setReplyDeckIdx] = useState<number | null>(null);
+  const [textReactOpen, setTextReactOpen] = useState(false);
+  const [textReactDraft, setTextReactDraft] = useState("");
+  const [phrasesOpen, setPhrasesOpen] = useState(false);
+  const [motion, setMotion] = useState<{ text: string; kind: MotionKind } | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longFired = useRef(false);
+  const motionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [roomViewMode, setRoomViewMode] = useState<"deck" | "review">("deck");
   const roomScreenRef = useRef<HTMLDivElement>(null);
 
@@ -390,26 +418,6 @@ export default function WakiiApp() {
     }
   }, [rooms]);
 
-  const addReply = (di: number) => {
-    const deck = rooms[currentRoom]?.[di];
-    if (hasSupabase) {
-      if (deck?.id) addReplyCard(deck.id, author, null).then(() => refreshRoom(currentRoom));
-      toast("답장을 남겼어요");
-      return;
-    }
-    setRooms((prev) => {
-      const next: RoomsData = { ...prev, [currentRoom]: prev[currentRoom].map((d) => ({ ...d, cards: [...d.cards] })) };
-      next[currentRoom][di].cards.push({
-        who: author,
-        mine: true,
-        date: "2026. 6. 26",
-        ov: overlays[Math.floor(Math.random() * overlays.length)],
-        reply: true,
-      });
-      return next;
-    });
-    toast("답장이 덱에 쌓였어요 (선형 +1)");
-  };
 
   // ---------- emoji react ----------
   const pickEmoji = (e: string) => {
@@ -440,6 +448,79 @@ export default function WakiiApp() {
     setBubbles((b) => [...b, ...made]);
     const ids = made.map((m) => m.id);
     setTimeout(() => setBubbles((b) => b.filter((x) => !ids.includes(x.id))), 4600);
+  };
+
+  // ---------- press (short tap vs long press) ----------
+  const startPress = (onLong: () => void) => {
+    longFired.current = false;
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = setTimeout(() => {
+      longFired.current = true;
+      onLong();
+    }, 450);
+  };
+  const endPress = (onShort: () => void) => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    if (!longFired.current) onShort();
+  };
+
+  // ---------- reply (instant photo into the open deck) ----------
+  const sendReply = async (deckIdx: number, dataUrl: string) => {
+    const deck = rooms[currentRoom]?.[deckIdx];
+    if (hasSupabase) {
+      try {
+        const url = await uploadPhoto(dataUrl);
+        if (deck?.id) await addReplyCard(deck.id, author, url);
+        refreshRoom(currentRoom);
+      } catch {
+        toast("답장 업로드 실패");
+      }
+    } else {
+      const d = new Date();
+      const date = `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}`;
+      setRooms((prev) => {
+        const next: RoomsData = { ...prev, [currentRoom]: prev[currentRoom].map((dk) => ({ ...dk, cards: [...dk.cards] })) };
+        next[currentRoom][deckIdx].cards.push({ who: author, mine: true, date, ov: "", img: dataUrl, reply: true });
+        return next;
+      });
+    }
+  };
+  // emoji long-press → open instant camera targeting the open deck
+  const startInstant = (emoji: string) => {
+    setReplyDeckIdx(openDeckIdx);
+    setInstantEmoji(emoji);
+    setGalReact(false);
+  };
+  const onInstantSend = (dataUrl: string) => {
+    const idx = replyDeckIdx;
+    const emoji = instantEmoji;
+    setInstantEmoji(null);
+    if (idx != null) sendReply(idx, dataUrl);
+    if (emoji) spawnBubble(emoji);
+    toast("즉석 답장을 보냈어요");
+  };
+
+  // ---------- text / AI phrase reactions ----------
+  const sendTextReaction = (text: string) => {
+    const t = text.trim().slice(0, 10);
+    if (!t) return;
+    spawnBubble(t);
+    toast("“" + t + "” 남겼어요");
+    if (hasSupabase) {
+      const cardId = openDeck?.cards[0]?.id;
+      if (cardId) addReaction(cardId, author, t).then(() => refreshRoom(currentRoom));
+    }
+  };
+  const playPhrase = (text: string, kind: MotionKind) => {
+    setPhrasesOpen(false);
+    setGalReact(false);
+    setMotion({ text, kind });
+    if (motionTimer.current) clearTimeout(motionTimer.current);
+    motionTimer.current = setTimeout(() => setMotion(null), 2800);
+    if (hasSupabase) {
+      const cardId = openDeck?.cards[0]?.id;
+      if (cardId) addReaction(cardId, author, text).then(() => refreshRoom(currentRoom));
+    }
   };
 
   // ---------- upload / camera ----------
@@ -1162,28 +1243,127 @@ export default function WakiiApp() {
               ))}
             </div>
 
+            {/* AI phrase motion playing over the gallery */}
+            {motion && (
+              <div className={"motionfx mfx-" + motion.kind} onClick={() => setMotion(null)}>
+                <div className="mfx-text">{motion.text}</div>
+                {motion.kind === "rain" &&
+                  Array.from({ length: 26 }).map((_, i) => (
+                    <span
+                      key={i}
+                      className="raindrop"
+                      style={{ left: ((i * 4.1) % 100) + "%", animationDelay: ((i * 0.11) % 1.4) + "s" }}
+                    />
+                  ))}
+                {motion.kind === "sparkle" &&
+                  Array.from({ length: 16 }).map((_, i) => (
+                    <span
+                      key={i}
+                      className="sparkle"
+                      style={{ left: ((i * 6.3) % 100) + "%", top: ((i * 17) % 90) + "%", animationDelay: (i * 0.09) + "s" }}
+                    >
+                      ✨
+                    </span>
+                  ))}
+              </div>
+            )}
+
+            {/* reaction palette: emojis (short=react, long=instant photo) + 텍스트 */}
             {galReact && (
-              <div className="dg-emojis" onClick={(e) => e.stopPropagation()}>
-                {["❤️", "🙂", "👍", "😢", "😮"].map((e) => (
-                  <span
-                    key={e}
-                    onClick={() => {
-                      setGalReact(false);
-                      pickEmoji(e);
-                    }}
+              <div className="rx-bar" onClick={(e) => e.stopPropagation()}>
+                {REACTIONS.map((r) => (
+                  <button
+                    key={r.emoji}
+                    className="rx-btn"
+                    onPointerDown={() => startPress(() => startInstant(r.emoji))}
+                    onPointerUp={() =>
+                      endPress(() => {
+                        setGalReact(false);
+                        pickEmoji(r.emoji);
+                      })
+                    }
+                    onPointerLeave={() => pressTimer.current && clearTimeout(pressTimer.current)}
                   >
-                    {e}
-                  </span>
+                    <span className="rx-emoji">{r.emoji}</span>
+                    <span className="rx-label">{r.label}</span>
+                  </button>
                 ))}
+                <button
+                  className="rx-btn rx-text"
+                  onPointerDown={() =>
+                    startPress(() => {
+                      setGalReact(false);
+                      setPhrasesOpen(true);
+                    })
+                  }
+                  onPointerUp={() =>
+                    endPress(() => {
+                      setGalReact(false);
+                      setTextReactOpen(true);
+                    })
+                  }
+                  onPointerLeave={() => pressTimer.current && clearTimeout(pressTimer.current)}
+                >
+                  <span className="rx-emoji">💬</span>
+                  <span className="rx-label">텍스트</span>
+                </button>
+              </div>
+            )}
+
+            {textReactOpen && (
+              <div className="rx-textinput" onClick={(e) => e.stopPropagation()}>
+                <input
+                  autoFocus
+                  maxLength={10}
+                  value={textReactDraft}
+                  placeholder="10자 이내로 입력"
+                  onChange={(e) => setTextReactDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      sendTextReaction(textReactDraft);
+                      setTextReactDraft("");
+                      setTextReactOpen(false);
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    sendTextReaction(textReactDraft);
+                    setTextReactDraft("");
+                    setTextReactOpen(false);
+                  }}
+                >
+                  보내기
+                </button>
+              </div>
+            )}
+
+            {phrasesOpen && (
+              <div className="rx-phrases" onClick={(e) => e.stopPropagation()}>
+                <div className="rx-phrases-title">✨ AI 추천 멘트</div>
+                <div className="rx-phrases-row">
+                  {AI_PHRASES.map((p) => (
+                    <button key={p.text} onClick={() => playPhrase(p.text, p.motion)}>
+                      {p.text}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
             <div className="dg-acts" onClick={(e) => e.stopPropagation()}>
-              <button className="b-react" onClick={() => setGalReact((v) => !v)}>
+              <button
+                className="b-react"
+                onClick={() => {
+                  setTextReactOpen(false);
+                  setPhrasesOpen(false);
+                  setGalReact((v) => !v);
+                }}
+              >
                 🙂 반응
               </button>
               {!openDeck.isMission && (
-                <button className="b-reply" onClick={() => openDeckIdx != null && addReply(openDeckIdx)}>
+                <button className="b-reply" onClick={() => startInstant("")}>
                   📷 답장
                 </button>
               )}
@@ -1192,6 +1372,11 @@ export default function WakiiApp() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* instant photo reply (emoji long-press, or 답장) */}
+        {instantEmoji != null && (
+          <InstantCapture emoji={instantEmoji} onSend={onInstantSend} onClose={() => setInstantEmoji(null)} />
         )}
 
         {/* first-run name prompt */}

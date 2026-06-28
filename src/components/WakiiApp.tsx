@@ -6,7 +6,18 @@ import PhotoEditor, { type PhotoEditorHandle } from "./PhotoEditor";
 import InstantCapture from "./InstantCapture";
 import type { Card, Deck, RoomsData } from "@/lib/types";
 import { hasSupabase } from "@/lib/supabase";
-import { listRoom, subscribeRoom, uploadPhoto, createPhotoDeck, addReplyCard, addReaction, listMyCards } from "@/lib/db";
+import {
+  listRoom,
+  subscribeRoom,
+  uploadPhoto,
+  createPhotoDeck,
+  addReplyCard,
+  addReaction,
+  listMyCards,
+  createGroup,
+  joinGroup,
+  type Group,
+} from "@/lib/db";
 
 // WebGL gallery is client-only (uses window / WebGL at runtime)
 const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false });
@@ -180,15 +191,22 @@ export default function WakiiApp() {
     toastTimer.current = setTimeout(() => setToastShown(false), 1700);
   };
 
-  // identity — name only for now (Kakao login later)
+  // identity + onboarding (login → name → group)
   const [name, setName] = useState("");
-  const [needName, setNeedName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const author = name || "나";
+  type ObStep = "login" | "name" | "group" | "create" | "join" | "code" | "joined";
+  const [obStep, setObStep] = useState<ObStep>("login");
+  const [addingGroup, setAddingGroup] = useState(false); // opening the group flow from "+"
+  const [myGroups, setMyGroups] = useState<Group[]>([]);
+  const [groupNameDraft, setGroupNameDraft] = useState("");
+  const [joinCodeDraft, setJoinCodeDraft] = useState("");
+  const [pendingGroup, setPendingGroup] = useState<Group | null>(null); // created/joined, awaiting confirm
+  const needSetup = !name || myGroups.length === 0;
 
   // rooms — start empty on the backend (real data); seeded demo only in mock mode
   const [rooms, setRooms] = useState<RoomsData>(hasSupabase ? {} : initialRooms);
-  const [currentRoom, setCurrentRoom] = useState("엄마아빠");
+  const [currentRoom, setCurrentRoom] = useState("");
   const [currentRoomEmoji, setCurrentRoomEmoji] = useState("🏠");
   const [openDeckIdx, setOpenDeckIdx] = useState<number | null>(null);
   const [galReact, setGalReact] = useState(false); // reaction row in the deck gallery
@@ -215,7 +233,7 @@ export default function WakiiApp() {
   const [shotTaken, setShotTaken] = useState(false);
   const [shareShow, setShareShow] = useState(false);
   const [shareTargets, setShareTargets] = useState<string[]>([]);
-  const [recentRooms, setRecentRooms] = useState<string[]>(walkRooms.map((r) => r.nm));
+  const [recentRooms, setRecentRooms] = useState<string[]>([]);
 
   // camera
   const [cameraActive, setCameraActive] = useState(false);
@@ -297,26 +315,86 @@ export default function WakiiApp() {
     setGalleryItems(deck.cards.map((c) => ({ image: buildGalleryImage(c), text: c.who })));
   }, [openDeckIdx, currentRoom, rooms]);
 
-  // load the saved name on mount (prompt for it the first time)
+  // load saved name + groups on mount; route the onboarding wizard
   useEffect(() => {
+    let nm = "";
+    let grps: Group[] = [];
     try {
-      const saved = localStorage.getItem("wakii.name");
-      if (saved) setName(saved);
-      else setNeedName(true);
+      nm = localStorage.getItem("wakii.name") || "";
     } catch {
-      setNeedName(true);
+      /* ignore */
     }
+    try {
+      grps = JSON.parse(localStorage.getItem("wakii.groups") || "[]");
+    } catch {
+      /* ignore */
+    }
+    if (nm) setName(nm);
+    setMyGroups(grps);
+    setObStep(!nm ? "login" : "group");
+    if (nm && grps.length) setCurrentRoom(grps[0].name);
   }, []);
+
   const saveName = () => {
     const v = nameDraft.trim();
     if (!v) return;
     setName(v);
-    setNeedName(false);
     try {
       localStorage.setItem("wakii.name", v);
     } catch {
       /* ignore */
     }
+    setObStep("group");
+  };
+  // social login UI — real OAuth (Kakao/Naver/Google/Apple) is wired later;
+  // for now choosing a provider proceeds to name entry.
+  const pickLogin = (_provider: string) => setObStep("name");
+
+  // ---------- groups (rooms by code) ----------
+  const addGroup = (g: Group) => {
+    setMyGroups((prev) => {
+      const next = prev.some((x) => x.code === g.code) ? prev : [...prev, g];
+      try {
+        localStorage.setItem("wakii.groups", JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+    setCurrentRoom(g.name);
+    setAddingGroup(false);
+    setObStep("login");
+  };
+  const doCreateGroup = async () => {
+    const nm = groupNameDraft.trim();
+    if (!nm) return;
+    try {
+      const g = await createGroup(nm);
+      setPendingGroup(g);
+      setGroupNameDraft("");
+      setObStep("code");
+    } catch {
+      toast("그룹 생성 실패 — 다시 시도해주세요");
+    }
+  };
+  const doJoinGroup = async () => {
+    const code = joinCodeDraft.trim();
+    if (!code) return;
+    const g = await joinGroup(code);
+    if (!g) {
+      toast("코드를 찾을 수 없어요");
+      return;
+    }
+    setPendingGroup(g);
+    setJoinCodeDraft("");
+    setObStep("joined");
+  };
+  const copyCode = () => {
+    if (pendingGroup) navigator.clipboard?.writeText(pendingGroup.code).then(() => toast("코드를 복사했어요"), () => {});
+  };
+  const openAddGroup = () => {
+    setAddingGroup(true);
+    setObStep("group");
   };
 
   // remember recently-shared room order (for the share sheet)
@@ -565,7 +643,7 @@ export default function WakiiApp() {
     setCapturedSrc(null);
     setShareShow(false);
     // preselect: current room for the in-room camera, else the most recent room
-    setShareTargets(mode === "room" ? [currentRoom] : recentRooms.slice(0, 1));
+    setShareTargets(mode === "room" ? [currentRoom] : [recentRooms[0] || myGroups[0]?.name].filter(Boolean) as string[]);
     setUploadShow(true);
   };
   const closeUpload = () => {
@@ -617,13 +695,14 @@ export default function WakiiApp() {
   const toggleShare = (room: string) =>
     setShareTargets((s) => (s.includes(room) ? s.filter((r) => r !== room) : [...s, room]));
 
-  // rooms ordered by most-recently shared (for the share sheet)
+  // my groups ordered by most-recently shared (for the share sheet)
   const orderedRooms = [
     ...recentRooms,
-    ...walkRooms.map((r) => r.nm).filter((n) => !recentRooms.includes(n)),
+    ...myGroups.map((g) => g.name).filter((n) => !recentRooms.includes(n)),
   ]
-    .map((nm) => walkRooms.find((r) => r.nm === nm))
-    .filter((r): r is (typeof walkRooms)[number] => Boolean(r));
+    .map((nm) => myGroups.find((g) => g.name === nm))
+    .filter((g): g is Group => Boolean(g))
+    .map((g) => ({ nm: g.name, e: "🏠" }));
 
   const bumpRecent = (targets: string[]) => {
     setRecentRooms((prev) => {
@@ -798,33 +877,20 @@ export default function WakiiApp() {
             </div>
 
             <div className="roomsheet">
-              <div className="room" onClick={() => openRoom("엄마아빠", "🏠")}>
-                <div className="ravatar on">🏠</div>
-                <div className="rmeta">
-                  <div className="rname">엄마아빠</div>
-                  <div className="rprev">새 사진</div>
+              {myGroups.map((grp, i) => (
+                <div key={grp.code} className="room" onClick={() => openRoom(grp.name, "🏠")}>
+                  <div className={"ravatar" + (i === 0 ? " on" : "")}>🏠</div>
+                  <div className="rmeta">
+                    <div className="rname">{grp.name}</div>
+                    <div className="rprev">코드 {grp.code}</div>
+                  </div>
                 </div>
-                <span className="rbadge">2</span>
-              </div>
-              <div className="room" onClick={() => openRoom("언니", "👩")}>
-                <div className="ravatar">👩</div>
+              ))}
+              <div className="room" onClick={openAddGroup}>
+                <div className="ravatar">＋</div>
                 <div className="rmeta">
-                  <div className="rname">언니</div>
-                  <div className="rprev">어제</div>
-                </div>
-              </div>
-              <div className="room" onClick={() => openRoom("동생", "🐣")}>
-                <div className="ravatar">🐣</div>
-                <div className="rmeta">
-                  <div className="rname">동생</div>
-                  <div className="rprev">3일 전</div>
-                </div>
-              </div>
-              <div className="room" onClick={() => openRoom("할머니", "👵")}>
-                <div className="ravatar">👵</div>
-                <div className="rmeta">
-                  <div className="rname">할머니</div>
-                  <div className="rprev">지난주</div>
+                  <div className="rname">그룹 추가</div>
+                  <div className="rprev">만들기 · 참여 코드</div>
                 </div>
               </div>
             </div>
@@ -1489,23 +1555,152 @@ export default function WakiiApp() {
           </div>
         )}
 
-        {/* first-run name prompt */}
-        {needName && (
-          <div className="namemodal">
-            <div className="nm-panel">
-              <div className="nm-title">이름을 알려주세요</div>
-              <div className="nm-sub">가족 방에 이 이름으로 표시돼요</div>
-              <input
-                autoFocus
-                value={nameDraft}
-                placeholder="예) 줄리"
-                onChange={(e) => setNameDraft(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && saveName()}
-              />
-              <button className="nm-go" onClick={saveName}>
-                시작하기
-              </button>
-            </div>
+        {/* onboarding: login → name → group (create / join) */}
+        {(needSetup || addingGroup) && (
+          <div className="onboarding">
+            {obStep === "login" && (
+              <>
+                <div className="ob-logo">wakii</div>
+                <div className="ob-tag">
+                  간편하게 로그인하고
+                  <br />
+                  다양한 서비스를 이용해보세요.
+                </div>
+                <div className="ob-buttons">
+                  <button className="ob-btn kakao" onClick={() => pickLogin("카카오")}>
+                    <span className="ob-ic">💬</span> 카카오 로그인
+                  </button>
+                  <button className="ob-btn naver" onClick={() => pickLogin("네이버")}>
+                    <span className="ob-ic">N</span> 네이버 로그인
+                  </button>
+                  <button className="ob-btn google" onClick={() => pickLogin("구글")}>
+                    <span className="ob-ic">G</span> 구글 로그인
+                  </button>
+                  <button className="ob-btn apple" onClick={() => pickLogin("Apple")}>
+                    <span className="ob-ic"></span> Apple로 로그인
+                  </button>
+                  <div className="ob-email" onClick={() => setObStep("name")}>
+                    다른 이메일로 시작하기
+                  </div>
+                </div>
+              </>
+            )}
+
+            {obStep === "name" && (
+              <>
+                <div className="ob-logo">wakii</div>
+                <div className="ob-tag">이름을 알려주세요</div>
+                <div className="ob-name">
+                  <input
+                    autoFocus
+                    value={nameDraft}
+                    placeholder="이름을 입력하세요"
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveName()}
+                  />
+                  <button className="nm-go" onClick={saveName}>
+                    다음
+                  </button>
+                  <div className="ob-back" onClick={() => setObStep("login")}>
+                    ‹ 로그인 방법 다시 선택
+                  </div>
+                </div>
+              </>
+            )}
+
+            {obStep === "group" && (
+              <>
+                <div className="ob-logo">wakii</div>
+                <div className="ob-tag">그룹을 만들거나 참여하세요</div>
+                <div className="ob-buttons">
+                  <button className="ob-btn dark" onClick={() => setObStep("create")}>
+                    그룹 만들기
+                  </button>
+                  <button className="ob-btn outline" onClick={() => setObStep("join")}>
+                    참여 코드로 참여하기
+                  </button>
+                  {addingGroup && (
+                    <div className="ob-email" onClick={() => setAddingGroup(false)}>
+                      닫기
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {obStep === "create" && (
+              <>
+                <div className="ob-logo">그룹 만들기</div>
+                <div className="ob-name">
+                  <input
+                    autoFocus
+                    value={groupNameDraft}
+                    placeholder="그룹 이름 (예: 우리 가족)"
+                    onChange={(e) => setGroupNameDraft(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && doCreateGroup()}
+                  />
+                  <button className="nm-go" onClick={doCreateGroup}>
+                    참여 코드 생성
+                  </button>
+                  <div className="ob-back" onClick={() => setObStep("group")}>
+                    ‹ 뒤로
+                  </div>
+                </div>
+              </>
+            )}
+
+            {obStep === "code" && pendingGroup && (
+              <>
+                <div className="ob-tag" style={{ marginBottom: 14 }}>
+                  이 코드를 가족에게 공유하세요
+                </div>
+                <div className="ob-code">{pendingGroup.code}</div>
+                <div className="ob-codesub">{pendingGroup.name}</div>
+                <button className="ob-copy" onClick={copyCode}>
+                  📋 코드 복사
+                </button>
+                <div className="ob-codenote">코드는 가족이 참여 코드로 입력하면 같은 방에 들어와요.</div>
+                <button className="nm-go" style={{ marginTop: 14 }} onClick={() => addGroup(pendingGroup)}>
+                  홈으로 가기
+                </button>
+              </>
+            )}
+
+            {obStep === "join" && (
+              <>
+                <div className="ob-logo">참여하기</div>
+                <div className="ob-tag">친구·가족에게 받은 코드를 입력하세요</div>
+                <div className="ob-name">
+                  <input
+                    autoFocus
+                    value={joinCodeDraft}
+                    placeholder="참여 코드 (예: A3K7F2)"
+                    style={{ textTransform: "uppercase", letterSpacing: ".12em" }}
+                    onChange={(e) => setJoinCodeDraft(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && doJoinGroup()}
+                  />
+                  <button className="nm-go" onClick={doJoinGroup}>
+                    참여하기
+                  </button>
+                  <div className="ob-back" onClick={() => setObStep("group")}>
+                    ‹ 뒤로
+                  </div>
+                </div>
+              </>
+            )}
+
+            {obStep === "joined" && pendingGroup && (
+              <>
+                <div className="ob-check">✓</div>
+                <div className="ob-tag" style={{ fontSize: 18 }}>
+                  {pendingGroup.name}에<br />참여했어요!
+                </div>
+                <div className="ob-codenote">가족이 사진을 올리면 알림을 보내드릴게요.</div>
+                <button className="nm-go" style={{ marginTop: 16 }} onClick={() => addGroup(pendingGroup)}>
+                  시작하기
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

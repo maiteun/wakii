@@ -66,6 +66,39 @@ export async function addReplyCard(deckId: string, author: string, imageUrl: str
   await supabase.from("cards").insert({ deck_id: deckId, author, image_url: imageUrl, is_reply: true });
 }
 
+// ── groups (rooms joinable by code) ─────────────────────────────────
+function randomCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no confusing 0/O/1/I
+  let s = "";
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+export type Group = { code: string; name: string };
+
+// create a group with a unique code; returns the group (or a local stub offline)
+export async function createGroup(name: string): Promise<Group> {
+  if (!supabase) return { code: randomCode(), name };
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = randomCode();
+    const { error } = await supabase.from("groups").insert({ code, name });
+    if (!error) return { code, name };
+  }
+  throw new Error("코드 생성 실패");
+}
+
+// look up a group by its join code
+export async function joinGroup(code: string): Promise<Group | null> {
+  if (!supabase) return { code: code.toUpperCase(), name: "우리 가족" };
+  const { data, error } = await supabase
+    .from("groups")
+    .select("code, name")
+    .eq("code", code.toUpperCase())
+    .maybeSingle();
+  if (error || !data) return null;
+  return { code: data.code, name: data.name };
+}
+
 // every card I authored (any room) — for the My-page calendar
 export async function listMyCards(author: string): Promise<{ createdAt: string; img: string | null }[]> {
   if (!supabase) return [];

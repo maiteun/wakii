@@ -6,7 +6,7 @@ import PhotoEditor, { type PhotoEditorHandle } from "./PhotoEditor";
 import InstantCapture from "./InstantCapture";
 import type { Card, Deck, RoomsData } from "@/lib/types";
 import { hasSupabase } from "@/lib/supabase";
-import { listRoom, subscribeRoom, uploadPhoto, createPhotoDeck, addReplyCard, addReaction } from "@/lib/db";
+import { listRoom, subscribeRoom, uploadPhoto, createPhotoDeck, addReplyCard, addReaction, listMyCards } from "@/lib/db";
 
 // WebGL gallery is client-only (uses window / WebGL at runtime)
 const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false });
@@ -235,8 +235,9 @@ export default function WakiiApp() {
   // walk
   const [walkSel, setWalkSel] = useState(0);
 
-  // calendar
+  // calendar — my uploaded content per day (June 2026), from the DB
   const [calSel, setCalSel] = useState<number | null>(null);
+  const [myDays, setMyDays] = useState<Record<number, string[]>>({});
   // step report range
   const [stepRange, setStepRange] = useState<"week" | "month">("week");
 
@@ -709,12 +710,34 @@ export default function WakiiApp() {
   const reached = pct / 100;
 
   // ---------- calendar detail ----------
+  // load my uploaded cards (June 2026) from the DB for the calendar
+  useEffect(() => {
+    if (!hasSupabase || !name) return;
+    listMyCards(name)
+      .then((cards) => {
+        const map: Record<number, string[]> = {};
+        cards.forEach((c) => {
+          const d = new Date(c.createdAt);
+          if (d.getFullYear() === 2026 && d.getMonth() === 5) {
+            (map[d.getDate()] = map[d.getDate()] || []).push(c.img || "");
+          }
+        });
+        setMyDays(map);
+      })
+      .catch(() => {});
+  }, [name, rooms]);
+
+  // day → uploaded content (image URLs). DB-backed when online; mock otherwise.
+  const dayContent: Record<number, string[]> = hasSupabase
+    ? myDays
+    : Object.fromEntries(Object.entries(uploadedDays).map(([d, n]) => [Number(d), Array(n).fill("")]));
+
   const calDetail = (() => {
     if (calSel == null) return null;
-    const up = uploadedDays[calSel] || 0;
+    const imgs = dayContent[calSel] || [];
     const steps = stepsByDay[calSel] || 0;
-    if (!up && !steps) return null;
-    return { day: calSel, up, steps };
+    if (!imgs.length && !steps) return null;
+    return { day: calSel, up: imgs.length, imgs, steps };
   })();
 
   // ---------- step report (this week / this month) ----------
@@ -1050,7 +1073,7 @@ export default function WakiiApp() {
                     <div
                       key={d}
                       className={
-                        "calday" + (uploadedDays[d] ? " has" : "") + (calSel === d ? " sel" : "")
+                        "calday" + (dayContent[d]?.length ? " has" : "") + (calSel === d ? " sel" : "")
                       }
                       onClick={() => setCalSel(d)}
                     >
@@ -1072,7 +1095,16 @@ export default function WakiiApp() {
                 <div className="cd-row">📷 올린 콘텐츠 {calDetail.up}개</div>
                 <div className="cd-thumbs">
                   {calDetail.up > 0 ? (
-                    Array.from({ length: calDetail.up }).map((_, i) => <div key={i} />)
+                    calDetail.imgs.map((src, i) =>
+                      src ? (
+                        <div
+                          key={i}
+                          style={{ backgroundImage: `url(${src})`, backgroundSize: "cover", backgroundPosition: "center" }}
+                        />
+                      ) : (
+                        <div key={i} />
+                      ),
+                    )
                   ) : (
                     <span style={{ fontSize: 10, color: "var(--g40)" }}>없음</span>
                   )}

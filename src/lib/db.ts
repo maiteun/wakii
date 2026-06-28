@@ -66,6 +66,21 @@ export async function addReplyCard(deckId: string, author: string, imageUrl: str
   await supabase.from("cards").insert({ deck_id: deckId, author, image_url: imageUrl, is_reply: true });
 }
 
+// every card I authored (any room) — for the My-page calendar
+export async function listMyCards(author: string): Promise<{ createdAt: string; img: string | null }[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("cards")
+    .select("created_at, image_url")
+    .eq("author", author)
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return (data || []).map((c: { created_at: string; image_url: string | null }) => ({
+    createdAt: c.created_at,
+    img: c.image_url,
+  }));
+}
+
 export async function addReaction(cardId: string, author: string, emoji: string) {
   if (!supabase) return;
   await supabase.from("reactions").insert({ card_id: cardId, author, emoji });

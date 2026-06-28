@@ -424,18 +424,16 @@ export default function WakiiApp() {
   // emoji long-press → instant, NON-editable reaction photo with the emoji
   // overlaid + the "와르르" bubble motion. Gallery stays open underneath.
   const startInstant = (emoji: string) => {
-    setReplyDeckIdx(openDeckIdx);
     setInstantEmoji(emoji);
     setGalReact(false);
   };
   const onInstantSend = (dataUrl: string) => {
-    const idx = replyDeckIdx;
     const emoji = instantEmoji;
     setInstantEmoji(null);
-    if (idx != null) sendReply(idx, dataUrl);
-    // the photo itself (with emoji badge) showers up the screen
+    // reaction is ephemeral: the photo (with emoji badge) just showers up the
+    // screen — it is NOT saved to the deck (only 답장 adds a card).
     spawnBubble(emoji || "", dataUrl);
-    toast("즉석 반응을 보냈어요");
+    toast("반응을 보냈어요");
   };
 
   // 답장 → open the FULL editor (stickers/draw/text/voice + time & weather),

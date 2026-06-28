@@ -376,10 +376,10 @@ export default function WakiiApp() {
   };
   // iMessage-style shower rising from across the bottom edge. With `img` set,
   // each bubble is the captured photo thumbnail (emoji as a corner badge).
-  const spawnBubble = (e: string, img?: string) => {
+  const spawnBubble = (e: string, img?: string, count?: number) => {
     const made: Bubble[] = [];
-    const count = img ? 7 : 16;
-    for (let i = 0; i < count; i++) {
+    const n = count ?? (img ? 7 : 16);
+    for (let i = 0; i < n; i++) {
       made.push({
         id: bubbleId.current++,
         emoji: e,
@@ -396,6 +396,22 @@ export default function WakiiApp() {
     const ids = made.map((m) => m.id);
     setTimeout(() => setBubbles((b) => b.filter((x) => !ids.includes(x.id))), 4600);
   };
+
+  // while a deck's gallery is open, its saved reactions keep gently floating
+  // up (the motion doesn't just play once and vanish).
+  useEffect(() => {
+    if (openDeckIdx == null) return;
+    const deck = rooms[currentRoom]?.[openDeckIdx];
+    const rx = deck ? deck.cards.flatMap((c) => c.reactions || []) : [];
+    if (!rx.length) return;
+    let i = 0;
+    const id = setInterval(() => {
+      spawnBubble(rx[i % rx.length], undefined, 3);
+      i++;
+    }, 1500);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openDeckIdx, currentRoom, rooms]);
 
   // ---------- press (short tap vs long press) ----------
   const startPress = (onLong: () => void) => {

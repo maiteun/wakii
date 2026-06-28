@@ -1057,7 +1057,7 @@ export default function WakiiApp() {
               <div className="mysub">가족 4 · 함께 걷는 중</div>
             </div>
             <div className="cal">
-              <h4>활동 캘린더 · 6월</h4>
+              <h4>6월</h4>
               <div className="calgrid">
                 {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
                   <div key={d} className="caldow">

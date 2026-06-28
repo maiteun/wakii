@@ -307,6 +307,11 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .motionfx .raindrop{position:absolute;top:-12%;width:2px;height:18px;background:linear-gradient(180deg,rgba(255,255,255,0),rgba(180,200,230,.85));border-radius:2px;animation:rainFall 1.1s linear infinite;}
 @keyframes rainFall{0%{transform:translateY(-20px);opacity:0;}10%{opacity:1;}100%{transform:translateY(620px);opacity:.2;}}
 
+/* long-press peek: original uploaded photo, no reactions */
+.peek{position:absolute;inset:0;z-index:130;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;}
+.peek img{max-width:92%;max-height:80%;border-radius:14px;object-fit:contain;box-shadow:0 12px 40px rgba(0,0,0,.5);}
+.peek .peek-hint{color:rgba(255,255,255,.7);font-size:11px;}
+
 /* instant photo reply overlay */
 .instant{position:absolute;inset:0;z-index:120;background:#111;display:flex;flex-direction:column;}
 .instant-top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;color:#fff;}

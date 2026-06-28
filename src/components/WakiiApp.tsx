@@ -192,6 +192,7 @@ export default function WakiiApp() {
   const [currentRoomEmoji, setCurrentRoomEmoji] = useState("🏠");
   const [openDeckIdx, setOpenDeckIdx] = useState<number | null>(null);
   const [galReact, setGalReact] = useState(false); // reaction row in the deck gallery
+  const [peekImg, setPeekImg] = useState<string | null>(null); // long-press → original photo, no reactions
   const [replyEmoji, setReplyEmoji] = useState(""); // reaction emoji pre-placed on a reply photo
   const [instantEmoji, setInstantEmoji] = useState<string | null>(null); // emoji long-press → instant (non-editable) reaction photo
   const [replyDeckIdx, setReplyDeckIdx] = useState<number | null>(null);
@@ -425,6 +426,9 @@ export default function WakiiApp() {
   const endPress = (onShort: () => void) => {
     if (pressTimer.current) clearTimeout(pressTimer.current);
     if (!longFired.current) onShort();
+  };
+  const cancelPress = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
   };
 
   // ---------- reply (instant photo into the open deck) ----------
@@ -1273,7 +1277,14 @@ export default function WakiiApp() {
               </span>
             </div>
 
-            <div className="dg-stage" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="dg-stage"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={() => startPress(() => setPeekImg(openDeck?.cards[0]?.img || null))}
+              onPointerUp={() => endPress(() => {})}
+              onPointerMove={cancelPress}
+              onPointerLeave={cancelPress}
+            >
               <CircularGallery
                 items={galleryItems}
                 bend={3}
@@ -1435,6 +1446,15 @@ export default function WakiiApp() {
         {/* instant (non-editable) emoji reaction photo */}
         {instantEmoji != null && (
           <InstantCapture emoji={instantEmoji} onSend={onInstantSend} onClose={() => setInstantEmoji(null)} />
+        )}
+
+        {/* long-press peek: the original uploaded photo, no reactions */}
+        {peekImg && (
+          <div className="peek" onClick={() => setPeekImg(null)}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={peekImg} alt="원본 사진" />
+            <div className="peek-hint">탭하면 닫기</div>
+          </div>
         )}
 
         {/* first-run name prompt */}

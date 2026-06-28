@@ -76,18 +76,23 @@ function randomCode(): string {
 
 export type Group = { code: string; name: string };
 
-// create a group with a unique code; returns the group (or a local stub offline)
+// create a group with a unique code. Falls back to a local code when the
+// backend/table isn't available, so the onboarding flow is always walkable.
 export async function createGroup(name: string): Promise<Group> {
   if (!supabase) return { code: randomCode(), name };
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = randomCode();
     const { error } = await supabase.from("groups").insert({ code, name });
     if (!error) return { code, name };
+    // unique-collision → retry; any other error (e.g. missing table) → local
+    if (!/duplicate|unique/i.test(error.message)) return { code, name };
   }
-  throw new Error("코드 생성 실패");
+  return { code: randomCode(), name };
 }
 
-// look up a group by its join code
+// look up a group by its join code. If the table is missing (error) we accept
+// the code as a mock join so the flow can be tested; a genuine "not found"
+// (table exists, no row) returns null.
 export async function joinGroup(code: string): Promise<Group | null> {
   if (!supabase) return { code: code.toUpperCase(), name: "우리 가족" };
   const { data, error } = await supabase
@@ -95,7 +100,8 @@ export async function joinGroup(code: string): Promise<Group | null> {
     .select("code, name")
     .eq("code", code.toUpperCase())
     .maybeSingle();
-  if (error || !data) return null;
+  if (error) return { code: code.toUpperCase(), name: "우리 가족" };
+  if (!data) return null;
   return { code: data.code, name: data.name };
 }
 

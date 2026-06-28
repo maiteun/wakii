@@ -260,12 +260,23 @@ export default function WakiiApp() {
     setOpenDeckIdx(null);
     setRoomViewMode("deck");
     setScreen("room");
-    if (roomScreenRef.current) roomScreenRef.current.scrollTop = 0;
   };
 
   // ---------- room board ----------
   const decks = rooms[currentRoom];
   const openDeck = openDeckIdx != null ? decks?.[openDeckIdx] : null;
+
+  // chat-style: newest deck sits at the bottom; entering a room (or new
+  // content) jumps to the bottom, and you scroll up to see older decks.
+  useEffect(() => {
+    if (screen === "room" && roomViewMode === "deck" && roomScreenRef.current) {
+      const el = roomScreenRef.current;
+      requestAnimationFrame(() => {
+        el.scrollTop = el.scrollHeight;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, currentRoom, roomViewMode, decks?.length]);
 
   // cards for the open deck, as image+label items for the circular gallery.
   // Built async because the author chip is composited onto each card image.
@@ -810,7 +821,10 @@ export default function WakiiApp() {
 
             {roomViewMode === "deck" && (
               <div className="board">
-                {(decks || []).map((deck, di) => {
+                {(decks || [])
+                  .map((deck, di) => ({ deck, di }))
+                  .reverse()
+                  .map(({ deck, di }) => {
                   const n = deck.cards.length;
                   const names = Array.from(new Set(deck.cards.map((c) => c.who)));
                   const rxTotal = deck.cards.reduce((s, c) => s + (c.reactions?.length || 0), 0);

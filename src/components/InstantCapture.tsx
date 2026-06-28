@@ -53,31 +53,19 @@ export default function InstantCapture({
     };
   }, []);
 
-  // draw the (centre-cropped 3:4) source + the emoji, return a data URL
+  // centre-crop the source to a SQUARE (shown as a circle); the emoji is
+  // added as a top-right badge on the bubble, not baked in.
   const compose = (source: CanvasImageSource, sw: number, sh: number): string => {
-    const W = 600,
-      H = 800;
+    const S = 600;
     const c = document.createElement("canvas");
-    c.width = W;
-    c.height = H;
+    c.width = S;
+    c.height = S;
     const ctx = c.getContext("2d");
     if (!ctx) return "";
-    const ratio = 3 / 4;
-    let cw = sw,
-      ch = sw / ratio;
-    if (ch > sh) {
-      ch = sh;
-      cw = sh * ratio;
-    }
-    const sx = (sw - cw) / 2,
-      sy = (sh - ch) / 2;
-    ctx.drawImage(source, sx, sy, cw, ch, 0, 0, W, H);
-    if (emoji) {
-      ctx.font = "260px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(emoji, W / 2, H / 2);
-    }
+    const side = Math.min(sw, sh);
+    const sx = (sw - side) / 2,
+      sy = (sh - side) / 2;
+    ctx.drawImage(source, sx, sy, side, side, 0, 0, S, S);
     return c.toDataURL("image/jpeg", 0.9);
   };
 

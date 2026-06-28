@@ -223,9 +223,9 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 /* floating reaction bubbles */
 .bubble{position:absolute;z-index:84;pointer-events:none;opacity:1;animation:bubblefloat 1.4s ease-out forwards;}
 @keyframes bubblefloat{to{transform:translateY(var(--dy)) translateX(var(--dx));opacity:0;}}
-/* instant-photo reaction bubble: the captured photo with an emoji badge */
-.photobubble{aspect-ratio:3/4;border-radius:16px;background-size:cover;background-position:center;box-shadow:0 8px 22px rgba(0,0,0,.32);border:2px solid rgba(255,255,255,.9);overflow:visible;}
-.photobubble .pb-badge{position:absolute;right:-8px;bottom:-8px;font-size:26px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
+/* instant-photo reaction bubble: circular photo with an emoji top-right badge */
+.photobubble{aspect-ratio:1;border-radius:50%;background-size:cover;background-position:center;box-shadow:0 8px 22px rgba(0,0,0,.32);border:3px solid rgba(255,255,255,.92);overflow:visible;}
+.photobubble .pb-badge{position:absolute;right:-6px;top:-6px;font-size:26px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
 
 /* ===== photo editor (after capture) ===== */
 .editor{display:flex;flex-direction:column;align-items:center;width:100%;gap:10px;padding:8px 0;}
@@ -313,8 +313,10 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .instant-top .instant-x{font-size:18px;cursor:pointer;}
 .instant-top .instant-ttl{font-size:13px;font-weight:700;}
 .instant-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding-bottom:calc(20px + env(safe-area-inset-bottom));}
-.instant-vf{position:relative;width:74%;max-width:300px;aspect-ratio:3/4;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#5a5a5a,#3a3a3a);}
-.instant-vf .instant-emoji{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:88px;pointer-events:none;}
+.instant-vf{position:relative;width:74%;max-width:300px;aspect-ratio:1;border-radius:50%;overflow:visible;background:linear-gradient(135deg,#5a5a5a,#3a3a3a);}
+.instant-vf video{border-radius:50%;}
+.instant-vf .ratio{display:none;}
+.instant-vf .instant-emoji{position:absolute;top:-4px;right:-4px;font-size:64px;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));}
 .instant-shutter{width:64px;height:64px;border-radius:50%;border:4px solid #fff;background:rgba(255,255,255,.18);cursor:pointer;}
 
 .dg-acts{display:flex;gap:8px;justify-content:center;padding:10px 0 calc(16px + env(safe-area-inset-bottom));}

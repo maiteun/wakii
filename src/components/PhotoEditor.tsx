@@ -56,8 +56,10 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-const PhotoEditor = forwardRef<PhotoEditorHandle, { src: string; toast: (m: string) => void; weather: string }>(
-  function PhotoEditor({ src, toast, weather }, ref) {
+const PhotoEditor = forwardRef<
+  PhotoEditorHandle,
+  { src: string; toast: (m: string) => void; weather: string; initialEmoji?: string }
+>(function PhotoEditor({ src, toast, weather, initialEmoji }, ref) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -82,12 +84,15 @@ const PhotoEditor = forwardRef<PhotoEditorHandle, { src: string; toast: (m: stri
   const [recSec, setRecSec] = useState(0);
   const recTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // default stickers on mount: time (top-left) + weather (top-right) pills
+  // default stickers on mount: time (top-left) + weather (top-right) pills,
+  // plus the chosen reaction emoji (centre) when replying.
   useEffect(() => {
-    setStickers([
+    const init: Sticker[] = [
       { id: idRef.current++, type: "time", content: nowTime(), x: 21, y: 9, scale: 1 },
       { id: idRef.current++, type: "weather", content: weather || MOCK_WEATHER, x: 79, y: 9, scale: 1 },
-    ]);
+    ];
+    if (initialEmoji) init.push({ id: idRef.current++, type: "emoji", content: initialEmoji, x: 50, y: 50, scale: 2 });
+    setStickers(init);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

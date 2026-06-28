@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import PhotoEditor, { type PhotoEditorHandle } from "./PhotoEditor";
-import InstantCapture from "./InstantCapture";
 import type { Card, Deck, RoomsData } from "@/lib/types";
 import { hasSupabase } from "@/lib/supabase";
 import { listRoom, subscribeRoom, uploadPhoto, createPhotoDeck, addReplyCard, addReaction } from "@/lib/db";
@@ -171,7 +170,7 @@ const stepsByDay: Record<number, number> = {
 };
 
 type Bubble = { id: number; emoji: string; left: number; size: number; dx: number; dy: number; dur: number; delay: number };
-type UploadMode = "new" | "mission" | "room";
+type UploadMode = "new" | "mission" | "room" | "reply";
 
 export default function WakiiApp() {
   const [screen, setScreen] = useState<ScreenId>("home");
@@ -199,7 +198,7 @@ export default function WakiiApp() {
   const [currentRoomEmoji, setCurrentRoomEmoji] = useState("🏠");
   const [openDeckIdx, setOpenDeckIdx] = useState<number | null>(null);
   const [galReact, setGalReact] = useState(false); // reaction row in the deck gallery
-  const [instantEmoji, setInstantEmoji] = useState<string | null>(null); // emoji long-press → instant photo reply
+  const [replyEmoji, setReplyEmoji] = useState(""); // reaction emoji pre-placed on a reply photo
   const [replyDeckIdx, setReplyDeckIdx] = useState<number | null>(null);
   const [textReactOpen, setTextReactOpen] = useState(false);
   const [textReactDraft, setTextReactDraft] = useState("");
@@ -428,19 +427,25 @@ export default function WakiiApp() {
       });
     }
   };
-  // emoji long-press → open instant camera targeting the open deck
-  const startInstant = (emoji: string) => {
+  // emoji long-press / 답장 → open the FULL editor (stickers/draw/text/voice
+  // + time & weather), targeting the open deck. Gallery closes while editing
+  // and reopens after sending.
+  const startReply = (emoji: string) => {
     setReplyDeckIdx(openDeckIdx);
-    setInstantEmoji(emoji);
+    setReplyEmoji(emoji);
     setGalReact(false);
+    setOpenDeckIdx(null);
+    openUpload("reply");
   };
-  const onInstantSend = (dataUrl: string) => {
+  const doReply = async () => {
     const idx = replyDeckIdx;
-    const emoji = instantEmoji;
-    setInstantEmoji(null);
-    if (idx != null) sendReply(idx, dataUrl);
+    const emoji = replyEmoji;
+    const img = (await editorRef.current?.getComposite()) || capturedSrc || undefined;
+    closeUpload();
+    if (img && idx != null) await sendReply(idx, img);
+    if (idx != null) setOpenDeckIdx(idx); // reopen the gallery on the same deck
     if (emoji) spawnBubble(emoji);
-    toast("즉석 답장을 보냈어요");
+    toast("답장을 보냈어요");
   };
 
   // ---------- text / AI phrase reactions ----------
@@ -1081,7 +1086,9 @@ export default function WakiiApp() {
               <span className="x" onClick={closeUpload}>
                 ✕
               </span>
-              <span className="ttl">{uploadMode === "mission" ? "미션 촬영" : "새 짤"}</span>
+              <span className="ttl">
+                {uploadMode === "mission" ? "미션 촬영" : uploadMode === "reply" ? "답장" : "새 짤"}
+              </span>
               <span style={{ width: 18 }} />
             </div>
             <div className="ul-stage">
@@ -1115,7 +1122,13 @@ export default function WakiiApp() {
               )}
               {/* after capture: full Instagram-style editor (all modes) */}
               {shotTaken && capturedSrc && (
-                <PhotoEditor ref={editorRef} src={capturedSrc} toast={toast} weather={weather} />
+                <PhotoEditor
+                  ref={editorRef}
+                  src={capturedSrc}
+                  toast={toast}
+                  weather={weather}
+                  initialEmoji={uploadMode === "reply" ? replyEmoji : undefined}
+                />
               )}
             </div>
             {/* hidden capture targets — used when a live stream isn't available
@@ -1137,7 +1150,7 @@ export default function WakiiApp() {
             />
             <canvas ref={canvasRef} style={{ display: "none" }} />
             {shotTaken && (
-              <div className="ul-next" onClick={() => setShareShow(true)}>
+              <div className="ul-next" onClick={() => (uploadMode === "reply" ? doReply() : setShareShow(true))}>
                 →
               </div>
             )}
@@ -1287,7 +1300,7 @@ export default function WakiiApp() {
                   <button
                     key={r.emoji}
                     className="rx-btn"
-                    onPointerDown={() => startPress(() => startInstant(r.emoji))}
+                    onPointerDown={() => startPress(() => startReply(r.emoji))}
                     onPointerUp={() =>
                       endPress(() => {
                         setGalReact(false);
@@ -1373,7 +1386,7 @@ export default function WakiiApp() {
                 🙂 반응
               </button>
               {!openDeck.isMission && (
-                <button className="b-reply" onClick={() => startInstant("")}>
+                <button className="b-reply" onClick={() => startReply("")}>
                   📷 답장
                 </button>
               )}
@@ -1382,11 +1395,6 @@ export default function WakiiApp() {
               </button>
             </div>
           </div>
-        )}
-
-        {/* instant photo reply (emoji long-press, or 답장) */}
-        {instantEmoji != null && (
-          <InstantCapture emoji={instantEmoji} onSend={onInstantSend} onClose={() => setInstantEmoji(null)} />
         )}
 
         {/* first-run name prompt */}

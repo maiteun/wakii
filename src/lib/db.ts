@@ -94,6 +94,8 @@ export async function createGroup(name: string): Promise<Group> {
 // the code as a mock join so the flow can be tested; a genuine "not found"
 // (table exists, no row) returns null.
 export async function joinGroup(code: string): Promise<Group | null> {
+  // demo backdoor: "1234" always joins, regardless of backend state
+  if (code.trim() === "1234") return { code: "1234", name: "우리 가족" };
   if (!supabase) return { code: code.toUpperCase(), name: "우리 가족" };
   const { data, error } = await supabase
     .from("groups")

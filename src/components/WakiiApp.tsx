@@ -202,6 +202,7 @@ export default function WakiiApp() {
   const [groupNameDraft, setGroupNameDraft] = useState("");
   const [joinCodeDraft, setJoinCodeDraft] = useState("");
   const [pendingGroup, setPendingGroup] = useState<Group | null>(null); // created/joined, awaiting confirm
+  const [pendingJoinCode, setPendingJoinCode] = useState(""); // from an invite deep-link (/?j=CODE), joined after onboarding
   const needSetup = !name || myGroups.length === 0;
 
   // rooms — start empty on the backend (real data); seeded demo only in mock mode
@@ -331,8 +332,45 @@ export default function WakiiApp() {
     }
     if (nm) setName(nm);
     setMyGroups(grps);
+
+    // invite deep-link (/?j=CODE) — shared via KakaoTalk. Join automatically
+    // instead of asking the user to read & type the code.
+    let invite = "";
+    try {
+      invite = (new URLSearchParams(window.location.search).get("j") || "").trim();
+    } catch {
+      /* ignore */
+    }
+    if (invite) {
+      // drop the param so a refresh / re-share doesn't re-trigger the join
+      try {
+        window.history.replaceState({}, "", window.location.pathname);
+      } catch {
+        /* ignore */
+      }
+      setPendingJoinCode(invite);
+      if (nm) {
+        // already onboarded → join straight away and land on the new room
+        joinGroup(invite).then((g) => {
+          if (g) {
+            addGroup(g);
+            toast(`${g.name}에 참여했어요`);
+          } else {
+            toast("초대 코드를 찾을 수 없어요");
+            if (grps.length) setCurrentRoom(grps[0].name);
+          }
+          setPendingJoinCode("");
+        });
+      } else {
+        // new user → login → name (filled from Kakao later) → auto-join
+        setObStep("login");
+      }
+      return;
+    }
+
     setObStep(!nm ? "login" : "group");
     if (nm && grps.length) setCurrentRoom(grps[0].name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveName = () => {
@@ -344,10 +382,25 @@ export default function WakiiApp() {
     } catch {
       /* ignore */
     }
+    // arrived via an invite link → skip the group step, join it now
+    if (pendingJoinCode) {
+      joinGroup(pendingJoinCode).then((g) => {
+        if (g) {
+          addGroup(g);
+          toast(`${g.name}에 참여했어요`);
+        } else {
+          toast("초대 코드를 찾을 수 없어요");
+          setObStep("group");
+        }
+        setPendingJoinCode("");
+      });
+      return;
+    }
     setObStep("group");
   };
-  // social login UI — real OAuth (Kakao/Naver/Google/Apple) is wired later;
-  // for now choosing a provider proceeds to name entry.
+  // social login UI — real OAuth (Kakao/Naver/Google/Apple) is wired later.
+  // Once Kakao login is connected the display name will come from the Kakao
+  // profile and the name step can be skipped; for now we ask for it.
   const pickLogin = (_provider: string) => setObStep("name");
 
   // ---------- groups (rooms by code) ----------
@@ -391,6 +444,27 @@ export default function WakiiApp() {
   };
   const copyCode = () => {
     if (pendingGroup) navigator.clipboard?.writeText(pendingGroup.code).then(() => toast("코드를 복사했어요"), () => {});
+  };
+  // share an invite LINK (opens the phone's share sheet → pick KakaoTalk).
+  // Opening the link auto-joins the group, so no code typing is needed.
+  // Falls back to copying the link when the Web Share API is unavailable.
+  const shareInvite = async (g: Group) => {
+    const url = `${window.location.origin}/?j=${encodeURIComponent(g.code)}`;
+    const text = `wakii에서 "${g.name}" 그룹에 초대했어요 🐾\n링크를 누르면 바로 들어와요.`;
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: "wakii 초대", text, url });
+        return;
+      }
+    } catch {
+      return; // user dismissed the share sheet
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast("초대 링크를 복사했어요");
+    } catch {
+      toast(url);
+    }
   };
   const openAddGroup = () => {
     setAddingGroup(true);
@@ -458,16 +532,18 @@ export default function WakiiApp() {
   // each bubble is the captured photo thumbnail (emoji as a corner badge).
   const spawnBubble = (e: string, img?: string, count?: number) => {
     const made: Bubble[] = [];
-    const n = count ?? (img ? 7 : 16);
+    const n = count ?? (img ? 12 : 16);
     for (let i = 0; i < n; i++) {
       made.push({
         id: bubbleId.current++,
         emoji: e,
         img,
-        left: img ? 8 + Math.random() * 84 : 4 + Math.random() * 92,
-        size: img ? 54 + Math.random() * 30 : 20 + Math.random() * 18,
-        dx: (Math.random() - 0.5) * 90,
-        dy: -(360 + Math.random() * 300),
+        // photos spread across the FULL width too (like the emoji shower),
+        // not clustered to one side
+        left: 4 + Math.random() * 92,
+        size: img ? 46 + Math.random() * 34 : 20 + Math.random() * 18,
+        dx: (Math.random() - 0.5) * (img ? 120 : 90),
+        dy: -(420 + Math.random() * 360),
         dur: 2.4 + Math.random() * 1.6,
         delay: Math.random() * 0.6,
       });
@@ -882,7 +958,15 @@ export default function WakiiApp() {
                   <div className={"ravatar" + (i === 0 ? " on" : "")}>🏠</div>
                   <div className="rmeta">
                     <div className="rname">{grp.name}</div>
-                    <div className="rprev">코드 {grp.code}</div>
+                    <div
+                      className="rprev rprev-share"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        shareInvite(grp);
+                      }}
+                    >
+                      💌 가족 초대하기
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1402,6 +1486,7 @@ export default function WakiiApp() {
                     style={
                       {
                         left: b.left + "%",
+                        marginLeft: -b.size / 2,
                         bottom: 4,
                         width: b.size,
                         animationDuration: b.dur + "s",
@@ -1651,15 +1736,18 @@ export default function WakiiApp() {
 
             {obStep === "code" && pendingGroup && (
               <>
-                <div className="ob-tag" style={{ marginBottom: 14 }}>
-                  이 코드를 가족에게 공유하세요
+                <div className="ob-tag" style={{ marginBottom: 6 }}>
+                  가족을 초대해보세요
                 </div>
-                <div className="ob-code">{pendingGroup.code}</div>
-                <div className="ob-codesub">{pendingGroup.name}</div>
-                <button className="ob-copy" onClick={copyCode}>
-                  📋 코드 복사
+                <div className="ob-codesub" style={{ marginBottom: 18 }}>{pendingGroup.name}</div>
+                <button className="ob-share" onClick={() => shareInvite(pendingGroup)}>
+                  💌 카카오톡으로 초대하기
                 </button>
-                <div className="ob-codenote">코드는 가족이 참여 코드로 입력하면 같은 방에 들어와요.</div>
+                <div className="ob-codenote">링크를 받은 가족이 누르면 바로 같은 방에 들어와요.</div>
+                <div className="ob-codefallback">
+                  또는 참여 코드 <b>{pendingGroup.code}</b>{" "}
+                  <span onClick={copyCode}>복사</span>
+                </div>
                 <button className="nm-go" style={{ marginTop: 14 }} onClick={() => addGroup(pendingGroup)}>
                   홈으로 가기
                 </button>

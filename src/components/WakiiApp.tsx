@@ -970,7 +970,7 @@ export default function WakiiApp() {
 
           {/* ===== WALK ===== */}
           <div className={"screen" + (screen === "walk" ? " active" : "")} id="s-walk">
-            <div className="sec-title">걸음 · 공동 여정</div>
+            <div className="sec-title">워키 여정</div>
             <div className="walkstories">
               {walkRooms.map((r, i) => (
                 <div
@@ -1114,7 +1114,7 @@ export default function WakiiApp() {
             {/* step report */}
             <div className="report">
               <div className="report-head">
-                <h4>걸음 레포트</h4>
+                <h4>워키 레포트</h4>
                 <div className="report-toggle">
                   <span className={stepRange === "week" ? "on" : ""} onClick={() => setStepRange("week")}>
                     이번 주
@@ -1287,7 +1287,7 @@ export default function WakiiApp() {
           </div>
           <div className={"tab" + (screen === "walk" ? " on" : "")} onClick={() => go("walk")}>
             <span className="ni">👣</span>
-            <span className="nl">걸음</span>
+            <span className="nl">워키</span>
           </div>
           <div className="divider" />
           <div className={"tab" + (screen === "my" ? " on" : "")} onClick={() => go("my")}>

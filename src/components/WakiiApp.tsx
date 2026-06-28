@@ -163,7 +163,7 @@ const stepsByDay: Record<number, number> = {
   1: 5400, 5: 7100, 8: 3200, 11: 8800, 12: 6600, 13: 4100, 17: 9200, 23: 5800, 24: 6200, 25: 7400, 26: 6200,
 };
 
-type Bubble = { id: number; emoji: string; left: number; size: number; dx: number; dy: number; dur: number; delay: number };
+type Bubble = { id: number; emoji: string; img?: string; left: number; size: number; dx: number; dy: number; dur: number; delay: number };
 type UploadMode = "new" | "mission" | "room" | "reply";
 
 export default function WakiiApp() {
@@ -363,17 +363,18 @@ export default function WakiiApp() {
       if (cardId) addReaction(cardId, author, e).then(() => refreshRoom(currentRoom));
     }
   };
-  const spawnBubble = (e: string) => {
-    // iMessage-style: many emojis rising from across the whole bottom edge,
-    // over a longer (~2x) duration.
+  // iMessage-style shower rising from across the bottom edge. With `img` set,
+  // each bubble is the captured photo thumbnail (emoji as a corner badge).
+  const spawnBubble = (e: string, img?: string) => {
     const made: Bubble[] = [];
-    const count = 16;
+    const count = img ? 7 : 16;
     for (let i = 0; i < count; i++) {
       made.push({
         id: bubbleId.current++,
         emoji: e,
-        left: 4 + Math.random() * 92,
-        size: 20 + Math.random() * 18,
+        img,
+        left: img ? 8 + Math.random() * 84 : 4 + Math.random() * 92,
+        size: img ? 54 + Math.random() * 30 : 20 + Math.random() * 18,
         dx: (Math.random() - 0.5) * 90,
         dy: -(360 + Math.random() * 300),
         dur: 2.4 + Math.random() * 1.6,
@@ -432,7 +433,8 @@ export default function WakiiApp() {
     const emoji = instantEmoji;
     setInstantEmoji(null);
     if (idx != null) sendReply(idx, dataUrl);
-    if (emoji) spawnBubble(emoji);
+    // the photo itself (with emoji badge) showers up the screen
+    spawnBubble(emoji || "", dataUrl);
     toast("즉석 반응을 보냈어요");
   };
 
@@ -1254,26 +1256,47 @@ export default function WakiiApp() {
                 scrollEase={0.03}
                 loop={false}
               />
-              {/* floating reaction bubbles */}
-              {bubbles.map((b) => (
-                <div
-                  key={b.id}
-                  className="bubble"
-                  style={
-                    {
-                      left: b.left + "%",
-                      bottom: 4,
-                      fontSize: b.size,
-                      animationDuration: b.dur + "s",
-                      animationDelay: b.delay + "s",
-                      ["--dx" as string]: b.dx + "px",
-                      ["--dy" as string]: b.dy + "px",
-                    } as React.CSSProperties
-                  }
-                >
-                  {b.emoji}
-                </div>
-              ))}
+              {/* floating reaction bubbles (emoji/text, or the instant photo) */}
+              {bubbles.map((b) =>
+                b.img ? (
+                  <div
+                    key={b.id}
+                    className="bubble photobubble"
+                    style={
+                      {
+                        left: b.left + "%",
+                        bottom: 4,
+                        width: b.size,
+                        animationDuration: b.dur + "s",
+                        animationDelay: b.delay + "s",
+                        backgroundImage: `url(${b.img})`,
+                        ["--dx" as string]: b.dx + "px",
+                        ["--dy" as string]: b.dy + "px",
+                      } as React.CSSProperties
+                    }
+                  >
+                    {b.emoji && <span className="pb-badge">{b.emoji}</span>}
+                  </div>
+                ) : (
+                  <div
+                    key={b.id}
+                    className="bubble"
+                    style={
+                      {
+                        left: b.left + "%",
+                        bottom: 4,
+                        fontSize: b.size,
+                        animationDuration: b.dur + "s",
+                        animationDelay: b.delay + "s",
+                        ["--dx" as string]: b.dx + "px",
+                        ["--dy" as string]: b.dy + "px",
+                      } as React.CSSProperties
+                    }
+                  >
+                    {b.emoji}
+                  </div>
+                ),
+              )}
             </div>
 
 

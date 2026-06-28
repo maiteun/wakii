@@ -223,6 +223,9 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 /* floating reaction bubbles */
 .bubble{position:absolute;z-index:84;pointer-events:none;opacity:1;animation:bubblefloat 1.4s ease-out forwards;}
 @keyframes bubblefloat{to{transform:translateY(var(--dy)) translateX(var(--dx));opacity:0;}}
+/* instant-photo reaction bubble: the captured photo with an emoji badge */
+.photobubble{aspect-ratio:3/4;border-radius:16px;background-size:cover;background-position:center;box-shadow:0 8px 22px rgba(0,0,0,.32);border:2px solid rgba(255,255,255,.9);overflow:visible;}
+.photobubble .pb-badge{position:absolute;right:-8px;bottom:-8px;font-size:26px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}
 
 /* ===== photo editor (after capture) ===== */
 .editor{display:flex;flex-direction:column;align-items:center;width:100%;gap:10px;padding:8px 0;}

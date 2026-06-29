@@ -22,7 +22,9 @@
       "Bash(curl -s -o /dev/null -w '%{http_code}' https://wakii-tau.vercel.app/assets/cloud.png)",
       "Bash(curl -s https://wakii-tau.vercel.app/)",
       "Bash(sips -g pixelWidth -g pixelHeight public/assets/courses/angkor_wat.png)",
-      "Bash(awk '/pixelWidth/{w=$2}/pixelHeight/{h=$2}END{print w\"x\"h\" ar=\"h/w}')"
+      "Bash(awk '/pixelWidth/{w=$2}/pixelHeight/{h=$2}END{print w\"x\"h\" ar=\"h/w}')",
+      "Bash(node /tmp/wipe_photos.mjs)",
+      "Bash(node wipe_photos.mjs)"
     ]
   }
 }

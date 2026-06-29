@@ -1206,20 +1206,12 @@ export default function WakiiApp() {
 
         <div className="viewport" ref={viewportRef}>
           {/* ===== HOME ===== */}
-          <div className={"screen" + (screen === "home" ? " active" : "")} id="s-home">
-            <div className="mission">
-              <span className="mlabel">오늘의 미션</span>
-              <div className="mtext">
-                오늘은 하지예요! 1년 중 해가
-                <br />가장 긴 날의 풍경을 담아보세요 ☀️
+          <div className={"screen home-screen" + (screen === "home" ? " active" : "")} id="s-home">
+            <div className="home-top">
+              <div className="home-logo">wakii</div>
+              <div className="home-step">
+                👣 <b>6,200</b>
               </div>
-              <button className="mbtn" onClick={() => openUpload("mission")}>
-                📷 촬영 후 공유하기
-              </button>
-            </div>
-
-            <div className="steptext">
-              <b>6,200</b> 걸음
             </div>
 
             <div
@@ -1229,10 +1221,21 @@ export default function WakiiApp() {
               onPointerLeave={cancelPress}
             >
               <img className="househero" src={houseImg(house)} alt="우리 집" draggable={false} />
-              <div className="mk">우리 · 길게 눌러 집 바꾸기</div>
+              <div className="mk">우리 집 · 길게 눌러 바꾸기</div>
             </div>
 
-            <div className="roomsheet">
+            <div className="homesheet">
+              <div className="mission">
+                <span className="mlabel">오늘의 미션</span>
+                <div className="mtext">
+                  오늘은 하지예요! 1년 중 해가
+                  <br />가장 긴 날의 풍경을 담아보세요 ☀️
+                </div>
+                <button className="mbtn" onClick={() => openUpload("mission")}>
+                  📷 촬영 후 공유하기
+                </button>
+              </div>
+
               {myGroups.map((grp, i) => (
                 <div key={grp.code} className="room" onClick={() => openRoom(grp.name, "🏠")}>
                   <div className={"ravatar" + (i === 0 ? " on" : "")}>🏠</div>

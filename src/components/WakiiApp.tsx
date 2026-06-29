@@ -1461,7 +1461,7 @@ export default function WakiiApp() {
 
                   // unselected (미달성): 빈 섬 베이스(flat/hill 랜덤) + 구름
                   if (node.kind === "unselected") {
-                    const ew = 162;
+                    const ew = 112;
                     const eh = ew * EMPTY_ISLAND_AR;
                     const emptyImg =
                       EMPTY_ISLANDS[Math.floor(rnd(i * 5.9 + 3) * EMPTY_ISLANDS.length)] || EMPTY_ISLANDS[0];
@@ -1475,7 +1475,7 @@ export default function WakiiApp() {
                           height={eh}
                           preserveAspectRatio="xMidYMax meet"
                         />
-                        <CloudOverlay cx={x} cy={y - eh * 0.5} size={ew * 1.18} op={0.95} rot={cloudRot} flip={cloudFlip} />
+                        <CloudOverlay cx={x} cy={y - eh * 0.5} size={ew * 1.95} op={0.98} rot={cloudRot} flip={cloudFlip} />
                       </g>
                     );
                   }
@@ -1485,8 +1485,8 @@ export default function WakiiApp() {
                   const id = node.kind === "active" ? activeCourse.id : node.id || "";
                   const img = courseImg(id);
                   const h = W_IMG * (courseById(id)?.ar ?? 1);
-                  // 진행 중 구름: 두껍게 시작해 천천히 걷힘 (랜드마크가 보일듯 말듯)
-                  const cloudOp = node.kind === "active" ? 0.92 - mt * 0.5 : 0;
+                  // 진행 중 구름: 거의 다 가린 채 천천히 걷힘 (랜드마크가 보일듯 말듯)
+                  const cloudOp = node.kind === "active" ? 0.98 - mt * 0.45 : 0;
                   const clickable = node.kind === "done";
                   return (
                     <g
@@ -1511,7 +1511,7 @@ export default function WakiiApp() {
                       <CloudOverlay
                         cx={x}
                         cy={y - h * 0.5}
-                        size={Math.max(W_IMG, h) * 1.12}
+                        size={Math.max(W_IMG, h) * 1.35}
                         op={cloudOp}
                         rot={cloudRot}
                         flip={cloudFlip}

@@ -919,7 +919,7 @@ export default function WakiiApp() {
     ...completedCourses.map((id) => ({ kind: "stamp" as const, id })),
     { kind: "current", id: activeCourseId },
   ];
-  for (let k = 0; k < 3; k++) mapNodes.push({ kind: "cloud" });
+  for (let k = 0; k < 2; k++) mapNodes.push({ kind: "cloud" });
 
   // deterministic pseudo-random (stable across renders) for organic spacing
   const rnd = (n: number) => {
@@ -929,7 +929,7 @@ export default function WakiiApp() {
   // narrow horizontal band → limited left/right panning; tall gaps so the path
   // between courses is long and winding (game-level-map feel)
   const W = 392,
-    PAD_TOP = 150,
+    PAD_TOP = 96,
     PAD_BOT = 64,
     SEG_H = 238;
   const gaps = mapNodes.map((_, i) => (i === 0 ? 0 : SEG_H + (rnd(i * 1.7) - 0.3) * 56));
@@ -958,11 +958,27 @@ export default function WakiiApp() {
 
   // ---------- journey map: pan & zoom (drag, wheel, pinch) ----------
   const clampZoom = (z: number) => Math.max(0.3, Math.min(2.6, z));
+  // keep the map from being dragged off into empty space (small overscroll only)
+  const clampPan = (p: { x: number; y: number }, z: number) => {
+    const el = mapViewRef.current;
+    const vw = el?.clientWidth || 360;
+    const vh = el?.clientHeight || 560;
+    const cw = W * z;
+    const ch = H * z;
+    const m = 20; // allowed overscroll margin
+    const ax = cw <= vw
+      ? Math.max((vw - cw) / 2 - m, Math.min((vw - cw) / 2 + m, p.x))
+      : Math.max(vw - cw - m, Math.min(m, p.x));
+    const ay = ch <= vh
+      ? Math.max((vh - ch) / 2 - m, Math.min((vh - ch) / 2 + m, p.y))
+      : Math.max(vh - ch - m, Math.min(m, p.y));
+    return { x: ax, y: ay };
+  };
   // zoom keeping the point (px,py) in the viewport fixed under the cursor
   const zoomAt = (px: number, py: number, factor: number) => {
     const nz = clampZoom(mapZoom * factor);
     const ratio = nz / mapZoom;
-    setMapPan((p) => ({ x: px - (px - p.x) * ratio, y: py - (py - p.y) * ratio }));
+    setMapPan((p) => clampPan({ x: px - (px - p.x) * ratio, y: py - (py - p.y) * ratio }, nz));
     setMapZoom(nz);
   };
   const onMapPointerDown = (e: React.PointerEvent) => {
@@ -991,12 +1007,12 @@ export default function WakiiApp() {
         const p0 = mapPinch.current;
         const nz = clampZoom(p0.zoom * (dist / p0.dist));
         const ratio = nz / p0.zoom;
-        setMapPan({ x: p0.mx - (p0.mx - p0.px) * ratio, y: p0.my - (p0.my - p0.py) * ratio });
+        setMapPan(clampPan({ x: p0.mx - (p0.mx - p0.px) * ratio, y: p0.my - (p0.my - p0.py) * ratio }, nz));
         setMapZoom(nz);
       }
     } else if (mapDrag.current) {
       const d = mapDrag.current;
-      setMapPan({ x: d.px + (e.clientX - d.x), y: d.py + (e.clientY - d.y) });
+      setMapPan(clampPan({ x: d.px + (e.clientX - d.x), y: d.py + (e.clientY - d.y) }, mapZoom));
     }
   };
   const onMapPointerUp = (e: React.PointerEvent) => {
@@ -1047,7 +1063,7 @@ export default function WakiiApp() {
     const z = clampZoom(Math.min(zW, zH));
     // 출발 near the bottom edge, journey winding upward; centred horizontally
     setMapZoom(z);
-    setMapPan({ x: vw / 2 - ((minX + maxX) / 2) * z, y: vh - 34 - startY * z });
+    setMapPan(clampPan({ x: vw / 2 - ((minX + maxX) / 2) * z, y: vh - 34 - startY * z }, z));
     mapInited.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen]);

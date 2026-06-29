@@ -6,7 +6,7 @@ import PhotoEditor, { type PhotoEditorHandle } from "./PhotoEditor";
 import InstantCapture from "./InstantCapture";
 import type { Card, Deck, RoomsData } from "@/lib/types";
 import { hasSupabase } from "@/lib/supabase";
-import { COURSES, courseById, courseImg } from "@/lib/courses";
+import { COURSES, courseById, courseImg, EMPTY_ISLAND_IMG } from "@/lib/courses";
 import {
   listRoom,
   subscribeRoom,
@@ -83,6 +83,21 @@ function buildGalleryImage(card: Card): string {
     ctx.fillText(card.ov, w / 2, h / 2);
   }
   return canvas.toDataURL("image/png");
+}
+
+// soft cloud puff drawn as overlapping ellipses; opacity = how "covered" a
+// journey node is (1 = hidden/미선택, 0 = fully revealed/완주). Rendered as an
+// app layer ON TOP of the landmark, never baked into the image.
+function CloudOverlay({ cx, cy, w, op }: { cx: number; cy: number; w: number; op: number }) {
+  if (op <= 0.01) return null;
+  return (
+    <g opacity={op} filter="url(#cloudblur)">
+      <ellipse cx={cx - w * 0.26} cy={cy + w * 0.05} rx={w * 0.3} ry={w * 0.22} fill="#eef2f8" />
+      <ellipse cx={cx + w * 0.26} cy={cy + w * 0.07} rx={w * 0.32} ry={w * 0.24} fill="#e5ebf4" />
+      <ellipse cx={cx} cy={cy - w * 0.12} rx={w * 0.34} ry={w * 0.28} fill="#f7fafe" />
+      <ellipse cx={cx} cy={cy + w * 0.12} rx={w * 0.5} ry={w * 0.28} fill="#eef3fa" />
+    </g>
+  );
 }
 
 /* ===================================================================
@@ -244,7 +259,6 @@ export default function WakiiApp() {
   const [recapShow, setRecapShow] = useState(false);
   const [recapTitle, setRecapTitle] = useState("");
   const [recapSub, setRecapSub] = useState("");
-  const [recapImgs, setRecapImgs] = useState<string[]>([]);
   const [recapCourseId, setRecapCourseId] = useState("");
 
   // walk — course system (A 구조: one active course = one landmark; the whole
@@ -892,18 +906,11 @@ export default function WakiiApp() {
   const isComplete = familyKm >= courseKm;
   const activeMember = walkRooms[walkSel] || walkRooms[0];
 
-  // recap of a course: title + the photo cards the family reacted to most
+  // recap of a course. The photo-curation rule (좋아요 수/이모지 종류 등) is TBD,
+  // so the photo section is an empty placeholder for now.
   const openRecap = (courseId: string) => {
     const c = courseById(courseId);
     if (!c) return;
-    const imgs = Object.values(rooms)
-      .flat()
-      .flatMap((d) => d.cards)
-      .filter((cd) => cd.img && (cd.reactions?.length || 0) > 0)
-      .sort((a, b) => (b.reactions?.length || 0) - (a.reactions?.length || 0))
-      .map((cd) => cd.img as string)
-      .slice(0, 4);
-    setRecapImgs(imgs);
     setRecapCourseId(courseId);
     setRecapTitle(`${c.name_ko} 완주!`);
     setRecapSub(`함께 ${c.distance_km}km · 가족이 함께 걸어 도착했어요`);
@@ -921,17 +928,19 @@ export default function WakiiApp() {
     setCourseSheet(false);
     if (finishing) openRecap(finishedId);
   };
-  const lockCloud = () => toast("아직 발견하지 않은 길이에요 · 함께 걸어서 채워요");
 
-  // build the winding journey path. Nodes (bottom → top): 출발 → 완주 스탬프들
-  // → 현재 코스(가족 마커) → 구름(미발견).
-  type MapNode = { kind: "start" | "stamp" | "current" | "cloud"; id?: string };
+  // Journey path (bottom → top = 과거 → 미래). Cloud opacity is the single axis
+  // for a node's state: done(0) → active(0.8→0.2, 진행률 연동) → unselected(1.0).
+  //   - done:       완주해 구름이 완전히 걷힌 랜드마크 (누적, 탭→리캡)
+  //   - active:     진행 중 코스. 구름이 진행률만큼 걷힘 + 가족 마커
+  //   - unselected: 다음 목적지 빈 자리 (빈 섬 + ? + 구름). 1개. 탭→코스 선택
+  type MapNode = { kind: "start" | "done" | "active" | "unselected"; id?: string };
   const mapNodes: MapNode[] = [
     { kind: "start" },
-    ...completedCourses.map((id) => ({ kind: "stamp" as const, id })),
-    { kind: "current", id: activeCourseId },
+    ...completedCourses.map((id) => ({ kind: "done" as const, id })),
+    { kind: "active", id: activeCourseId },
+    { kind: "unselected" },
   ];
-  for (let k = 0; k < 2; k++) mapNodes.push({ kind: "cloud" });
 
   // deterministic pseudo-random (stable across renders) for organic spacing
   const rnd = (n: number) => {
@@ -1406,8 +1415,8 @@ export default function WakiiApp() {
               >
                 <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: "block", overflow: "visible" }}>
                 <defs>
-                  <filter id="fog" x="-60%" y="-60%" width="220%" height="220%">
-                    <feGaussianBlur stdDeviation="2.4" />
+                  <filter id="cloudblur" x="-60%" y="-60%" width="220%" height="220%">
+                    <feGaussianBlur stdDeviation="3.4" />
                   </filter>
                 </defs>
                 <path d={dpath} fill="none" stroke="#fff" strokeWidth="10" strokeLinecap="round" opacity="0.7" />
@@ -1422,25 +1431,42 @@ export default function WakiiApp() {
                       </text>
                     );
                   }
-                  if (node.kind === "cloud") {
+                  const W_IMG = 132; // uniform width for every landmark
+
+                  // unselected (다음 목적지 빈 자리): 빈 섬 베이스 + ? + 구름(거의 덮음)
+                  if (node.kind === "unselected") {
                     return (
-                      <g key={i} style={{ cursor: "pointer" }} onClick={lockCloud}>
-                        <circle cx={x} cy={y} r="16" fill="#CFCDCA" stroke="#BBB8B5" strokeWidth="1.5" filter="url(#fog)" />
-                        <text x={x} y={y + 6} fontSize="16" textAnchor="middle">
-                          ☁️
+                      <g key={i} style={{ cursor: "pointer" }} onClick={() => setCourseSheet(true)}>
+                        {EMPTY_ISLAND_IMG ? (
+                          <image
+                            href={EMPTY_ISLAND_IMG}
+                            x={x - W_IMG / 2}
+                            y={y - W_IMG}
+                            width={W_IMG}
+                            height={W_IMG}
+                            preserveAspectRatio="xMidYMax meet"
+                          />
+                        ) : (
+                          <>
+                            <ellipse cx={x} cy={y - 14} rx="54" ry="20" fill="#aab0b8" />
+                            <ellipse cx={x} cy={y - 3} rx="40" ry="13" fill="#878d96" />
+                          </>
+                        )}
+                        <text x={x} y={y - 38} fontSize="38" fontWeight="900" textAnchor="middle" fill="#5f6670">
+                          ?
                         </text>
+                        <CloudOverlay cx={x} cy={y - 40} w={150} op={0.95} />
                       </g>
                     );
                   }
-                  // stamp (completed) or current course → show the uploaded
-                  // landmark image ITSELF, sitting on the path. No border, flag,
-                  // or label. Width is FIXED for every course (height follows the
-                  // image's aspect ratio) so they all look the same size.
-                  const id = node.kind === "current" ? activeCourse.id : node.id || "";
+
+                  // done(완주) or active(진행중): 랜드마크 이미지 + 구름 오버레이.
+                  // cloud opacity = 상태축: done 0, active 0.8→0.2(진행률 연동).
+                  const id = node.kind === "active" ? activeCourse.id : node.id || "";
                   const img = courseImg(id);
-                  const w = 132; // uniform width for all course images
-                  const h = w * (courseById(id)?.ar ?? 1);
-                  const clickable = node.kind === "stamp";
+                  const h = W_IMG * (courseById(id)?.ar ?? 1);
+                  const cloudOp = node.kind === "active" ? 0.8 - mt * 0.6 : 0;
+                  const clickable = node.kind === "done";
                   return (
                     <g
                       key={i}
@@ -1450,17 +1476,18 @@ export default function WakiiApp() {
                       {img ? (
                         <image
                           href={img}
-                          x={x - w / 2}
+                          x={x - W_IMG / 2}
                           y={y - h}
-                          width={w}
+                          width={W_IMG}
                           height={h}
                           preserveAspectRatio="xMidYMax meet"
                         />
                       ) : (
-                        <text x={x} y={y - w * 0.3} fontSize={w * 0.45} textAnchor="middle">
+                        <text x={x} y={y - W_IMG * 0.3} fontSize={W_IMG * 0.45} textAnchor="middle">
                           🏝️
                         </text>
                       )}
+                      <CloudOverlay cx={x} cy={y - h * 0.5} w={150} op={cloudOp} />
                     </g>
                   );
                 })}
@@ -1703,19 +1730,7 @@ export default function WakiiApp() {
             )}
             <div className="rc-title">{recapTitle}</div>
             <div className="rc-sub">{recapSub}</div>
-            <div className="rc-strip">
-              {Array.from({ length: 4 }).map((_, i) =>
-                recapImgs[i] ? (
-                  <div
-                    key={i}
-                    style={{ backgroundImage: `url(${recapImgs[i]})`, backgroundSize: "cover", backgroundPosition: "center" }}
-                  />
-                ) : (
-                  <div key={i} />
-                ),
-              )}
-            </div>
-            <div className="rc-ai">AI가 이 여정에서 반응 많았던 짤을 골랐어요</div>
+            <div className="rc-empty">이 여정 동안 가족이 가장 많이 반응한 사진을<br />모아 보여드릴 예정이에요</div>
           </div>
 
           {/* course select — "새 목표 고르기" (모든 코스 재선택 가능) */}

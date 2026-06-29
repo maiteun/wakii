@@ -7,6 +7,7 @@ import InstantCapture from "./InstantCapture";
 import type { Card, Deck, RoomsData } from "@/lib/types";
 import { hasSupabase } from "@/lib/supabase";
 import { COURSES, courseById, courseImg, EMPTY_ISLANDS, EMPTY_ISLAND_AR } from "@/lib/courses";
+import { HOUSES, houseImg, DEFAULT_HOUSE } from "@/lib/houses";
 import {
   listRoom,
   subscribeRoom,
@@ -227,7 +228,10 @@ export default function WakiiApp() {
   const [name, setName] = useState("");
   const [nameDraft, setNameDraft] = useState("");
   const author = name || "나";
-  type ObStep = "login" | "name" | "group" | "create" | "join" | "code" | "joined";
+  type ObStep = "login" | "name" | "house" | "group" | "create" | "join" | "code" | "joined";
+  // "우리 집" art: chosen at onboarding, changeable via long-press on home
+  const [house, setHouse] = useState(DEFAULT_HOUSE);
+  const [housePicker, setHousePicker] = useState(false);
   const [obStep, setObStep] = useState<ObStep>("login");
   const [addingGroup, setAddingGroup] = useState(false); // opening the group flow from "+"
   const [myGroups, setMyGroups] = useState<Group[]>([]);
@@ -382,6 +386,12 @@ export default function WakiiApp() {
     }
     if (nm) setName(nm);
     setMyGroups(grps);
+    try {
+      const h = localStorage.getItem("wakii.house");
+      if (h) setHouse(h);
+    } catch {
+      /* ignore */
+    }
 
     // invite deep-link (/?j=CODE) — shared via KakaoTalk. Join automatically
     // instead of asking the user to read & type the code.
@@ -423,16 +433,17 @@ export default function WakiiApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const saveName = () => {
-    const v = nameDraft.trim();
-    if (!v) return;
-    setName(v);
+  const chooseHouse = (id: string) => {
+    setHouse(id);
     try {
-      localStorage.setItem("wakii.name", v);
+      localStorage.setItem("wakii.house", id);
     } catch {
       /* ignore */
     }
-    // arrived via an invite link → skip the group step, join it now
+  };
+  // routing after identity (name + house) is set: invite link → auto-join,
+  // otherwise the group step
+  const afterIdentity = () => {
     if (pendingJoinCode) {
       joinGroup(pendingJoinCode).then((g) => {
         if (g) {
@@ -447,6 +458,17 @@ export default function WakiiApp() {
       return;
     }
     setObStep("group");
+  };
+  const saveName = () => {
+    const v = nameDraft.trim();
+    if (!v) return;
+    setName(v);
+    try {
+      localStorage.setItem("wakii.name", v);
+    } catch {
+      /* ignore */
+    }
+    setObStep("house"); // pick "우리 집" before joining/creating a group
   };
   // social login UI — real OAuth (Kakao/Naver/Google/Apple) is wired later.
   // Once Kakao login is connected the display name will come from the Kakao
@@ -1200,9 +1222,14 @@ export default function WakiiApp() {
               <b>6,200</b> 걸음
             </div>
 
-            <div className="mark">
-              <div className="house">🏠</div>
-              <div className="mk">우리</div>
+            <div
+              className="mark"
+              onPointerDown={() => startPress(() => setHousePicker(true))}
+              onPointerUp={() => endPress(() => {})}
+              onPointerLeave={cancelPress}
+            >
+              <img className="househero" src={houseImg(house)} alt="우리 집" draggable={false} />
+              <div className="mk">우리 · 길게 눌러 집 바꾸기</div>
             </div>
 
             <div className="roomsheet">
@@ -1795,6 +1822,29 @@ export default function WakiiApp() {
             </div>
           </div>
 
+          {/* house picker — long-press the home house to change it */}
+          <div className={"sharesheet" + (housePicker ? " show" : "")} onClick={() => setHousePicker(false)}>
+            <div className="ss-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="grip" />
+              <h4>우리 집 바꾸기</h4>
+              <div className="housegrid">
+                {HOUSES.map((hh) => (
+                  <div
+                    key={hh.id}
+                    className={"hcell" + (house === hh.id ? " on" : "")}
+                    onClick={() => {
+                      chooseHouse(hh.id);
+                      setHousePicker(false);
+                    }}
+                  >
+                    <img src={houseImg(hh.id)} alt={hh.label} draggable={false} />
+                    <span>{hh.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* toast */}
           <div className={"toast" + (toastShown ? " show" : "")}>{toastMsg}</div>
         </div>
@@ -2062,6 +2112,31 @@ export default function WakiiApp() {
                   <div className="ob-back" onClick={() => setObStep("login")}>
                     ‹ 로그인 방법 다시 선택
                   </div>
+                </div>
+              </>
+            )}
+
+            {obStep === "house" && (
+              <>
+                <div className="ob-logo">우리 집 고르기</div>
+                <div className="ob-tag">홈 화면에 띄울 집을 골라주세요</div>
+                <div className="housegrid">
+                  {HOUSES.map((hh) => (
+                    <div
+                      key={hh.id}
+                      className={"hcell" + (house === hh.id ? " on" : "")}
+                      onClick={() => chooseHouse(hh.id)}
+                    >
+                      <img src={houseImg(hh.id)} alt={hh.label} draggable={false} />
+                      <span>{hh.label}</span>
+                    </div>
+                  ))}
+                </div>
+                <button className="nm-go" style={{ marginTop: 14 }} onClick={afterIdentity}>
+                  다음
+                </button>
+                <div className="ob-back" onClick={() => setObStep("name")}>
+                  ‹ 뒤로
                 </div>
               </>
             )}

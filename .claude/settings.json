@@ -14,7 +14,15 @@
       "Bash(sips -s format jpeg cloud.png --out /tmp/cloud_flat.jpg)",
       "Bash(sips -g pixelWidth -g pixelHeight empty_hill_background_removal.png)",
       "Bash(awk '/pixelWidth/{w=$2}/pixelHeight/{h=$2}END{print w\"x\"h\" \\(ar=\"h/w\"\\)\"}')",
-      "Bash(sips -g hasAlpha empty_hill_background_removal.png)"
+      "Bash(sips -g hasAlpha empty_hill_background_removal.png)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' https://wakii-tau.vercel.app/assets/empty_island.png)",
+      "Bash(echo \"deployed empty_island \\(신규\\): $\\(curl -s -o /dev/null -w '%{http_code}' https://wakii-tau.vercel.app/assets/empty_island.png\\)\")",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' https://wakii-tau.vercel.app/assets/empty_flat.png)",
+      "Bash(echo \"deployed empty_flat \\(구버전, 삭제됨\\): $\\(curl -s -o /dev/null -w '%{http_code}' https://wakii-tau.vercel.app/assets/empty_flat.png\\)\")",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' https://wakii-tau.vercel.app/assets/cloud.png)",
+      "Bash(curl -s https://wakii-tau.vercel.app/)",
+      "Bash(sips -g pixelWidth -g pixelHeight public/assets/courses/angkor_wat.png)",
+      "Bash(awk '/pixelWidth/{w=$2}/pixelHeight/{h=$2}END{print w\"x\"h\" ar=\"h/w}')"
     ]
   }
 }

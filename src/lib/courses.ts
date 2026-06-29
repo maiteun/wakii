@@ -16,7 +16,7 @@ export type Course = {
 export const COURSES: Course[] = [
   { id: "hallasan", name_ko: "한라산", name_en: "Hallasan", distance_km: 19.2, steps: 25920, ar: 0.886 },
   { id: "colosseum", name_ko: "콜로세움", name_en: "Colosseum", distance_km: 17.0, steps: 22950, ar: 0.812 },
-  { id: "angkor_wat", name_ko: "앙코르와트", name_en: "Angkor Wat", distance_km: 18.0, steps: 24300, ar: 1.0 },
+  { id: "angkor_wat", name_ko: "앙코르와트", name_en: "Angkor Wat", distance_km: 18.0, steps: 24300, ar: 0.848 },
   { id: "taj_mahal", name_ko: "타지마할", name_en: "Taj Mahal", distance_km: 15.3, steps: 20655, ar: 0.978 },
   { id: "moai", name_ko: "모아이", name_en: "Moai", distance_km: 16.4, steps: 22140, ar: 1.029 },
   { id: "eiffel_tower", name_ko: "에펠탑", name_en: "Eiffel Tower", distance_km: 15.4, steps: 20790, ar: 1.585 },
@@ -30,11 +30,11 @@ export const COURSES: Course[] = [
 export const courseById = (id: string): Course | undefined => COURSES.find((c) => c.id === id);
 
 // Island/landmark thumbnails live in public/assets/courses/<id>.png, mapped by
-// id. angkor_wat has no image yet → null, render a placeholder. Add the missing
-// PNG later and this picks it up automatically.
+// id. All 11 courses now have art.
 const WITH_IMAGE = new Set<string>([
   "hallasan",
   "colosseum",
+  "angkor_wat",
   "taj_mahal",
   "moai",
   "eiffel_tower",

@@ -44,9 +44,17 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .steptext{margin:8px 16px;font-size:13px;color:var(--g55);font-weight:600;text-align:center;}
 .steptext b{color:var(--ink);font-weight:800;font-size:15px;}
 
-.mark{display:flex;flex-direction:column;align-items:center;padding:18px 0 10px;}
+.mark{display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;cursor:pointer;user-select:none;}
 .mark .house{font-size:72px;line-height:1;filter:grayscale(1);}
-.mark .mk{font-size:11px;color:var(--g40);margin-top:6px;font-weight:700;letter-spacing:.04em;}
+.mark .househero{width:322px;height:366px;max-width:92vw;object-fit:contain;pointer-events:none;}
+.mark .mk{font-size:11px;color:var(--g40);margin-top:2px;font-weight:700;letter-spacing:.04em;}
+/* house picker grid (onboarding + long-press sheet) */
+.housegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;max-height:48vh;overflow-y:auto;margin-top:6px;}
+.hcell{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;}
+.hcell img{width:100%;aspect-ratio:4/3;object-fit:contain;background:var(--g04);border-radius:12px;border:2px solid transparent;}
+.hcell.on img{border-color:var(--ink);}
+.hcell span{font-size:10px;color:var(--g55);font-weight:700;}
+.hcell.on span{color:var(--ink);}
 
 .roomsheet{background:#fff;border-radius:20px 20px 0 0;margin-top:8px;padding:8px 0 4px;box-shadow:0 -2px 12px rgba(0,0,0,.04);min-height:260px;}
 .room{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;}

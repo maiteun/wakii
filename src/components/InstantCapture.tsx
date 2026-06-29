@@ -32,7 +32,7 @@ export default function InstantCapture({
     let cancelled = false;
     (async () => {
       try {
-        const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
         if (cancelled) {
           s.getTracks().forEach((t) => t.stop());
           return;
@@ -53,8 +53,10 @@ export default function InstantCapture({
     };
   }, []);
 
-  // centre-crop the source to a SQUARE (shown as a circle); the emoji is
-  // added as a top-right badge on the bubble, not baked in.
+  // centre-crop the source to a SQUARE (shown as a circle), zoomed in a bit so
+  // the face fills more of the frame, and mirrored (front-camera selfie feel).
+  // The emoji is added as a top-right badge on the bubble, not baked in.
+  const ZOOM = 1.3;
   const compose = (source: CanvasImageSource, sw: number, sh: number): string => {
     const S = 600;
     const c = document.createElement("canvas");
@@ -62,9 +64,11 @@ export default function InstantCapture({
     c.height = S;
     const ctx = c.getContext("2d");
     if (!ctx) return "";
-    const side = Math.min(sw, sh);
+    const side = Math.min(sw, sh) / ZOOM;
     const sx = (sw - side) / 2,
       sy = (sh - side) / 2;
+    ctx.translate(S, 0);
+    ctx.scale(-1, 1); // mirror horizontally
     ctx.drawImage(source, sx, sy, side, side, 0, 0, S, S);
     return c.toDataURL("image/jpeg", 0.9);
   };
@@ -112,6 +116,8 @@ export default function InstantCapture({
               height: "100%",
               objectFit: "cover",
               display: active ? "block" : "none",
+              transform: "scaleX(-1) scale(1.3)", // mirror + zoom to match capture
+              transformOrigin: "center",
             }}
           />
           {emoji && <div className="instant-emoji">{emoji}</div>}

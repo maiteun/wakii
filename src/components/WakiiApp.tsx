@@ -531,13 +531,31 @@ export default function WakiiApp() {
 
 
   // ---------- emoji react ----------
+  // record a reaction onto the open deck's author card in LOCAL state so it
+  // replays when the deck is re-opened (and persists in mock mode). Supabase
+  // mode additionally writes to the server.
+  const recordReaction = (emoji: string) => {
+    if (openDeckIdx == null) return;
+    setRooms((prev) => {
+      const list = prev[currentRoom];
+      if (!list || !list[openDeckIdx] || !list[openDeckIdx].cards[0]) return prev;
+      const next = list.map((dk, i) => {
+        if (i !== openDeckIdx) return dk;
+        const cards = dk.cards.slice();
+        cards[0] = { ...cards[0], reactions: [...(cards[0].reactions || []), emoji] };
+        return { ...dk, cards };
+      });
+      return { ...prev, [currentRoom]: next };
+    });
+    if (hasSupabase) {
+      const cardId = openDeck?.cards[0]?.id;
+      if (cardId) addReaction(cardId, author, emoji).then(() => refreshRoom(currentRoom));
+    }
+  };
   const pickEmoji = (e: string) => {
     spawnBubble(e);
     toast(e + " 반응을 남겼어요");
-    if (hasSupabase) {
-      const cardId = openDeck?.cards[0]?.id;
-      if (cardId) addReaction(cardId, author, e).then(() => refreshRoom(currentRoom));
-    }
+    recordReaction(e);
   };
   // iMessage-style shower rising from across the bottom edge. With `img` set,
   // each bubble is the captured photo thumbnail (emoji as a corner badge).
@@ -660,10 +678,7 @@ export default function WakiiApp() {
     if (!t) return;
     spawnBubble(t);
     toast("“" + t + "” 남겼어요");
-    if (hasSupabase) {
-      const cardId = openDeck?.cards[0]?.id;
-      if (cardId) addReaction(cardId, author, t).then(() => refreshRoom(currentRoom));
-    }
+    recordReaction(t);
   };
   // AI phrase tap → shower many copies of the phrase, like the text reaction
   const playPhrase = (text: string) => {
@@ -671,10 +686,7 @@ export default function WakiiApp() {
     setGalReact(false);
     spawnBubble(text);
     toast("“" + text + "” 남겼어요");
-    if (hasSupabase) {
-      const cardId = openDeck?.cards[0]?.id;
-      if (cardId) addReaction(cardId, author, text).then(() => refreshRoom(currentRoom));
-    }
+    recordReaction(text);
   };
 
   // ---------- upload / camera ----------

@@ -1463,7 +1463,8 @@ export default function WakiiApp() {
                   if (node.kind === "unselected") {
                     const ew = 162;
                     const eh = ew * EMPTY_ISLAND_AR;
-                    const emptyImg = EMPTY_ISLANDS[rnd(i * 5.9 + 3) > 0.5 ? 1 : 0];
+                    const emptyImg =
+                      EMPTY_ISLANDS[Math.floor(rnd(i * 5.9 + 3) * EMPTY_ISLANDS.length)] || EMPTY_ISLANDS[0];
                     return (
                       <g key={i} style={{ cursor: "pointer" }} onClick={() => setCourseSheet(true)}>
                         <image

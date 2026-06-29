@@ -48,8 +48,7 @@ const WITH_IMAGE = new Set<string>([
 export const courseImg = (id: string): string | null =>
   WITH_IMAGE.has(id) ? `/assets/courses/${id}.png` : null;
 
-// Bare-island art for UNSELECTED (미달성) nodes — two variants, picked at
-// random per node so the undiscovered path doesn't look repetitive. The cloud
-// is always layered on top as an app layer.
-export const EMPTY_ISLANDS = ["/assets/empty_flat.png", "/assets/empty_hill.png"];
-export const EMPTY_ISLAND_AR = 1536 / 2816; // height / width
+// Bare-island art for UNSELECTED (미달성) nodes. Add more entries to vary the
+// undiscovered path; one is fine. The cloud is always layered on top.
+export const EMPTY_ISLANDS = ["/assets/empty_island.png"];
+export const EMPTY_ISLAND_AR = 1298 / 1296; // height / width (≈1, square)

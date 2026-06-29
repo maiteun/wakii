@@ -1484,7 +1484,8 @@ export default function WakiiApp() {
                   const id = node.kind === "active" ? activeCourse.id : node.id || "";
                   const img = courseImg(id);
                   const h = W_IMG * (courseById(id)?.ar ?? 1);
-                  const cloudOp = node.kind === "active" ? 0.8 - mt * 0.6 : 0;
+                  // 진행 중 구름: 두껍게 시작해 천천히 걷힘 (랜드마크가 보일듯 말듯)
+                  const cloudOp = node.kind === "active" ? 0.92 - mt * 0.5 : 0;
                   const clickable = node.kind === "done";
                   return (
                     <g

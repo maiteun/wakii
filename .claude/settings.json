@@ -24,7 +24,13 @@
       "Bash(sips -g pixelWidth -g pixelHeight public/assets/courses/angkor_wat.png)",
       "Bash(awk '/pixelWidth/{w=$2}/pixelHeight/{h=$2}END{print w\"x\"h\" ar=\"h/w}')",
       "Bash(node /tmp/wipe_photos.mjs)",
-      "Bash(node wipe_photos.mjs)"
+      "Bash(node wipe_photos.mjs)",
+      "mcp__claude_ai_Figma__get_screenshot",
+      "Bash(curl -s -o figma_home.png \"https://www.figma.com/api/mcp/asset/23d9e7bb-7796-415f-85a2-aeb478f37dda\")",
+      "Bash(sips -g pixelWidth -g pixelHeight figma_home.png)",
+      "Bash(echo \"downloaded $\\(sips -g pixelWidth -g pixelHeight figma_home.png)",
+      "mcp__claude_ai_Figma__get_metadata",
+      "mcp__claude_ai_Figma__get_design_context"
     ]
   }
 }

@@ -1208,10 +1208,21 @@ export default function WakiiApp() {
           {/* ===== HOME ===== */}
           <div className={"screen home-screen" + (screen === "home" ? " active" : "")} id="s-home">
             <div className="home-top">
-              <div className="home-logo">wakii</div>
+              <img className="home-logo" src="/assets/wakii_logo.svg" alt="wakii" />
               <div className="home-step">
                 👣 <b>6,200</b>
               </div>
+            </div>
+
+            <div className="mission">
+              <span className="mlabel">오늘의 미션</span>
+              <div className="mtext">
+                오늘은 하지예요! 1년 중 해가
+                <br />가장 긴 날의 풍경을 담아보세요 ☀️
+              </div>
+              <button className="mbtn" onClick={() => openUpload("mission")}>
+                📷 촬영 후 공유하기
+              </button>
             </div>
 
             <div
@@ -1225,17 +1236,6 @@ export default function WakiiApp() {
             </div>
 
             <div className="homesheet">
-              <div className="mission">
-                <span className="mlabel">오늘의 미션</span>
-                <div className="mtext">
-                  오늘은 하지예요! 1년 중 해가
-                  <br />가장 긴 날의 풍경을 담아보세요 ☀️
-                </div>
-                <button className="mbtn" onClick={() => openUpload("mission")}>
-                  📷 촬영 후 공유하기
-                </button>
-              </div>
-
               {myGroups.map((grp, i) => (
                 <div key={grp.code} className="room" onClick={() => openRoom(grp.name, "🏠")}>
                   <div className={"ravatar" + (i === 0 ? " on" : "")}>🏠</div>

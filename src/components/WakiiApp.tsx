@@ -927,29 +927,29 @@ export default function WakiiApp() {
     return s - Math.floor(s);
   };
   // narrow horizontal band → limited left/right panning; tall gaps so the path
-  // between courses is long and winding
-  const W = 372,
-    PAD_TOP = 160,
-    PAD_BOT = 90,
-    SEG_H = 232;
-  const gaps = mapNodes.map((_, i) => (i === 0 ? 0 : SEG_H + (rnd(i * 1.7) - 0.3) * 64));
+  // between courses is long and winding (game-level-map feel)
+  const W = 392,
+    PAD_TOP = 150,
+    PAD_BOT = 64,
+    SEG_H = 238;
+  const gaps = mapNodes.map((_, i) => (i === 0 ? 0 : SEG_H + (rnd(i * 1.7) - 0.3) * 56));
   let acc = 0;
   const cum = gaps.map((g2) => (acc += g2));
   const H = PAD_BOT + PAD_TOP + cum[cum.length - 1];
   const pts: [number, number][] = mapNodes.map((_, i) => {
     const y = H - PAD_BOT - cum[i];
-    // gentle zigzag inside a narrow band (keeps panning small)
-    const x = Math.max(98, Math.min(W - 98, W / 2 + Math.sin(i * 1.15) * 66 + (rnd(i * 3.3 + 2) - 0.5) * 34));
+    // strong zigzag inside a band → serpentine path, but bounded panning
+    const x = Math.max(94, Math.min(W - 94, W / 2 + Math.sin(i * 1.05) * 94 + (rnd(i * 3.3 + 2) - 0.5) * 28));
     return [x, y];
   });
   let dpath = `M${pts[0][0]},${pts[0][1]}`;
   for (let i = 1; i < pts.length; i++) {
     const [px, py] = pts[i - 1];
     const [cx, cy] = pts[i];
-    // bow the control points outward so the line snakes between nodes
+    // bow the control points outward so the line really snakes between nodes
     const dir = cx >= px ? 1 : -1;
-    const bow = 52 + rnd(i * 5.1) * 38;
-    dpath += ` C${px + dir * bow},${py - (py - cy) * 0.34} ${cx - dir * bow},${cy + (py - cy) * 0.34} ${cx},${cy}`;
+    const bow = 82 + rnd(i * 5.1) * 54;
+    dpath += ` C${px + dir * bow},${py - (py - cy) * 0.32} ${cx - dir * bow},${cy + (py - cy) * 0.32} ${cx},${cy}`;
   }
   const curIdx = 1 + completedCourses.length;
   const mt = Math.max(0, Math.min(1, pct / 100));
@@ -1024,28 +1024,30 @@ export default function WakiiApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // first time the walk map shows: fit the course photos (출발 → 현재 코스)
-  // into view so you can see them all at a glance
+  // first time the walk map shows: zoom out so the whole journey (출발 → 현재
+  // 코스) fits, and pin 출발 to the bottom edge of the screen
   useEffect(() => {
     if (mapInited.current || screen !== "walk") return;
     const el = mapViewRef.current;
     if (!el) return;
     const vw = el.clientWidth || 360;
-    const vh = el.clientHeight || 540;
+    const vh = el.clientHeight || 560;
     let minX = Infinity,
       maxX = -Infinity,
-      minY = Infinity,
-      maxY = -Infinity;
+      topY = Infinity;
     for (let i = 0; i <= curIdx; i++) {
       const [x, y] = pts[i];
-      minX = Math.min(minX, x - 86);
-      maxX = Math.max(maxX, x + 86);
-      minY = Math.min(minY, y - 175); // images extend upward from the node
-      maxY = Math.max(maxY, y + 40);
+      minX = Math.min(minX, x - 84);
+      maxX = Math.max(maxX, x + 84);
+      topY = Math.min(topY, y - 180); // images extend upward from the node
     }
-    const z = clampZoom(Math.min(vw / (maxX - minX), vh / (maxY - minY)) * 0.92);
+    const startY = pts[0][1];
+    const zW = (vw * 0.92) / (maxX - minX);
+    const zH = (vh * 0.9) / (startY - topY);
+    const z = clampZoom(Math.min(zW, zH));
+    // 출발 near the bottom edge, journey winding upward; centred horizontally
     setMapZoom(z);
-    setMapPan({ x: vw / 2 - ((minX + maxX) / 2) * z, y: vh / 2 - ((minY + maxY) / 2) * z });
+    setMapPan({ x: vw / 2 - ((minX + maxX) / 2) * z, y: vh - 34 - startY * z });
     mapInited.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen]);
@@ -1387,7 +1389,7 @@ export default function WakiiApp() {
                   const [x, y] = pts[i];
                   if (node.kind === "start") {
                     return (
-                      <text key={i} x={x} y={y + 26} fontSize="13" textAnchor="middle">
+                      <text key={i} x={x} y={y + 26} fontSize="13" textAnchor="middle" fill="#dbe4ff" fontWeight="700">
                         🚩 출발
                       </text>
                     );

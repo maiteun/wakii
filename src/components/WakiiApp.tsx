@@ -979,18 +979,18 @@ export default function WakiiApp() {
   };
   // narrow horizontal band → limited left/right panning; tall gaps so the path
   // between courses is long and winding (game-level-map feel)
-  const W = 392,
-    PAD_TOP = 96,
-    PAD_BOT = 64,
-    SEG_H = 238;
-  const gaps = mapNodes.map((_, i) => (i === 0 ? 0 : SEG_H + (rnd(i * 1.7) - 0.3) * 56));
+  const W = 432,
+    PAD_TOP = 110,
+    PAD_BOT = 70,
+    SEG_H = 300; // 더 넓은 세로 간격 → 위로 스크롤하며 탐험
+  const gaps = mapNodes.map((_, i) => (i === 0 ? 0 : SEG_H + (rnd(i * 1.7) - 0.3) * 96));
   let acc = 0;
   const cum = gaps.map((g2) => (acc += g2));
   const H = PAD_BOT + PAD_TOP + cum[cum.length - 1];
   const pts: [number, number][] = mapNodes.map((_, i) => {
     const y = H - PAD_BOT - cum[i];
-    // strong zigzag inside a band → serpentine path, but bounded panning
-    const x = Math.max(94, Math.min(W - 94, W / 2 + Math.sin(i * 1.05) * 94 + (rnd(i * 3.3 + 2) - 0.5) * 28));
+    // 넓은 지그재그 → 좌우로 크게 굽이치는 탐험 경로
+    const x = Math.max(92, Math.min(W - 92, W / 2 + Math.sin(i * 1.12) * 122 + (rnd(i * 3.3 + 2) - 0.5) * 44));
     return [x, y];
   });
   let dpath = `M${pts[0][0]},${pts[0][1]}`;
@@ -1091,8 +1091,9 @@ export default function WakiiApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // first time the walk map shows: zoom out so the whole journey (출발 → 현재
-  // 코스) fits, and pin 출발 to the bottom edge of the screen
+  // first time the walk map shows: fit the WIDTH (so the zigzag reads at a
+  // comfortable size) and pin 출발 to the bottom edge. The tall winding path
+  // then extends upward → user scrolls/pans up to explore the journey.
   useEffect(() => {
     if (mapInited.current || screen !== "walk") return;
     const el = mapViewRef.current;
@@ -1100,19 +1101,14 @@ export default function WakiiApp() {
     const vw = el.clientWidth || 360;
     const vh = el.clientHeight || 560;
     let minX = Infinity,
-      maxX = -Infinity,
-      topY = Infinity;
+      maxX = -Infinity;
     for (let i = 0; i <= curIdx; i++) {
-      const [x, y] = pts[i];
+      const [x] = pts[i];
       minX = Math.min(minX, x - 84);
       maxX = Math.max(maxX, x + 84);
-      topY = Math.min(topY, y - 180); // images extend upward from the node
     }
     const startY = pts[0][1];
-    const zW = (vw * 0.92) / (maxX - minX);
-    const zH = (vh * 0.9) / (startY - topY);
-    const z = clampZoom(Math.min(zW, zH));
-    // 출발 near the bottom edge, journey winding upward; centred horizontally
+    const z = clampZoom((vw * 0.94) / (maxX - minX)); // fit width only
     setMapZoom(z);
     setMapPan(clampPan({ x: vw / 2 - ((minX + maxX) / 2) * z, y: vh - 34 - startY * z }, z));
     mapInited.current = true;

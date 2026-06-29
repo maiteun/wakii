@@ -288,11 +288,11 @@ export default function WakiiApp() {
   // family's steps combine into the shared distance; finishing resets to 0 and
   // stamps the course; every course is re-selectable forever)
   const [walkSel, setWalkSel] = useState(0); // highlighted family member (avatar row)
-  // demo seed: 한라산을 ~57% 진행 중으로 둬 현재 코스 위에 구름이 절반쯤 덮인
-  // 상태가 또렷이 보이게 한다 (콜로세움·에펠탑은 완주 → 구름 0).
-  const [activeCourseId, setActiveCourseId] = useState("hallasan");
-  const [familyKm, setFamilyKm] = useState(11.0); // combined distance on the active course
-  const [completedCourses, setCompletedCourses] = useState<string[]>(["colosseum", "eiffel_tower"]);
+  // demo seed: 콜로세움만 완주(맨 아래), 에펠탑이 진행 중(~56%)이라 그 위에
+  // 구름이 절반쯤 덮인 상태로 보인다.
+  const [activeCourseId, setActiveCourseId] = useState("eiffel_tower");
+  const [familyKm, setFamilyKm] = useState(8.6); // combined distance on the active course (에펠탑 15.4km ≈ 56%)
+  const [completedCourses, setCompletedCourses] = useState<string[]>(["colosseum"]);
   const [courseSheet, setCourseSheet] = useState(false);
   const [courseLoaded, setCourseLoaded] = useState(false);
   // journey map pan & zoom (the screen behaves like a real map)
@@ -900,7 +900,7 @@ export default function WakiiApp() {
   // ---------- course system ----------
   // load saved course progress. Bumping COURSE_SEED resets everyone once to the
   // new demo state (so a previously-stored 100% doesn't hide the cloud).
-  const COURSE_SEED = 2;
+  const COURSE_SEED = 3;
   useEffect(() => {
     try {
       const raw = localStorage.getItem("wakii.course");

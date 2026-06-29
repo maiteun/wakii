@@ -6,6 +6,7 @@ import PhotoEditor, { type PhotoEditorHandle } from "./PhotoEditor";
 import InstantCapture from "./InstantCapture";
 import type { Card, Deck, RoomsData } from "@/lib/types";
 import { hasSupabase } from "@/lib/supabase";
+import { COURSES, courseById, courseImg } from "@/lib/courses";
 import {
   listRoom,
   subscribeRoom,
@@ -160,13 +161,6 @@ const walkRooms = [
   { nm: "동생", e: "🐣" },
   { nm: "할머니", e: "👵" },
 ];
-const walkGoals = [
-  { name: "나일강 종주", dist: 6650, done: 4180 },
-  { name: "룸피니 둘레", dist: 2500, done: 900 },
-  { name: "한라산 등반", dist: 1950, done: 1950 },
-  { name: "제주 올레길", dist: 4250, done: 300 },
-];
-
 const uploadedDays: Record<number, number> = {
   1: 2, 5: 1, 8: 3, 11: 1, 12: 2, 13: 1, 17: 1, 23: 2, 24: 1, 25: 3, 26: 1,
 };
@@ -248,11 +242,28 @@ export default function WakiiApp() {
 
   // recap
   const [recapShow, setRecapShow] = useState(false);
-  const [recapTitle, setRecapTitle] = useState("나일강 종주 완주!");
-  const [recapSub, setRecapSub] = useState("312시간 만에 함께 도착했어요");
+  const [recapTitle, setRecapTitle] = useState("");
+  const [recapSub, setRecapSub] = useState("");
+  const [recapImgs, setRecapImgs] = useState<string[]>([]);
+  const [recapCourseId, setRecapCourseId] = useState("");
 
-  // walk
-  const [walkSel, setWalkSel] = useState(0);
+  // walk — course system (A 구조: one active course = one landmark; the whole
+  // family's steps combine into the shared distance; finishing resets to 0 and
+  // stamps the course; every course is re-selectable forever)
+  const [walkSel, setWalkSel] = useState(0); // highlighted family member (avatar row)
+  const [activeCourseId, setActiveCourseId] = useState("hallasan");
+  const [familyKm, setFamilyKm] = useState(19.2); // combined distance on the active course
+  const [completedCourses, setCompletedCourses] = useState<string[]>(["colosseum", "eiffel_tower"]);
+  const [courseSheet, setCourseSheet] = useState(false);
+  const [courseLoaded, setCourseLoaded] = useState(false);
+  // journey map pan & zoom (the screen behaves like a real map)
+  const [mapZoom, setMapZoom] = useState(0.82);
+  const [mapPan, setMapPan] = useState({ x: 0, y: 0 });
+  const mapViewRef = useRef<HTMLDivElement>(null);
+  const mapPtrs = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const mapDrag = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  const mapPinch = useRef<{ dist: number; zoom: number; px: number; py: number; mx: number; my: number } | null>(null);
+  const mapInited = useRef(false);
 
   // calendar — my uploaded content per day (June 2026), from the DB
   const [calSel, setCalSel] = useState<number | null>(null);
@@ -532,7 +543,8 @@ export default function WakiiApp() {
   // each bubble is the captured photo thumbnail (emoji as a corner badge).
   const spawnBubble = (e: string, img?: string, count?: number) => {
     const made: Bubble[] = [];
-    const n = count ?? (img ? 12 : 16);
+    // photos: fewer on screen and ~0.5× speed (slower, calmer rise)
+    const n = count ?? (img ? 6 : 16);
     for (let i = 0; i < n; i++) {
       made.push({
         id: bubbleId.current++,
@@ -544,13 +556,13 @@ export default function WakiiApp() {
         size: img ? 46 + Math.random() * 34 : 20 + Math.random() * 18,
         dx: (Math.random() - 0.5) * (img ? 120 : 90),
         dy: -(420 + Math.random() * 360),
-        dur: 2.4 + Math.random() * 1.6,
+        dur: img ? 4.8 + Math.random() * 3.2 : 2.4 + Math.random() * 1.6,
         delay: Math.random() * 0.6,
       });
     }
     setBubbles((b) => [...b, ...made]);
     const ids = made.map((m) => m.id);
-    setTimeout(() => setBubbles((b) => b.filter((x) => !ids.includes(x.id))), 4600);
+    setTimeout(() => setBubbles((b) => b.filter((x) => !ids.includes(x.id))), img ? 9400 : 4600);
   };
 
   // while a deck's gallery is open, its saved reactions keep gently floating
@@ -834,35 +846,209 @@ export default function WakiiApp() {
   };
 
   // ---------- walk ----------
-  const g = walkGoals[walkSel];
-  const pct = Math.round((g.done / g.dist) * 100);
+  // ---------- course system ----------
+  // load saved course progress (one active course at a time)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("wakii.course");
+      if (raw) {
+        const o = JSON.parse(raw);
+        if (typeof o.active === "string") setActiveCourseId(o.active);
+        if (typeof o.km === "number") setFamilyKm(o.km);
+        if (Array.isArray(o.done)) setCompletedCourses(o.done);
+      }
+    } catch {
+      /* ignore */
+    }
+    setCourseLoaded(true);
+  }, []);
+  useEffect(() => {
+    if (!courseLoaded) return;
+    try {
+      localStorage.setItem(
+        "wakii.course",
+        JSON.stringify({ active: activeCourseId, km: familyKm, done: completedCourses }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [courseLoaded, activeCourseId, familyKm, completedCourses]);
 
-  const showRecap = (name: string, i: number) => {
-    setRecapTitle(name + " 구간 " + i / 2 + " 도착!");
-    setRecapSub(Math.round(40 + Math.random() * 300) + "시간 만에 함께 도착했어요");
+  const activeCourse = courseById(activeCourseId) || COURSES[0];
+  const courseKm = activeCourse.distance_km;
+  const pct = Math.min(100, Math.round((familyKm / courseKm) * 100));
+  const isComplete = familyKm >= courseKm;
+  const activeMember = walkRooms[walkSel] || walkRooms[0];
+
+  // recap of a course: title + the photo cards the family reacted to most
+  const openRecap = (courseId: string) => {
+    const c = courseById(courseId);
+    if (!c) return;
+    const imgs = Object.values(rooms)
+      .flat()
+      .flatMap((d) => d.cards)
+      .filter((cd) => cd.img && (cd.reactions?.length || 0) > 0)
+      .sort((a, b) => (b.reactions?.length || 0) - (a.reactions?.length || 0))
+      .map((cd) => cd.img as string)
+      .slice(0, 4);
+    setRecapImgs(imgs);
+    setRecapCourseId(courseId);
+    setRecapTitle(`${c.name_ko} 완주!`);
+    setRecapSub(`함께 ${c.distance_km}km · 가족이 함께 걸어 도착했어요`);
     setRecapShow(true);
   };
-  const lockFlag = () => toast("아직 도착 전이에요 · 함께 걸어서 채워요");
 
-  // build winding walk map (same maths as the prototype)
-  const W = 308,
-    H = 760,
-    segs = 7;
-  const pts: [number, number][] = [];
-  for (let i = 0; i <= segs; i++) {
-    const t = i / segs;
-    const y = H - 20 - (H - 60) * t;
-    const x = W / 2 + Math.sin(t * Math.PI * 3) * 100;
-    pts.push([x, y]);
-  }
+  // pick a course → it becomes "in progress" from 0. If the current course is
+  // finished, stamp it (and show its recap) before moving on.
+  const selectCourse = (id: string) => {
+    const finishing = isComplete;
+    const finishedId = activeCourseId;
+    if (finishing) setCompletedCourses((prev) => [...prev, finishedId]);
+    setActiveCourseId(id);
+    setFamilyKm(0);
+    setCourseSheet(false);
+    if (finishing) openRecap(finishedId);
+  };
+  const lockCloud = () => toast("아직 발견하지 않은 길이에요 · 함께 걸어서 채워요");
+
+  // build the winding journey path. Nodes (bottom → top): 출발 → 완주 스탬프들
+  // → 현재 코스(가족 마커) → 구름(미발견).
+  type MapNode = { kind: "start" | "stamp" | "current" | "cloud"; id?: string };
+  const mapNodes: MapNode[] = [
+    { kind: "start" },
+    ...completedCourses.map((id) => ({ kind: "stamp" as const, id })),
+    { kind: "current", id: activeCourseId },
+  ];
+  for (let k = 0; k < 3; k++) mapNodes.push({ kind: "cloud" });
+
+  // deterministic pseudo-random (stable across renders) for organic spacing
+  const rnd = (n: number) => {
+    const s = Math.sin(n * 127.1 + 0.5) * 43758.5453;
+    return s - Math.floor(s);
+  };
+  // narrow horizontal band → limited left/right panning; tall gaps so the path
+  // between courses is long and winding
+  const W = 372,
+    PAD_TOP = 160,
+    PAD_BOT = 90,
+    SEG_H = 232;
+  const gaps = mapNodes.map((_, i) => (i === 0 ? 0 : SEG_H + (rnd(i * 1.7) - 0.3) * 64));
+  let acc = 0;
+  const cum = gaps.map((g2) => (acc += g2));
+  const H = PAD_BOT + PAD_TOP + cum[cum.length - 1];
+  const pts: [number, number][] = mapNodes.map((_, i) => {
+    const y = H - PAD_BOT - cum[i];
+    // gentle zigzag inside a narrow band (keeps panning small)
+    const x = Math.max(98, Math.min(W - 98, W / 2 + Math.sin(i * 1.15) * 66 + (rnd(i * 3.3 + 2) - 0.5) * 34));
+    return [x, y];
+  });
   let dpath = `M${pts[0][0]},${pts[0][1]}`;
   for (let i = 1; i < pts.length; i++) {
     const [px, py] = pts[i - 1];
     const [cx, cy] = pts[i];
-    const my = (py + cy) / 2;
-    dpath += ` C${px},${my} ${cx},${my} ${cx},${cy}`;
+    // bow the control points outward so the line snakes between nodes
+    const dir = cx >= px ? 1 : -1;
+    const bow = 52 + rnd(i * 5.1) * 38;
+    dpath += ` C${px + dir * bow},${py - (py - cy) * 0.34} ${cx - dir * bow},${cy + (py - cy) * 0.34} ${cx},${cy}`;
   }
-  const reached = pct / 100;
+  const curIdx = 1 + completedCourses.length;
+  const mt = Math.max(0, Math.min(1, pct / 100));
+  const markerX = pts[curIdx - 1][0] + (pts[curIdx][0] - pts[curIdx - 1][0]) * mt;
+  const markerY = pts[curIdx - 1][1] + (pts[curIdx][1] - pts[curIdx - 1][1]) * mt;
+
+  // ---------- journey map: pan & zoom (drag, wheel, pinch) ----------
+  const clampZoom = (z: number) => Math.max(0.3, Math.min(2.6, z));
+  // zoom keeping the point (px,py) in the viewport fixed under the cursor
+  const zoomAt = (px: number, py: number, factor: number) => {
+    const nz = clampZoom(mapZoom * factor);
+    const ratio = nz / mapZoom;
+    setMapPan((p) => ({ x: px - (px - p.x) * ratio, y: py - (py - p.y) * ratio }));
+    setMapZoom(nz);
+  };
+  const onMapPointerDown = (e: React.PointerEvent) => {
+    mapViewRef.current?.setPointerCapture(e.pointerId);
+    mapPtrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (mapPtrs.current.size === 1) {
+      mapDrag.current = { x: e.clientX, y: e.clientY, px: mapPan.x, py: mapPan.y };
+    } else {
+      mapDrag.current = null;
+      mapPinch.current = null; // re-initialised on the next move
+    }
+  };
+  const onMapPointerMove = (e: React.PointerEvent) => {
+    if (!mapPtrs.current.has(e.pointerId)) return;
+    mapPtrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const pts2 = Array.from(mapPtrs.current.values());
+    const rect = mapViewRef.current?.getBoundingClientRect();
+    if (pts2.length >= 2 && rect) {
+      const [a, b] = pts2;
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const mx = (a.x + b.x) / 2 - rect.left;
+      const my = (a.y + b.y) / 2 - rect.top;
+      if (!mapPinch.current) {
+        mapPinch.current = { dist, zoom: mapZoom, px: mapPan.x, py: mapPan.y, mx, my };
+      } else {
+        const p0 = mapPinch.current;
+        const nz = clampZoom(p0.zoom * (dist / p0.dist));
+        const ratio = nz / p0.zoom;
+        setMapPan({ x: p0.mx - (p0.mx - p0.px) * ratio, y: p0.my - (p0.my - p0.py) * ratio });
+        setMapZoom(nz);
+      }
+    } else if (mapDrag.current) {
+      const d = mapDrag.current;
+      setMapPan({ x: d.px + (e.clientX - d.x), y: d.py + (e.clientY - d.y) });
+    }
+  };
+  const onMapPointerUp = (e: React.PointerEvent) => {
+    mapPtrs.current.delete(e.pointerId);
+    mapPinch.current = null;
+    if (mapPtrs.current.size === 1) {
+      const [only] = Array.from(mapPtrs.current.values());
+      mapDrag.current = { x: only.x, y: only.y, px: mapPan.x, py: mapPan.y };
+    } else if (mapPtrs.current.size === 0) {
+      mapDrag.current = null;
+    }
+  };
+
+  // native (non-passive) wheel listener so we can preventDefault to zoom
+  useEffect(() => {
+    const el = mapViewRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      zoomAt(e.clientX - rect.left, e.clientY - rect.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // first time the walk map shows: fit the course photos (출발 → 현재 코스)
+  // into view so you can see them all at a glance
+  useEffect(() => {
+    if (mapInited.current || screen !== "walk") return;
+    const el = mapViewRef.current;
+    if (!el) return;
+    const vw = el.clientWidth || 360;
+    const vh = el.clientHeight || 540;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
+    for (let i = 0; i <= curIdx; i++) {
+      const [x, y] = pts[i];
+      minX = Math.min(minX, x - 86);
+      maxX = Math.max(maxX, x + 86);
+      minY = Math.min(minY, y - 175); // images extend upward from the node
+      maxY = Math.max(maxY, y + 40);
+    }
+    const z = clampZoom(Math.min(vw / (maxX - minX), vh / (maxY - minY)) * 0.92);
+    setMapZoom(z);
+    setMapPan({ x: vw / 2 - ((minX + maxX) / 2) * z, y: vh / 2 - ((minY + maxY) / 2) * z });
+    mapInited.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
 
   // ---------- calendar detail ----------
   // load my uploaded cards (June 2026) from the DB for the calendar
@@ -1135,33 +1321,60 @@ export default function WakiiApp() {
                 </div>
               ))}
             </div>
-            <div className="walkgoal">
-              <div>
-                <div className="gname">{g.name}</div>
-                <div className="gdist">
-                  목표 {g.dist.toLocaleString()}km · 함께 {g.done.toLocaleString()}km
-                </div>
-              </div>
-              <div className="gpct">{pct}%</div>
-            </div>
-            {pct >= 100 && (
-              <div style={{ textAlign: "center", margin: "8px 16px 0" }}>
-                <span
-                  className="change"
-                  style={{ background: "var(--ink)", color: "#fff", borderColor: "var(--ink)" }}
-                  onClick={() => toast("새 목표 — 함께 걸은 거리보다 먼 곳만 선택지로 떠요")}
-                >
-                  🏁 완주! 새 목표 고르기 →
-                </span>
+            {/* completed-course badge collection */}
+            {completedCourses.length > 0 && (
+              <div className="walkbadges">
+                {completedCourses.map((id, i) => {
+                  const c = courseById(id);
+                  const img = courseImg(id);
+                  return (
+                    <div key={i} className="wbadge" onClick={() => openRecap(id)}>
+                      <div className="wb-thumb">
+                        {img ? <img src={img} alt={c?.name_ko} /> : <span>🏝️</span>}
+                        <span className="wb-flag">🏁</span>
+                      </div>
+                      <div className="wb-nm">{c?.name_ko}</div>
+                    </div>
+                  );
+                })}
               </div>
             )}
-            <div className="walkmap">
-              <svg
-                viewBox={`0 0 ${W} ${H}`}
-                width="100%"
-                height="100%"
-                preserveAspectRatio="xMidYMin meet"
+            <div className={"walkgoal" + (isComplete ? " done" : "")}>
+              <div className="wg-row">
+                <div className="wg-thumb">
+                  {courseImg(activeCourse.id) ? (
+                    <img src={courseImg(activeCourse.id) as string} alt={activeCourse.name_ko} />
+                  ) : (
+                    <span>🏝️</span>
+                  )}
+                </div>
+                <div className="wg-info">
+                  <div className="gname">{activeCourse.name_ko}</div>
+                  <div className="gdist">
+                    목표 {courseKm}km · 함께 {familyKm.toLocaleString("ko-KR", { maximumFractionDigits: 1 })}km
+                  </div>
+                </div>
+                <div className="gpct">{pct}%</div>
+              </div>
+              {isComplete && (
+                <button className="wg-newgoal" onClick={() => setCourseSheet(true)}>
+                  🏁 완주! 새 목표 고르기 →
+                </button>
+              )}
+            </div>
+            <div
+              className="walkmap"
+              ref={mapViewRef}
+              onPointerDown={onMapPointerDown}
+              onPointerMove={onMapPointerMove}
+              onPointerUp={onMapPointerUp}
+              onPointerCancel={onMapPointerUp}
+            >
+              <div
+                className="walkmap-inner"
+                style={{ transform: `translate(${mapPan.x}px, ${mapPan.y}px) scale(${mapZoom})` }}
               >
+                <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: "block", overflow: "visible" }}>
                 <defs>
                   <filter id="fog" x="-60%" y="-60%" width="220%" height="220%">
                     <feGaussianBlur stdDeviation="2.4" />
@@ -1169,33 +1382,76 @@ export default function WakiiApp() {
                 </defs>
                 <path d={dpath} fill="none" stroke="#fff" strokeWidth="10" strokeLinecap="round" opacity="0.7" />
                 <path d={dpath} fill="none" stroke="#9E9E9E" strokeWidth="3" strokeDasharray="4 5" />
-                <text x={pts[0][0]} y={pts[0][1] + 24} fontSize="13" textAnchor="middle">
-                  🚩 출발
-                </text>
-                {pts.map((p, i) => {
-                  if (i === 0 || i % 2 !== 0) return null;
-                  const t = i / segs;
-                  const done = t <= reached;
-                  if (done) {
+
+                {mapNodes.map((node, i) => {
+                  const [x, y] = pts[i];
+                  if (node.kind === "start") {
                     return (
-                      <g key={i} style={{ cursor: "pointer" }} onClick={() => showRecap(g.name, i)}>
-                        <circle cx={p[0]} cy={p[1]} r="15" fill="#1A1A1A" stroke="#fff" strokeWidth="2.5" />
-                        <text x={p[0]} y={p[1] + 5} fontSize="14" textAnchor="middle" fill="#fff">
-                          🏁
+                      <text key={i} x={x} y={y + 26} fontSize="13" textAnchor="middle">
+                        🚩 출발
+                      </text>
+                    );
+                  }
+                  if (node.kind === "cloud") {
+                    return (
+                      <g key={i} style={{ cursor: "pointer" }} onClick={lockCloud}>
+                        <circle cx={x} cy={y} r="16" fill="#CFCDCA" stroke="#BBB8B5" strokeWidth="1.5" filter="url(#fog)" />
+                        <text x={x} y={y + 6} fontSize="16" textAnchor="middle">
+                          ☁️
                         </text>
                       </g>
                     );
                   }
+                  // stamp (completed) or current course → show the uploaded
+                  // landmark image ITSELF, sitting on the path. No border, flag,
+                  // or label. Width is FIXED for every course (height follows the
+                  // image's aspect ratio) so they all look the same size.
+                  const id = node.kind === "current" ? activeCourse.id : node.id || "";
+                  const img = courseImg(id);
+                  const w = 132; // uniform width for all course images
+                  const h = w * (courseById(id)?.ar ?? 1);
+                  const clickable = node.kind === "stamp";
                   return (
-                    <g key={i} style={{ cursor: "pointer" }} onClick={lockFlag}>
-                      <circle cx={p[0]} cy={p[1]} r="15" fill="#CFCDCA" stroke="#BBB8B5" strokeWidth="1.5" filter="url(#fog)" />
-                      <text x={p[0]} y={p[1] + 5} fontSize="13" textAnchor="middle" fill="#fff" opacity="0.85">
-                        ?
-                      </text>
+                    <g
+                      key={i}
+                      style={clickable ? { cursor: "pointer" } : undefined}
+                      onClick={clickable ? () => id && openRecap(id) : undefined}
+                    >
+                      {img ? (
+                        <image
+                          href={img}
+                          x={x - w / 2}
+                          y={y - h}
+                          width={w}
+                          height={h}
+                          preserveAspectRatio="xMidYMax meet"
+                        />
+                      ) : (
+                        <text x={x} y={y - w * 0.3} fontSize={w * 0.45} textAnchor="middle">
+                          🏝️
+                        </text>
+                      )}
                     </g>
                   );
                 })}
-              </svg>
+
+                {/* family position marker — moves up the path toward the landmark */}
+                <g>
+                  <circle cx={markerX} cy={markerY} r="15" fill="#fff" stroke="#5b4bd6" strokeWidth="2.5" />
+                  <text x={markerX} y={markerY + 5} fontSize="15" textAnchor="middle">
+                    {activeMember.e}
+                  </text>
+                </g>
+                </svg>
+              </div>
+              <div className="walkmap-zoom">
+                <button onClick={() => { const el = mapViewRef.current; el && zoomAt(el.clientWidth / 2, el.clientHeight / 2, 1.25); }} aria-label="확대">
+                  ＋
+                </button>
+                <button onClick={() => { const el = mapViewRef.current; el && zoomAt(el.clientWidth / 2, el.clientHeight / 2, 1 / 1.25); }} aria-label="축소">
+                  －
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1410,16 +1666,60 @@ export default function WakiiApp() {
             <span className="rc-x" onClick={() => setRecapShow(false)}>
               ✕
             </span>
-            <div className="rc-flag">🏁</div>
+            {courseImg(recapCourseId) ? (
+              <img className="rc-hero" src={courseImg(recapCourseId) as string} alt="" />
+            ) : (
+              <div className="rc-flag">🏁</div>
+            )}
             <div className="rc-title">{recapTitle}</div>
             <div className="rc-sub">{recapSub}</div>
             <div className="rc-strip">
-              <div />
-              <div />
-              <div />
-              <div />
+              {Array.from({ length: 4 }).map((_, i) =>
+                recapImgs[i] ? (
+                  <div
+                    key={i}
+                    style={{ backgroundImage: `url(${recapImgs[i]})`, backgroundSize: "cover", backgroundPosition: "center" }}
+                  />
+                ) : (
+                  <div key={i} />
+                ),
+              )}
             </div>
             <div className="rc-ai">AI가 이 여정에서 반응 많았던 짤을 골랐어요</div>
+          </div>
+
+          {/* course select — "새 목표 고르기" (모든 코스 재선택 가능) */}
+          <div className={"sharesheet" + (courseSheet ? " show" : "")} onClick={() => setCourseSheet(false)}>
+            <div className="ss-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="grip" />
+              <h4>워키 여정 고르기</h4>
+              <div className="cs-list">
+                {COURSES.map((c) => {
+                  const done = completedCourses.includes(c.id);
+                  const active = c.id === activeCourseId;
+                  const img = courseImg(c.id);
+                  return (
+                    <div
+                      key={c.id}
+                      className={"cs-row" + (active ? " active" : "")}
+                      onClick={() => selectCourse(c.id)}
+                    >
+                      <div className="cs-thumb">{img ? <img src={img} alt={c.name_ko} /> : <span>🏝️</span>}</div>
+                      <div className="cs-meta">
+                        <div className="cs-name">
+                          {c.name_ko}
+                          {done && <span className="cs-stamp">🏁</span>}
+                        </div>
+                        <div className="cs-sub">
+                          {c.distance_km}km · 약 {c.steps.toLocaleString()}보
+                        </div>
+                      </div>
+                      {active ? <span className="cs-tag">진행 중</span> : <span className="cs-go">선택 ›</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* toast */}

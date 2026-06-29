@@ -288,8 +288,10 @@ export default function WakiiApp() {
   // family's steps combine into the shared distance; finishing resets to 0 and
   // stamps the course; every course is re-selectable forever)
   const [walkSel, setWalkSel] = useState(0); // highlighted family member (avatar row)
+  // demo seed: 한라산을 ~57% 진행 중으로 둬 현재 코스 위에 구름이 절반쯤 덮인
+  // 상태가 또렷이 보이게 한다 (콜로세움·에펠탑은 완주 → 구름 0).
   const [activeCourseId, setActiveCourseId] = useState("hallasan");
-  const [familyKm, setFamilyKm] = useState(19.2); // combined distance on the active course
+  const [familyKm, setFamilyKm] = useState(11.0); // combined distance on the active course
   const [completedCourses, setCompletedCourses] = useState<string[]>(["colosseum", "eiffel_tower"]);
   const [courseSheet, setCourseSheet] = useState(false);
   const [courseLoaded, setCourseLoaded] = useState(false);
@@ -896,27 +898,32 @@ export default function WakiiApp() {
 
   // ---------- walk ----------
   // ---------- course system ----------
-  // load saved course progress (one active course at a time)
+  // load saved course progress. Bumping COURSE_SEED resets everyone once to the
+  // new demo state (so a previously-stored 100% doesn't hide the cloud).
+  const COURSE_SEED = 2;
   useEffect(() => {
     try {
       const raw = localStorage.getItem("wakii.course");
       if (raw) {
         const o = JSON.parse(raw);
-        if (typeof o.active === "string") setActiveCourseId(o.active);
-        if (typeof o.km === "number") setFamilyKm(o.km);
-        if (Array.isArray(o.done)) setCompletedCourses(o.done);
+        if (o.v === COURSE_SEED) {
+          if (typeof o.active === "string") setActiveCourseId(o.active);
+          if (typeof o.km === "number") setFamilyKm(o.km);
+          if (Array.isArray(o.done)) setCompletedCourses(o.done);
+        }
       }
     } catch {
       /* ignore */
     }
     setCourseLoaded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     if (!courseLoaded) return;
     try {
       localStorage.setItem(
         "wakii.course",
-        JSON.stringify({ active: activeCourseId, km: familyKm, done: completedCourses }),
+        JSON.stringify({ v: COURSE_SEED, active: activeCourseId, km: familyKm, done: completedCourses }),
       );
     } catch {
       /* ignore */

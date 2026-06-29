@@ -10,7 +10,8 @@
       "Bash(curl -s -o /dev/null -w \"localhost:3000 → HTTP %{http_code}\\\\n\" http://localhost:3000)",
       "Bash(git add *)",
       "Bash(git commit -q -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(sips -s format jpeg cloud.png --out /tmp/cloud_flat.jpg)"
     ]
   }
 }

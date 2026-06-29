@@ -85,18 +85,41 @@ function buildGalleryImage(card: Card): string {
   return canvas.toDataURL("image/png");
 }
 
-// soft cloud puff drawn as overlapping ellipses; opacity = how "covered" a
-// journey node is (1 = hidden/미선택, 0 = fully revealed/완주). Rendered as an
-// app layer ON TOP of the landmark, never baked into the image.
-function CloudOverlay({ cx, cy, w, op }: { cx: number; cy: number; w: number; op: number }) {
+// cloud image (alpha PNG) laid OVER a landmark; opacity = how "covered" a
+// journey node is (1 = hidden/미선택, 0 = fully revealed/완주). Always an app
+// layer, never baked into the landmark image.
+const CLOUD_IMG = "/assets/cloud.png";
+// per-node rotation/flip breaks up the "same shape repeated" look
+function CloudOverlay({
+  cx,
+  cy,
+  size,
+  op,
+  rot = 0,
+  flip = false,
+}: {
+  cx: number;
+  cy: number;
+  size: number;
+  op: number;
+  rot?: number;
+  flip?: boolean;
+}) {
   if (op <= 0.01) return null;
+  const t = [`rotate(${rot} ${cx} ${cy})`];
+  if (flip) t.push(`translate(${2 * cx} 0) scale(-1 1)`); // mirror around cx
   return (
-    <g opacity={op} filter="url(#cloudblur)">
-      <ellipse cx={cx - w * 0.26} cy={cy + w * 0.05} rx={w * 0.3} ry={w * 0.22} fill="#eef2f8" />
-      <ellipse cx={cx + w * 0.26} cy={cy + w * 0.07} rx={w * 0.32} ry={w * 0.24} fill="#e5ebf4" />
-      <ellipse cx={cx} cy={cy - w * 0.12} rx={w * 0.34} ry={w * 0.28} fill="#f7fafe" />
-      <ellipse cx={cx} cy={cy + w * 0.12} rx={w * 0.5} ry={w * 0.28} fill="#eef3fa" />
-    </g>
+    <image
+      href={CLOUD_IMG}
+      x={cx - size / 2}
+      y={cy - size / 2}
+      width={size}
+      height={size}
+      opacity={op}
+      transform={t.join(" ")}
+      preserveAspectRatio="xMidYMid meet"
+      style={{ pointerEvents: "none" }}
+    />
   );
 }
 
@@ -1414,11 +1437,6 @@ export default function WakiiApp() {
                 style={{ transform: `translate(${mapPan.x}px, ${mapPan.y}px) scale(${mapZoom})` }}
               >
                 <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: "block", overflow: "visible" }}>
-                <defs>
-                  <filter id="cloudblur" x="-60%" y="-60%" width="220%" height="220%">
-                    <feGaussianBlur stdDeviation="3.4" />
-                  </filter>
-                </defs>
                 <path d={dpath} fill="none" stroke="#fff" strokeWidth="10" strokeLinecap="round" opacity="0.7" />
                 <path d={dpath} fill="none" stroke="#9E9E9E" strokeWidth="3" strokeDasharray="4 5" />
 
@@ -1432,6 +1450,9 @@ export default function WakiiApp() {
                     );
                   }
                   const W_IMG = 132; // uniform width for every landmark
+                  // per-node variation so identical cloud art doesn't read as a pattern
+                  const cloudRot = (rnd(i * 2.3 + 1) - 0.5) * 28; // ±14°
+                  const cloudFlip = rnd(i * 3.7 + 2) > 0.5;
 
                   // unselected (다음 목적지 빈 자리): 빈 섬 베이스 + ? + 구름(거의 덮음)
                   if (node.kind === "unselected") {
@@ -1455,7 +1476,7 @@ export default function WakiiApp() {
                         <text x={x} y={y - 38} fontSize="38" fontWeight="900" textAnchor="middle" fill="#5f6670">
                           ?
                         </text>
-                        <CloudOverlay cx={x} cy={y - 40} w={150} op={0.95} />
+                        <CloudOverlay cx={x} cy={y - 46} size={176} op={0.95} rot={cloudRot} flip={cloudFlip} />
                       </g>
                     );
                   }
@@ -1487,7 +1508,14 @@ export default function WakiiApp() {
                           🏝️
                         </text>
                       )}
-                      <CloudOverlay cx={x} cy={y - h * 0.5} w={150} op={cloudOp} />
+                      <CloudOverlay
+                        cx={x}
+                        cy={y - h * 0.5}
+                        size={Math.max(W_IMG, h) * 1.12}
+                        op={cloudOp}
+                        rot={cloudRot}
+                        flip={cloudFlip}
+                      />
                     </g>
                   );
                 })}

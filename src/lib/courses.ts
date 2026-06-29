@@ -48,8 +48,8 @@ const WITH_IMAGE = new Set<string>([
 export const courseImg = (id: string): string | null =>
   WITH_IMAGE.has(id) ? `/assets/courses/${id}.png` : null;
 
-// Base art for an UNSELECTED (다음 목적지) node — a bare island the cloud + "?"
-// sit on. Drop public/assets/courses/empty_island.png and set this to that path;
-// until then the map draws a gray placeholder. Cloud and "?" are always app
-// layers (the cloud's opacity is animated), never baked into the image.
-export const EMPTY_ISLAND_IMG: string | null = null;
+// Bare-island art for UNSELECTED (미달성) nodes — two variants, picked at
+// random per node so the undiscovered path doesn't look repetitive. The cloud
+// is always layered on top as an app layer.
+export const EMPTY_ISLANDS = ["/assets/empty_flat.png", "/assets/empty_hill.png"];
+export const EMPTY_ISLAND_AR = 1536 / 2816; // height / width

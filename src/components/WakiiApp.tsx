@@ -6,7 +6,7 @@ import PhotoEditor, { type PhotoEditorHandle } from "./PhotoEditor";
 import InstantCapture from "./InstantCapture";
 import type { Card, Deck, RoomsData } from "@/lib/types";
 import { hasSupabase } from "@/lib/supabase";
-import { COURSES, courseById, courseImg, EMPTY_ISLAND_IMG } from "@/lib/courses";
+import { COURSES, courseById, courseImg, EMPTY_ISLANDS, EMPTY_ISLAND_AR } from "@/lib/courses";
 import {
   listRoom,
   subscribeRoom,
@@ -965,11 +965,13 @@ export default function WakiiApp() {
   //   - active:     진행 중 코스. 구름이 진행률만큼 걷힘 + 가족 마커
   //   - unselected: 다음 목적지 빈 자리 (빈 섬 + ? + 구름). 1개. 탭→코스 선택
   type MapNode = { kind: "start" | "done" | "active" | "unselected"; id?: string };
+  // many unselected nodes above the active course → no visible "끝", the
+  // undiscovered path keeps going up as you scroll
   const mapNodes: MapNode[] = [
     { kind: "start" },
     ...completedCourses.map((id) => ({ kind: "done" as const, id })),
     { kind: "active", id: activeCourseId },
-    { kind: "unselected" },
+    ...Array.from({ length: 12 }, () => ({ kind: "unselected" as const })),
   ];
 
   // deterministic pseudo-random (stable across renders) for organic spacing
@@ -1457,29 +1459,22 @@ export default function WakiiApp() {
                   const cloudRot = (rnd(i * 2.3 + 1) - 0.5) * 28; // ±14°
                   const cloudFlip = rnd(i * 3.7 + 2) > 0.5;
 
-                  // unselected (다음 목적지 빈 자리): 빈 섬 베이스 + ? + 구름(거의 덮음)
+                  // unselected (미달성): 빈 섬 베이스(flat/hill 랜덤) + 구름
                   if (node.kind === "unselected") {
+                    const ew = 162;
+                    const eh = ew * EMPTY_ISLAND_AR;
+                    const emptyImg = EMPTY_ISLANDS[rnd(i * 5.9 + 3) > 0.5 ? 1 : 0];
                     return (
                       <g key={i} style={{ cursor: "pointer" }} onClick={() => setCourseSheet(true)}>
-                        {EMPTY_ISLAND_IMG ? (
-                          <image
-                            href={EMPTY_ISLAND_IMG}
-                            x={x - W_IMG / 2}
-                            y={y - W_IMG}
-                            width={W_IMG}
-                            height={W_IMG}
-                            preserveAspectRatio="xMidYMax meet"
-                          />
-                        ) : (
-                          <>
-                            <ellipse cx={x} cy={y - 14} rx="54" ry="20" fill="#aab0b8" />
-                            <ellipse cx={x} cy={y - 3} rx="40" ry="13" fill="#878d96" />
-                          </>
-                        )}
-                        <text x={x} y={y - 38} fontSize="38" fontWeight="900" textAnchor="middle" fill="#5f6670">
-                          ?
-                        </text>
-                        <CloudOverlay cx={x} cy={y - 46} size={176} op={0.95} rot={cloudRot} flip={cloudFlip} />
+                        <image
+                          href={emptyImg}
+                          x={x - ew / 2}
+                          y={y - eh}
+                          width={ew}
+                          height={eh}
+                          preserveAspectRatio="xMidYMax meet"
+                        />
+                        <CloudOverlay cx={x} cy={y - eh * 0.5} size={ew * 1.18} op={0.95} rot={cloudRot} flip={cloudFlip} />
                       </g>
                     );
                   }

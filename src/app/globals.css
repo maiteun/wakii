@@ -144,9 +144,7 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .wb-thumb img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .wb-flag{position:absolute;right:-4px;bottom:-4px;font-size:13px;line-height:1;}
 .wb-nm{font-size:8px;color:var(--g70);font-weight:700;max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.walkmap{position:relative;margin:8px 16px;border-radius:16px;overflow:hidden;height:560px;touch-action:none;cursor:grab;background:
-  url('/assets/mapnoise.svg') 0 0/180px 180px repeat,
-  linear-gradient(180deg,#05070f 0%,#0a1430 40%,#142650 70%,#244a86 100%);}
+.walkmap{position:relative;margin:8px 16px;border-radius:16px;overflow:hidden;height:560px;touch-action:none;cursor:grab;background:url('/assets/mapbg.png') center/cover no-repeat;background-color:#0a1430;}
 .walkmap:active{cursor:grabbing;}
 .walkmap-inner{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;}
 .walkmap-zoom{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:6px;z-index:2;}

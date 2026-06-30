@@ -22,6 +22,7 @@ import {
   upsertProfile,
   listProfiles,
   type Group,
+  type Profile,
 } from "@/lib/db";
 
 // WebGL gallery is client-only (uses window / WebGL at runtime)
@@ -58,6 +59,30 @@ function curateRecap(decks: Deck[]): RecapPhoto[] {
   });
   // 반응 많은 사람 먼저
   return out.sort((a, b) => b.count - a.count);
+}
+
+// 기기에서 고른 사진을 ~max px로 줄여 data URL로. 프로필/방 대표 사진 공용.
+function downscaleImage(file: File, max = 400): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        c.getContext("2d")?.drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = reject;
+      img.src = String(reader.result || "");
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // today's mission, noun-ified for the mission deck label/footer
@@ -257,26 +282,33 @@ export default function WakiiApp() {
     toastTimer.current = setTimeout(() => setToastShown(false), 1700);
   };
 
-  // identity + onboarding (login → name → group)
+  // identity + onboarding (login → email+name → group). 신원 키 = 이메일(고유).
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [nameDraft, setNameDraft] = useState("");
-  const author = name || "나";
+  const [emailDraft, setEmailDraft] = useState("");
+  const author = email || name || "나"; // DB에 저장되는 작성자 키(고유 이메일)
   type ObStep = "login" | "name" | "house" | "group" | "create" | "join" | "code" | "joined";
   // "우리 집" art: chosen at onboarding, changeable via long-press on home
   const [house, setHouse] = useState(DEFAULT_HOUSE);
   const [housePicker, setHousePicker] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null); // 마이 프로필 사진(data URL or 업로드 URL)
   const avatarFileRef = useRef<HTMLInputElement>(null);
-  const [profileMap, setProfileMap] = useState<Record<string, string>>({}); // 이름 → 아바타 URL (팀원 포함)
+  const [profileMap, setProfileMap] = useState<Record<string, Profile>>({}); // 이메일 → {name, avatar} (팀원 포함)
+  // 작성자 키(이메일) → 표시 이름 / 아바타. 프로필 없으면 키 그대로(시드 데이터 등).
+  const nameOf = (key: string) => profileMap[key]?.name || key;
+  const avatarOf = (key: string) => profileMap[key]?.avatar;
   const [obStep, setObStep] = useState<ObStep>("login");
   const [addingGroup, setAddingGroup] = useState(false); // opening the group flow from "+"
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [groupNameDraft, setGroupNameDraft] = useState("");
   const [groupCodeDraft, setGroupCodeDraft] = useState(""); // 만든 사람이 정하는 코드(=비번)
+  const [groupPhotoDraft, setGroupPhotoDraft] = useState<string | null>(null); // 방 대표 사진(생성 시)
+  const groupPhotoRef = useRef<HTMLInputElement>(null);
   const [joinCodeDraft, setJoinCodeDraft] = useState("");
   const [pendingGroup, setPendingGroup] = useState<Group | null>(null); // created/joined, awaiting confirm
   const [pendingJoinCode, setPendingJoinCode] = useState(""); // from an invite deep-link (/?j=CODE), joined after onboarding
-  const needSetup = !name || myGroups.length === 0;
+  const needSetup = !name || !email || myGroups.length === 0;
 
   // rooms — start empty on the backend (real data); seeded demo only in mock mode
   const [rooms, setRooms] = useState<RoomsData>(hasSupabase ? {} : initialRooms);
@@ -377,6 +409,7 @@ export default function WakiiApp() {
 
   // ---------- room board ----------
   const decks = rooms[currentRoom];
+  const currentGroup = myGroups.find((g) => g.name === currentRoom); // 현재 방의 그룹(참여코드 등)
   const openDeck = openDeckIdx != null ? decks?.[openDeckIdx] : null;
 
   // chat-style: newest deck sits at the bottom; entering a room (or new
@@ -405,15 +438,18 @@ export default function WakiiApp() {
       return;
     }
     // author shown as the label below each card
-    setGalleryItems(deck.cards.map((c) => ({ image: buildGalleryImage(c), text: c.who })));
-  }, [openDeckIdx, currentRoom, rooms]);
+    setGalleryItems(deck.cards.map((c) => ({ image: buildGalleryImage(c), text: nameOf(c.who) })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openDeckIdx, currentRoom, rooms, profileMap]);
 
   // load saved name + groups on mount; route the onboarding wizard
   useEffect(() => {
     let nm = "";
     let grps: Group[] = [];
+    let em = "";
     try {
       nm = localStorage.getItem("wakii.name") || "";
+      em = localStorage.getItem("wakii.email") || "";
     } catch {
       /* ignore */
     }
@@ -423,6 +459,7 @@ export default function WakiiApp() {
       /* ignore */
     }
     if (nm) setName(nm);
+    if (em) setEmail(em);
     setMyGroups(grps);
     try {
       const h = localStorage.getItem("wakii.house");
@@ -450,8 +487,8 @@ export default function WakiiApp() {
         /* ignore */
       }
       setPendingJoinCode(invite);
-      if (nm) {
-        // already onboarded → join straight away and land on the new room
+      if (nm && em) {
+        // already onboarded (email+name) → join straight away
         joinGroup(invite).then((g) => {
           if (g) {
             addGroup(g);
@@ -463,14 +500,17 @@ export default function WakiiApp() {
           setPendingJoinCode("");
         });
       } else {
-        // new user → login → name (filled from Kakao later) → auto-join
+        // new/incomplete profile → login → email+name → auto-join
+        if (nm) setNameDraft(nm);
         setObStep("login");
       }
       return;
     }
 
-    setObStep(!nm ? "login" : "group");
-    if (nm && grps.length) setCurrentRoom(grps[0].name);
+    const onboarded = nm && em;
+    if (!onboarded && nm) setNameDraft(nm); // 이름은 채워두고 이메일만 더 받기
+    setObStep(onboarded ? "group" : "login");
+    if (onboarded && grps.length) setCurrentRoom(grps[0].name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -482,34 +522,26 @@ export default function WakiiApp() {
       /* ignore */
     }
   };
-  // profile photo: pick from device, downscale to ~400px, persist as data URL
+  // profile photo: pick from device, downscale, persist + share via profiles
   const pickAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const S = 400;
-        const scale = Math.min(1, S / Math.max(img.width, img.height));
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
-        const c = document.createElement("canvas");
-        c.width = w;
-        c.height = h;
-        c.getContext("2d")?.drawImage(img, 0, 0, w, h);
-        const url = c.toDataURL("image/jpeg", 0.85);
+    downscaleImage(f)
+      .then((url) => {
         setAvatar(url); // 즉시 반영(내 화면)
         toast("프로필 사진을 바꿨어요");
-        // 팀원에게도 보이도록 Storage 업로드 → profiles 테이블에 저장
+        // 팀원에게도 보이도록 Storage 업로드 → profiles(email) 테이블에 저장
         const persist = (saved: string) => {
           try {
             localStorage.setItem("wakii.avatar", saved);
           } catch {
             /* ignore */
           }
-          if (name) upsertProfile(name, saved).then(() => listProfiles().then(setProfileMap));
+          if (email) {
+            setProfileMap((m) => ({ ...m, [email]: { name, avatar: saved } })); // 내 화면 즉시 매핑
+            upsertProfile(email, name, saved).then(() => listProfiles().then(setProfileMap));
+          }
         };
         if (hasSupabase) {
           uploadPhoto(url)
@@ -521,10 +553,8 @@ export default function WakiiApp() {
         } else {
           persist(url);
         }
-      };
-      img.src = String(reader.result || "");
-    };
-    reader.readAsDataURL(f);
+      })
+      .catch(() => {});
   };
   // routing after identity (name + house) is set: invite link → auto-join,
   // otherwise the group step
@@ -544,15 +574,25 @@ export default function WakiiApp() {
     }
     setObStep("group");
   };
+  // 이메일(신원 키) + 이름(표시명)으로 프로필 생성
   const saveName = () => {
     const v = nameDraft.trim();
+    const em = emailDraft.trim().toLowerCase();
     if (!v) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
+      toast("이메일을 정확히 입력해주세요");
+      return;
+    }
     setName(v);
+    setEmail(em);
     try {
       localStorage.setItem("wakii.name", v);
+      localStorage.setItem("wakii.email", em);
     } catch {
       /* ignore */
     }
+    setProfileMap((m) => ({ ...m, [em]: { name: v, avatar: m[em]?.avatar } })); // 내 화면 즉시 매핑
+    upsertProfile(em, v, avatar || undefined).then(() => listProfiles().then(setProfileMap));
     setObStep("house"); // pick "우리 집" before joining/creating a group
   };
   // social login UI — real OAuth (Kakao/Naver/Google/Apple) is wired later.
@@ -584,7 +624,12 @@ export default function WakiiApp() {
       return;
     }
     try {
-      const res = await createGroup(nm, code);
+      // 방 대표 사진: Supabase면 업로드해 URL로, 아니면 data URL 그대로
+      let avatarUrl: string | undefined;
+      if (groupPhotoDraft) {
+        avatarUrl = hasSupabase ? await uploadPhoto(groupPhotoDraft).catch(() => undefined) : groupPhotoDraft;
+      }
+      const res = await createGroup(nm, code, avatarUrl);
       if (!res.ok) {
         toast("이미 쓰는 코드예요 — 다른 코드로 해주세요");
         return;
@@ -592,10 +637,18 @@ export default function WakiiApp() {
       setPendingGroup(res.group);
       setGroupNameDraft("");
       setGroupCodeDraft("");
+      setGroupPhotoDraft(null);
       setObStep("code");
     } catch {
       toast("그룹 생성 실패 — 다시 시도해주세요");
     }
+  };
+  // 방 대표 사진 선택(생성 단계)
+  const pickGroupPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    downscaleImage(f).then(setGroupPhotoDraft).catch(() => {});
   };
   const doJoinGroup = async () => {
     const code = joinCodeDraft.trim();
@@ -651,11 +704,11 @@ export default function WakiiApp() {
   // ── backend (Supabase) vs mock (localStorage) ──────────────────────
   const refreshRoom = useCallback(
     (room: string) => {
-      listRoom(room, name)
+      listRoom(room, author)
         .then((decks) => setRooms((r) => ({ ...r, [room]: decks })))
         .catch(() => {});
     },
-    [name],
+    [author],
   );
 
   // fetch + live-subscribe the current room when backed by Supabase
@@ -1296,8 +1349,8 @@ export default function WakiiApp() {
   // ---------- calendar detail ----------
   // load my uploaded cards (June 2026) from the DB for the calendar
   useEffect(() => {
-    if (!hasSupabase || !name) return;
-    listMyCards(name)
+    if (!hasSupabase || !author) return;
+    listMyCards(author)
       .then((cards) => {
         const map: Record<number, string[]> = {};
         cards.forEach((c) => {
@@ -1309,7 +1362,7 @@ export default function WakiiApp() {
         setMyDays(map);
       })
       .catch(() => {});
-  }, [name, rooms]);
+  }, [author, rooms]);
 
   // day → uploaded content (image URLs). DB-backed when online; mock otherwise.
   const dayContent: Record<number, string[]> = hasSupabase
@@ -1386,24 +1439,16 @@ export default function WakiiApp() {
               onPointerLeave={cancelPress}
             >
               <img className="househero" src={houseImg(house)} alt="우리 집" draggable={false} />
-              <div className="mk">우리 집 · 길게 눌러 바꾸기</div>
             </div>
 
             <div className="homesheet">
               {myGroups.map((grp, i) => (
                 <div key={grp.code} className="room" onClick={() => openRoom(grp.name, "🏠")}>
-                  <div className={"ravatar" + (i === 0 ? " on" : "")}>🏠</div>
+                  <div className={"ravatar" + (i === 0 ? " on" : "")}>
+                    {grp.avatar ? <img src={grp.avatar} alt="" /> : "🏠"}
+                  </div>
                   <div className="rmeta">
                     <div className="rname">{grp.name}</div>
-                    <div
-                      className="rprev rprev-share"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        shareInvite(grp);
-                      }}
-                    >
-                      💌 가족 초대하기
-                    </div>
                   </div>
                 </div>
               ))}
@@ -1456,7 +1501,7 @@ export default function WakiiApp() {
                   .reverse()
                   .map(({ deck, di }) => {
                   const n = deck.cards.length;
-                  const names = Array.from(new Set(deck.cards.map((c) => c.who)));
+                  const names = Array.from(new Set(deck.cards.map((c) => nameOf(c.who))));
                   const rxTotal = deck.cards.reduce((s, c) => s + (c.reactions?.length || 0) + (c.photoReactions?.length || 0), 0);
                   return (
                     <div key={di} className="deckwrap">
@@ -1465,7 +1510,7 @@ export default function WakiiApp() {
                           <b className="mission-names">📷 {names.join(" · ")}</b>
                         ) : (
                           <>
-                            <b>{deck.label}</b>가 시작 · {deck.when}
+                            <b>{nameOf(deck.label)}</b>가 시작 · {deck.when}
                           </>
                         )}
                         {rxTotal > 0 && <span className="rxcnt">🙂 {rxTotal}</span>}
@@ -1492,7 +1537,7 @@ export default function WakiiApp() {
                               className={"card" + (c.mine ? " mine" : "") + (deck.isMission ? " mission" : "")}
                               style={style}
                             >
-                              <div className="meta">{deck.isMission ? c.who : roleLabel(i)}</div>
+                              <div className="meta">{deck.isMission ? nameOf(c.who) : roleLabel(i)}</div>
                               {!c.img && c.ov && <div className="ov">{c.ov}</div>}
                               <div className="seq">{i + 1}</div>
                               {c.reply &&
@@ -1551,6 +1596,21 @@ export default function WakiiApp() {
                     </div>
                   ));
                 })()}
+              </div>
+            )}
+
+            {/* 참여코드(=비번) — MVP: 잘 안 보이는 방 맨 아래에 두고, 탭하면 복사 */}
+            {currentGroup && (
+              <div
+                className="roomcode"
+                onClick={() => {
+                  navigator.clipboard?.writeText(currentGroup.code).then(
+                    () => toast("참여코드를 복사했어요"),
+                    () => {},
+                  );
+                }}
+              >
+                참여코드 {currentGroup.code}
               </div>
             )}
           </div>
@@ -1966,9 +2026,9 @@ export default function WakiiApp() {
                       )}
                       <div className="rc-who">
                         <span className="rc-avatar">
-                          {profileMap[p.who] ? <img src={profileMap[p.who]} alt="" /> : p.who.slice(0, 1)}
+                          {avatarOf(p.who) ? <img src={avatarOf(p.who)} alt="" /> : nameOf(p.who).slice(0, 1)}
                         </span>
-                        {p.who}
+                        {nameOf(p.who)}
                       </div>
                     </div>
                   ))}
@@ -2066,7 +2126,7 @@ export default function WakiiApp() {
             <div className="dg-top" onClick={(e) => e.stopPropagation()}>
               <b>
                 {openDeck.isMission ? "📷 " : ""}
-                {openDeck.label}
+                {nameOf(openDeck.label)}
               </b>
               <span className="dg-x" onClick={() => setOpenDeckIdx(null)}>
                 ✕
@@ -2301,12 +2361,20 @@ export default function WakiiApp() {
             {obStep === "name" && (
               <>
                 <div className="ob-logo">wakii</div>
-                <div className="ob-tag">이름을 알려주세요</div>
+                <div className="ob-tag">이메일과 이름으로 프로필을 만들어요</div>
                 <div className="ob-name">
                   <input
                     autoFocus
+                    type="email"
+                    value={emailDraft}
+                    placeholder="이메일"
+                    autoCapitalize="off"
+                    onChange={(e) => setEmailDraft(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveName()}
+                  />
+                  <input
                     value={nameDraft}
-                    placeholder="이름을 입력하세요"
+                    placeholder="이름 (가족에게 보일 이름)"
                     onChange={(e) => setNameDraft(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && saveName()}
                   />
@@ -2370,8 +2438,22 @@ export default function WakiiApp() {
                 <div className="ob-logo">그룹 만들기</div>
                 <div className="ob-tag">참여 코드를 직접 정해 가족에게 공유하세요</div>
                 <div className="ob-name">
+                  <div
+                    className="ob-roomphoto"
+                    onClick={() => groupPhotoRef.current?.click()}
+                    title="방 대표 사진"
+                  >
+                    {groupPhotoDraft ? <img src={groupPhotoDraft} alt="방 대표 사진" /> : <span>＋ 방 사진</span>}
+                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <input
-                    autoFocus
+                    ref={groupPhotoRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={pickGroupPhoto}
+                  />
+                  <input
                     value={groupNameDraft}
                     placeholder="그룹 이름 (예: 우리 가족)"
                     onChange={(e) => setGroupNameDraft(e.target.value)}

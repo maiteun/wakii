@@ -1,9 +1,12 @@
--- wakii — profiles (display name → avatar photo, shared across devices)
+-- wakii — profiles (email → display name + avatar photo, shared across devices)
 -- Run in Supabase: SQL Editor → New query → paste → Run.
--- Identity is the name string for now (no real auth yet), so name is the key.
+-- Identity key is the EMAIL (unique). name is the display name, avatar_url the
+-- profile photo. Re-running drops the old (name-keyed) table — fine for beta.
 
-create table if not exists public.profiles (
-  name        text primary key,
+drop table if exists public.profiles cascade;
+create table public.profiles (
+  email       text primary key,
+  name        text,
   avatar_url  text,
   updated_at  timestamptz not null default now()
 );

@@ -74,21 +74,22 @@ function randomCode(): string {
   return s;
 }
 
-export type Group = { code: string; name: string };
+export type Group = { code: string; name: string; avatar?: string };
 export type CreateResult = { ok: true; group: Group } | { ok: false; reason: "taken" };
 
 // create a group. The creator chooses the code (it doubles as the room's
-// password — they share it with family). Codes are case-insensitive (stored
-// uppercased). A duplicate code is rejected so two groups can't collide; any
-// other backend error (e.g. groups table not yet created) falls back to a
-// local code so the onboarding flow stays walkable.
-export async function createGroup(name: string, code?: string): Promise<CreateResult> {
+// password — they share it with family) and can embed a room photo. Codes are
+// case-insensitive (stored uppercased). A duplicate code is rejected so two
+// groups can't collide; any other backend error (e.g. groups table not yet
+// created) falls back to a local code so the onboarding flow stays walkable.
+export async function createGroup(name: string, code?: string, avatarUrl?: string): Promise<CreateResult> {
   const c = (code?.trim() || randomCode()).toUpperCase();
-  if (!supabase) return { ok: true, group: { code: c, name } };
-  const { error } = await supabase.from("groups").insert({ code: c, name });
-  if (!error) return { ok: true, group: { code: c, name } };
+  const group: Group = { code: c, name, avatar: avatarUrl };
+  if (!supabase) return { ok: true, group };
+  const { error } = await supabase.from("groups").insert({ code: c, name, avatar_url: avatarUrl ?? null });
+  if (!error) return { ok: true, group };
   if (/duplicate|unique/i.test(error.message)) return { ok: false, reason: "taken" };
-  return { ok: true, group: { code: c, name } }; // table missing → accept locally
+  return { ok: true, group }; // table missing → accept locally
 }
 
 // look up a group by its join code. If the table is missing (error) we accept
@@ -100,12 +101,12 @@ export async function joinGroup(code: string): Promise<Group | null> {
   if (!supabase) return { code: code.toUpperCase(), name: "우리 가족" };
   const { data, error } = await supabase
     .from("groups")
-    .select("code, name")
+    .select("code, name, avatar_url")
     .eq("code", code.toUpperCase())
     .maybeSingle();
   if (error) return { code: code.toUpperCase(), name: "우리 가족" };
   if (!data) return null;
-  return { code: data.code, name: data.name };
+  return { code: data.code, name: data.name, avatar: data.avatar_url || undefined };
 }
 
 // every card I authored (any room) — for the My-page calendar
@@ -123,24 +124,25 @@ export async function listMyCards(author: string): Promise<{ createdAt: string; 
   }));
 }
 
-// ── profiles (name → avatar photo, shared across devices) ───────────
-// Save/replace my avatar so teammates see it too. No-op without a backend
-// (mock mode keeps the avatar in localStorage only).
-export async function upsertProfile(name: string, avatarUrl: string) {
-  if (!supabase || !name) return;
+// ── profiles (email → display name + avatar, shared across devices) ──
+// Identity key is the email (unique). No-op without a backend (mock mode
+// keeps the profile in localStorage only).
+export type Profile = { name?: string; avatar?: string };
+export async function upsertProfile(email: string, name: string, avatarUrl?: string) {
+  if (!supabase || !email) return;
   await supabase
     .from("profiles")
-    .upsert({ name, avatar_url: avatarUrl, updated_at: new Date().toISOString() });
+    .upsert({ email, name, avatar_url: avatarUrl ?? null, updated_at: new Date().toISOString() });
 }
 
-// name → avatar URL for everyone with a profile (small table; fetch all).
-export async function listProfiles(): Promise<Record<string, string>> {
+// email → {name, avatar} for everyone with a profile (small table; fetch all).
+export async function listProfiles(): Promise<Record<string, Profile>> {
   if (!supabase) return {};
-  const { data, error } = await supabase.from("profiles").select("name, avatar_url");
+  const { data, error } = await supabase.from("profiles").select("email, name, avatar_url");
   if (error) return {};
-  const map: Record<string, string> = {};
-  (data || []).forEach((p: { name: string; avatar_url: string | null }) => {
-    if (p.avatar_url) map[p.name] = p.avatar_url;
+  const map: Record<string, Profile> = {};
+  (data || []).forEach((p: { email: string; name: string | null; avatar_url: string | null }) => {
+    map[p.email] = { name: p.name || undefined, avatar: p.avatar_url || undefined };
   });
   return map;
 }

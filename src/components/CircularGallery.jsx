@@ -397,13 +397,16 @@ class App {
       font = "bold 30px Figtree",
       scrollSpeed = 2,
       scrollEase = 0.05,
-      loop = true
+      loop = true,
+      onActiveChange
     } = {}
   ) {
     document.documentElement.classList.remove("no-js");
     this.container = container;
     this.scrollSpeed = scrollSpeed;
     this.loop = loop;
+    this.onActiveChange = onActiveChange;
+    this.activeIndex = -1;
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
     this.onCheckDebounce = debounce(this.onCheck, 200);
     this.createRenderer();
@@ -565,6 +568,17 @@ class App {
       this.medias.forEach(media => media.update(this.scroll, direction));
     }
     this.renderer.render({ scene: this.scene, camera: this.camera });
+    // report which item is centered (maps back to original index when looping)
+    if (this.onActiveChange && this.medias && this.medias[0]) {
+      const width = this.medias[0].width;
+      const count = this.loop ? this.mediasImages.length / 2 : this.medias.length;
+      let idx = Math.round(Math.abs(this.scroll.current) / width);
+      idx = ((idx % count) + count) % count;
+      if (idx !== this.activeIndex) {
+        this.activeIndex = idx;
+        this.onActiveChange(idx);
+      }
+    }
     this.scroll.last = this.scroll.current;
     this.raf = window.requestAnimationFrame(this.update.bind(this));
   }
@@ -618,9 +632,13 @@ export default function CircularGallery({
   fontUrl,
   scrollSpeed = 2,
   scrollEase = 0.05,
-  loop = true
+  loop = true,
+  onActiveChange
 }) {
   const containerRef = useRef(null);
+  // keep the latest callback in a ref so changing it doesn't recreate the App
+  const activeCbRef = useRef(onActiveChange);
+  activeCbRef.current = onActiveChange;
   useEffect(() => {
     if (!containerRef.current) return;
     let app;
@@ -635,7 +653,8 @@ export default function CircularGallery({
         font: resolvedFont,
         scrollSpeed,
         scrollEase,
-        loop
+        loop,
+        onActiveChange: i => activeCbRef.current && activeCbRef.current(i)
       });
     });
 

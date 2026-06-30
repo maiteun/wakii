@@ -332,6 +332,8 @@ export default function WakiiApp() {
   const [currentRoom, setCurrentRoom] = useState("");
   const [currentRoomEmoji, setCurrentRoomEmoji] = useState("🏠");
   const [openDeckIdx, setOpenDeckIdx] = useState<number | null>(null);
+  // 갤러리에서 지금 가운데 보이는 카드 인덱스 — 반응은 이 카드에만 붙는다
+  const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [galReact, setGalReact] = useState(false); // reaction row in the deck gallery
   const [peekImg, setPeekImg] = useState<string | null>(null); // long-press → original photo, no reactions
   const [replyEmoji, setReplyEmoji] = useState(""); // reaction emoji pre-placed on a reply photo
@@ -486,6 +488,15 @@ export default function WakiiApp() {
     setGalleryItems(deck.cards.map((c) => ({ image: buildGalleryImage(c), text: nameOf(c.who) })));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openDeckIdx, currentRoom, rooms, profileMap]);
+
+  // 덱을 새로 열면 활성 카드를 최신(마지막) 카드로 초기화 — 갤러리가 거기서 시작하므로.
+  // (rooms 실시간 갱신엔 반응하지 않게 deck/room 변경 시에만 리셋)
+  useEffect(() => {
+    if (openDeckIdx == null) return;
+    const len = rooms[currentRoom]?.[openDeckIdx]?.cards.length ?? 1;
+    setActiveCardIdx(Math.max(0, len - 1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openDeckIdx, currentRoom]);
 
   // load saved name + groups on mount; route the onboarding wizard
   useEffect(() => {
@@ -814,38 +825,40 @@ export default function WakiiApp() {
   // mode additionally writes to the server.
   const recordReaction = (emoji: string) => {
     if (openDeckIdx == null) return;
+    const ci = activeCardIdx;
     setRooms((prev) => {
       const list = prev[currentRoom];
-      if (!list || !list[openDeckIdx] || !list[openDeckIdx].cards[0]) return prev;
+      if (!list || !list[openDeckIdx] || !list[openDeckIdx].cards[ci]) return prev;
       const next = list.map((dk, i) => {
         if (i !== openDeckIdx) return dk;
         const cards = dk.cards.slice();
-        cards[0] = { ...cards[0], reactions: [...(cards[0].reactions || []), emoji] };
+        cards[ci] = { ...cards[ci], reactions: [...(cards[ci].reactions || []), emoji] };
         return { ...dk, cards };
       });
       return { ...prev, [currentRoom]: next };
     });
     if (hasSupabase) {
-      const cardId = openDeck?.cards[0]?.id;
+      const cardId = openDeck?.cards[ci]?.id;
       if (cardId) addReaction(cardId, author, emoji).then(() => refreshRoom(currentRoom));
     }
   };
   // 즉석 원형 사진 반응: 이모지 반응처럼 덱에 저장 → 재진입 시 같은 모션으로 재생.
   const recordPhotoReaction = (emoji: string, img: string) => {
     if (openDeckIdx == null) return;
+    const ci = activeCardIdx;
     setRooms((prev) => {
       const list = prev[currentRoom];
-      if (!list || !list[openDeckIdx] || !list[openDeckIdx].cards[0]) return prev;
+      if (!list || !list[openDeckIdx] || !list[openDeckIdx].cards[ci]) return prev;
       const next = list.map((dk, i) => {
         if (i !== openDeckIdx) return dk;
         const cards = dk.cards.slice();
-        cards[0] = { ...cards[0], photoReactions: [...(cards[0].photoReactions || []), { emoji, img }] };
+        cards[ci] = { ...cards[ci], photoReactions: [...(cards[ci].photoReactions || []), { emoji, img }] };
         return { ...dk, cards };
       });
       return { ...prev, [currentRoom]: next };
     });
     if (hasSupabase) {
-      const cardId = openDeck?.cards[0]?.id;
+      const cardId = openDeck?.cards[ci]?.id;
       if (cardId) {
         uploadPhoto(img)
           .then((url) => addReaction(cardId, author, emoji, url))
@@ -894,11 +907,12 @@ export default function WakiiApp() {
   useEffect(() => {
     if (openDeckIdx == null) return;
     const deck = rooms[currentRoom]?.[openDeckIdx];
-    // 이모지 반응 + 즉석 사진 반응을 한 풀로 섞어 같은 모션으로 재생
-    const items: { emoji: string; img?: string }[] = deck
+    // 반응은 카드별 — 지금 보고 있는 카드(activeCardIdx)의 반응만 재생한다.
+    const card = deck?.cards[activeCardIdx];
+    const items: { emoji: string; img?: string }[] = card
       ? [
-          ...deck.cards.flatMap((c) => (c.reactions || []).map((e) => ({ emoji: e }))),
-          ...deck.cards.flatMap((c) => c.photoReactions || []),
+          ...(card.reactions || []).map((e) => ({ emoji: e })),
+          ...(card.photoReactions || []),
         ]
       : [];
     if (!items.length) return;
@@ -910,7 +924,7 @@ export default function WakiiApp() {
     }, 1500);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openDeckIdx, currentRoom, rooms]);
+  }, [openDeckIdx, currentRoom, rooms, activeCardIdx]);
 
   // ---------- press (short tap vs long press) ----------
   const startPress = (onLong: () => void) => {
@@ -1616,7 +1630,7 @@ export default function WakiiApp() {
                     <div key={di} className="deckwrap">
                       <div className="decklabel">
                         {deck.isMission ? (
-                          <b className="mission-names">📷 {names.join(" · ")}</b>
+                          <b className="mission-names">{names.join(" · ")}</b>
                         ) : (
                           <>
                             <b>{nameOf(deck.label)}</b>가 시작 · {deck.when}
@@ -2267,7 +2281,7 @@ export default function WakiiApp() {
             <div
               className="dg-stage"
               onClick={(e) => e.stopPropagation()}
-              onPointerDown={() => startPress(() => setPeekImg(openDeck?.cards[0]?.img || null))}
+              onPointerDown={() => startPress(() => setPeekImg(openDeck?.cards[activeCardIdx]?.img || null))}
               onPointerUp={() => endPress(() => {})}
               onPointerMove={cancelPress}
               onPointerLeave={cancelPress}
@@ -2294,6 +2308,7 @@ export default function WakiiApp() {
                 fontUrl={undefined}
                 scrollEase={0.03}
                 loop={false}
+                onActiveChange={setActiveCardIdx}
               />
               {/* floating reaction bubbles (emoji/text, or the instant photo) */}
               {bubbles.map((b) =>

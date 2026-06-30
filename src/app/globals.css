@@ -591,7 +591,7 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 
 /* ===== mission deck cards: blue + neon glow ===== */
 .card.mission{border-color:#3B82F6;background:linear-gradient(160deg,#3a5a8a,#1e3a6a);box-shadow:0 0 8px rgba(59,130,246,.7),0 0 18px rgba(59,130,246,.45),0 6px 16px rgba(0,0,0,.18);}
-.decklabel .mission-names{color:#2563EB;font-weight:800;}
+.decklabel .mission-names{color:#74F1F1;font-weight:800;}
 .missionchip{color:#2563EB;}
 .decklabel .rxcnt{margin-left:auto;background:var(--g08);border-radius:8px;padding:1px 7px;font-size:var(--fs-caption);color:var(--g70);font-weight:700;}
 .decklabel .rxcnt + .cnt{margin-left:6px;}

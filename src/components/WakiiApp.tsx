@@ -305,6 +305,7 @@ export default function WakiiApp() {
   // "우리 집" art: chosen at onboarding, changeable via long-press on home
   const [house, setHouse] = useState(DEFAULT_HOUSE);
   const [housePicker, setHousePicker] = useState(false);
+  const [stampOpen, setStampOpen] = useState(false); // 스탬프(완주 코스 컬렉션) 화면
   const [avatar, setAvatar] = useState<string | null>(null); // 마이 프로필 사진(data URL or 업로드 URL)
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const [profileMap, setProfileMap] = useState<Record<string, Profile>>({}); // 이메일 → {name, avatar} (팀원 포함)
@@ -1513,7 +1514,7 @@ export default function WakiiApp() {
               <div className="home-top">
                 <img className="home-logo" src="/assets/와키로고.png" alt="wakii" />
                 <div className="home-step">
-                  👣 <b>6,200</b>
+                  <b>6,200</b>
                 </div>
               </div>
 
@@ -1743,22 +1744,27 @@ export default function WakiiApp() {
 
           {/* ===== WALK ===== */}
           <div className={"screen" + (screen === "walk" ? " active" : "")} id="s-walk">
-            <div className="sec-title">워키 여정</div>
-            <div className="walkstories">
-              {myGroups.map((grp, i) => (
-                <div
-                  key={grp.code}
-                  className={"wstory" + (i === walkSel ? " on" : "")}
-                  onClick={() => setWalkSel(i)}
-                >
-                  <div className="ring">
-                    <div className="inner">
-                      {grp.avatar ? <img src={grp.avatar} alt="" /> : grp.name.slice(0, 1)}
+            {/* 상단: 방 아바타 행(활성=민트 발광) + STAMP 민트 알약 (Figma '세번째 화면') */}
+            <div className="walktop">
+              <div className="walkstories">
+                {myGroups.map((grp, i) => (
+                  <div
+                    key={grp.code}
+                    className={"wstory" + (i === walkSel ? " on" : "")}
+                    onClick={() => setWalkSel(i)}
+                  >
+                    <div className="ring">
+                      <div className="inner">
+                        {grp.avatar ? <img src={grp.avatar} alt="" /> : grp.name.slice(0, 1)}
+                      </div>
                     </div>
+                    <div className="nm">{grp.name}</div>
                   </div>
-                  <div className="nm">{grp.name}</div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <button className="stamp-pill" onClick={() => setStampOpen(true)}>
+                STAMP
+              </button>
             </div>
             {/* completed-course badge collection */}
             {completedCourses.length > 0 && (
@@ -2234,6 +2240,42 @@ export default function WakiiApp() {
             </div>
           </div>
 
+          {/* 스탬프 화면 — 워키여정 상단 STAMP 탭 시. 글래스 패널에 완주 코스 섬 컬렉션 */}
+          {stampOpen && (
+            <div className="stampscreen" onClick={() => setStampOpen(false)}>
+              <div className="stamp-panel" onClick={(e) => e.stopPropagation()}>
+                <div className="stamp-head">
+                  <span className="stamp-pill">STAMP</span>
+                  <span className="stamp-x" onClick={() => setStampOpen(false)}>
+                    ✕
+                  </span>
+                </div>
+                <div className="stamp-islands">
+                  {completedCourses.length === 0 && (
+                    <div className="stamp-empty">아직 완주한 코스가 없어요</div>
+                  )}
+                  {completedCourses.map((id, i) => {
+                    const c = courseById(id);
+                    const img = courseImg(id);
+                    return (
+                      <div
+                        key={i}
+                        className="stamp-island"
+                        onClick={() => {
+                          setStampOpen(false);
+                          openRecap(id);
+                        }}
+                      >
+                        {img ? <img src={img} alt={c?.name_ko} /> : <span className="si-emoji">🏝️</span>}
+                        <div className="stamp-nm">{c?.name_ko}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* toast */}
           <div className={"toast" + (toastShown ? " show" : "")}>{toastMsg}</div>
         </div>
@@ -2268,16 +2310,6 @@ export default function WakiiApp() {
         {/* ===== deck circular gallery (opens over everything, dark/blur bg) ===== */}
         {openDeck && (
           <div className="deckgallery" onClick={() => setOpenDeckIdx(null)}>
-            <div className="dg-top" onClick={(e) => e.stopPropagation()}>
-              <b>
-                {openDeck.isMission ? "📷 " : ""}
-                {nameOf(openDeck.label)}
-              </b>
-              <span className="dg-x" onClick={() => setOpenDeckIdx(null)}>
-                ✕
-              </span>
-            </div>
-
             <div
               className="dg-stage"
               onClick={(e) => e.stopPropagation()}
@@ -2286,19 +2318,48 @@ export default function WakiiApp() {
               onPointerMove={cancelPress}
               onPointerLeave={cancelPress}
             >
-              {openDeck.cards[0]?.mine && (
-                <button
-                  className="dg-del"
-                  title="이 사진 내리기"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteOpenDeck();
-                  }}
-                >
-                  ✕
-                </button>
-              )}
+              {/* 카드 헤더: 좌상단 작성자(프로필+이름), 우상단 ⋯ 메뉴 */}
+              <div className="dg-cardbar" onPointerDown={(e) => e.stopPropagation()}>
+                <div className="dg-author">
+                  <span className="dg-ava">
+                    {avatarOf(openDeck.cards[activeCardIdx]?.who || "") ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={avatarOf(openDeck.cards[activeCardIdx]?.who || "")} alt="" />
+                    ) : null}
+                  </span>
+                  <span className="dg-name">{nameOf(openDeck.cards[activeCardIdx]?.who || openDeck.label)}</span>
+                </div>
+                <div className="dg-morewrap">
+                  <button
+                    className="dg-more"
+                    aria-label="더보기"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDgMenuOpen((v) => !v);
+                    }}
+                  >
+                    ⋯
+                  </button>
+                  {dgMenuOpen && (
+                    <div className="dg-menu" onClick={(e) => e.stopPropagation()}>
+                      {openDeck.cards[0]?.mine && (
+                        <button
+                          className="dg-mi del"
+                          onClick={() => {
+                            setDgMenuOpen(false);
+                            deleteOpenDeck();
+                          }}
+                        >
+                          사진 내리기
+                        </button>
+                      )}
+                      <button className="dg-mi" onClick={() => setOpenDeckIdx(null)}>
+                        닫기
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
               <CircularGallery
                 items={galleryItems}
                 bend={3}
@@ -2402,7 +2463,7 @@ export default function WakiiApp() {
                   maxLength={10}
                   value={textReactDraft}
                   placeholder="10자 이내로 입력"
-                  onChange={(e) => setTextReactDraft(e.target.value)}
+                  onChange={(e) => setTextReactDraft(e.target.value.slice(0, 10))}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       sendTextReaction(textReactDraft);

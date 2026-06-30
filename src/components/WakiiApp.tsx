@@ -1441,19 +1441,26 @@ export default function WakiiApp() {
               </div>
             </div>
 
-            {/* 방 선택 바텀시트 — 기본은 집 아래로 살짝 보이고, 위로 스크롤하면 올라옴 */}
+            {/* 방 선택 바텀시트 — 기본은 집 아래로 살짝 보이고, 위로 스크롤하면 올라옴.
+                시간/안읽음 배지는 아직 백엔드 필드가 없어 디자인 목업값으로 표시한다. */}
             <div className="homesheet">
               <div className="sheet-grip" />
-              {myGroups.map((grp, i) => (
-                <div key={grp.code} className="room" onClick={() => openRoom(grp.name, "🏠")}>
-                  <div className={"ravatar" + (i === 0 ? " on" : "")}>
-                    {grp.avatar ? <img src={grp.avatar} alt="" /> : "🏠"}
+              {myGroups.map((grp, i) => {
+                const demoTime = ["8분 전", "2일 전", "5일 전", "1주 전"][i % 4];
+                const demoUnread = [2, 0, 1, 0][i % 4];
+                return (
+                  <div key={grp.code} className="room" onClick={() => openRoom(grp.name, "🏠")}>
+                    <div className={"ravatar" + (i === 0 ? " on" : "")}>
+                      {grp.avatar ? <img src={grp.avatar} alt="" /> : "🏠"}
+                    </div>
+                    <div className="rmeta">
+                      <div className="rname">{grp.name}</div>
+                      <div className="rtime">{demoTime}</div>
+                    </div>
+                    {demoUnread > 0 && <span className="rbadge">{demoUnread}</span>}
                   </div>
-                  <div className="rmeta">
-                    <div className="rname">{grp.name}</div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               <div className="room room-add" onClick={openAddGroup}>
                 <div className="ravatar">＋</div>
                 <div className="rmeta">

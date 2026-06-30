@@ -182,7 +182,9 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .rhead{display:flex;align-items:center;gap:9px;padding:10px 16px;border-bottom:1px solid var(--g08);background:var(--paper);position:sticky;top:0;z-index:10;}
 .rhead .bk{font-size:var(--fs-title);color:var(--g55);cursor:pointer;}
 .rhead .ttl{font-size:var(--fs-body);font-weight:800;}
-.rhead .cam{margin-left:auto;font-size:var(--fs-title);cursor:pointer;filter:grayscale(1);}
+.rhead .cam{margin-left:auto;font-size:var(--fs-title);cursor:pointer;filter:grayscale(1);display:flex;align-items:center;}
+/* 방 헤더 카메라 = 미션 카메라 아이콘(흰색), 크기는 기존 이모지(20px)에 맞춤 */
+.rhead .cam .cam-ic{height:20px;width:auto;display:block;}
 .vtoggle{display:flex;gap:3px;background:var(--g08);border-radius:9px;padding:2px;margin:10px 16px;}
 .vtoggle span{flex:1;text-align:center;font-size:var(--fs-caption);font-weight:700;color:var(--g40);padding:6px 0;border-radius:7px;cursor:pointer;}
 .vtoggle span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);}

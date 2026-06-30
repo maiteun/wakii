@@ -446,6 +446,9 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 /* 아바타 크게 + 활성=민트 링 + 글로우(디자인 68px 발광 원) */
 #s-walk .wstory .ring{width:64px;height:64px;}
 #s-walk .wstory.on .ring{background:#74f1f1;box-shadow:0 0 16px rgba(116,241,241,.85);}
+/* 워키 여정 지도 — 섬 일러스트 풀폭(Figma 세번째 화면) */
+#s-walk .journey{width:100%;cursor:pointer;}
+#s-walk .journey-map{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none;}
 #s-walk .walkbadges .wb-nm{color:rgba(255,255,255,.75);}
 /* 스탬프 화면 (Figma 스탬프화면 402×874): 스크림 .6 + 글래스 패널 .3 r30, 완주 섬 컬렉션 */
 .stampscreen{position:absolute;inset:0;z-index:68;background:rgba(0,0,0,.6);}

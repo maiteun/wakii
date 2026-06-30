@@ -50,5 +50,5 @@ export const courseImg = (id: string): string | null =>
 
 // Bare-island art for UNSELECTED (미달성) nodes. Add more entries to vary the
 // undiscovered path; one is fine. The cloud is always layered on top.
-export const EMPTY_ISLANDS = ["/assets/empty_island.png"];
+export const EMPTY_ISLANDS = ["/assets/walk/empty_island.png"];
 export const EMPTY_ISLAND_AR = 1298 / 1296; // height / width (≈1, square)

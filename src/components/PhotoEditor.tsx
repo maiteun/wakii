@@ -536,25 +536,27 @@ const PhotoEditor = forwardRef<
 
       {/* tools */}
       <div className="ul-tools">
+        {/* eslint-disable @next/next/no-img-element */}
         <div className={"tg" + (tool === "emoji" ? " on" : "")} onClick={() => pickTool("emoji")}>
-          <span className="ic">😊</span>
+          <img className="ic" src="/assets/icons/heart.png" alt="" />
           <span className="tx">이모지</span>
         </div>
         <div className={"tg" + (tool === "draw" ? " on" : "")} onClick={() => pickTool("draw")}>
-          <span className="ic">✏️</span>
+          <img className="ic" src="/assets/icons/write.png" alt="" />
           <span className="tx">그림</span>
         </div>
         <div className={"tg" + (tool === "text" ? " on" : "")} onClick={() => pickTool("text")}>
-          <span className="ic">T</span>
+          <img className="ic" src="/assets/icons/text.png" alt="" />
           <span className="tx">텍스트</span>
         </div>
         <div
           className={"tg" + (recording ? " rec" : "") + (tool === "voice" ? " on" : "")}
           onClick={() => pickTool("voice")}
         >
-          <span className="ic">🎤</span>
+          <img className="ic" src="/assets/icons/voice.png" alt="" />
           <span className="tx">{recording ? "멈춤" : audioUrl ? "음성✓" : "음성"}</span>
         </div>
+        {/* eslint-enable @next/next/no-img-element */}
       </div>
     </div>
   );

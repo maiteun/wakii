@@ -147,7 +147,7 @@ function buildGalleryImage(card: Card): string {
 // cloud image (alpha PNG) laid OVER a landmark; opacity = how "covered" a
 // journey node is (1 = hidden/미선택, 0 = fully revealed/완주). Always an app
 // layer, never baked into the landmark image.
-const CLOUD_IMG = "/assets/cloud.png";
+const CLOUD_IMG = "/assets/walk/cloud.png";
 // per-node rotation/flip breaks up the "same shape repeated" look
 function CloudOverlay({
   cx,
@@ -1430,7 +1430,7 @@ export default function WakiiApp() {
           <div className={"screen home-screen" + (screen === "home" ? " active" : "")} id="s-home" ref={homeScrollRef}>
             <div className="home-hero">
               <div className="home-top">
-                <img className="home-logo" src="/assets/wakii_logo.svg" alt="wakii" />
+                <img className="home-logo" src="/assets/home/wakii_logo.svg" alt="wakii" />
                 <div className="home-step">
                   👣 <b>6,200</b>
                 </div>
@@ -1439,9 +1439,9 @@ export default function WakiiApp() {
               {/* 오늘의 미션 — Figma 프레임 에셋(글래스 카드 + 텍스트 + 아이콘). 탭하면 촬영 */}
               <div className="mission" onClick={() => openUpload("mission")}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="mission-text" src="/assets/mission-text.svg" alt="오늘의 미션" />
+                <img className="mission-text" src="/assets/mission/mission-text.svg" alt="오늘의 미션" />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="mission-icon" src="/assets/mission-icon.svg" alt="" />
+                <img className="mission-icon" src="/assets/mission/mission-icon.svg" alt="" />
               </div>
 
               <div
@@ -1927,7 +1927,8 @@ export default function WakiiApp() {
                 <span className="mi">🔔</span> 알림 <span className="chev">›</span>
               </div>
               <div className="myitem" onClick={() => toast("계정·설정")}>
-                <span className="mi">⚙️</span> 설정 <span className="chev">›</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="mi" src="/assets/icons/settings.png" alt="" /> 설정 <span className="chev">›</span>
               </div>
             </div>
           </div>

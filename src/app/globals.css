@@ -53,15 +53,15 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .home-step b{color:#fff;font-weight:800;font-size:15px;}
 .home-screen .mk{color:rgba(255,255,255,.72);}
 /* mission → glass card (Figma 374:2492: white .10 + 2px white .30, r30). 카드 전체가 탭 → 촬영 */
-.home-screen .mission{margin:8px 18px 0;display:flex;align-items:center;gap:10px;min-height:84px;padding:14px 20px;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.30);border-radius:30px;box-shadow:none;cursor:pointer;}
-.home-screen .mission:active{background:rgba(255,255,255,.16);}
+.home-screen .mission{margin:8px 18px 0;display:flex;align-items:center;gap:10px;min-height:84px;padding:14px 22px;background:url('/assets/mission-box.png') center/100% 100% no-repeat;border:none;border-radius:30px;box-shadow:none;cursor:pointer;}
+.home-screen .mission:active{filter:brightness(1.1);}
 .home-screen .mission .mission-text{height:56px;width:auto;flex:0 1 auto;}
 .home-screen .mission .mission-icon{width:30px;height:auto;margin-left:auto;flex-shrink:0;}
 /* hero(배경+집)는 뷰포트에 고정(sticky), 글래스 시트가 그 위로 스크롤되어 올라옴 */
 .home-hero{position:sticky;top:0;z-index:0;display:flex;flex-direction:column;min-height:100%;
   background:url('/assets/home_bg.svg') center/cover no-repeat;background-color:#0a1430;}
-/* floating island — 시트가 스크롤로 이 위로 덮으며 올라온다 */
-.home-screen .mark{position:relative;z-index:1;margin-top:auto;}
+/* floating island — 화면 중앙쯤에 위치(위·아래 auto 마진). 시트가 그 위로 올라옴 */
+.home-screen .mark{position:relative;z-index:1;margin:auto 0;}
 /* bottom sheet (Figma 350:3551: dark gradient, rounded-top 30, 56px 원형 아바타).
    고정된 hero 위로 올라오도록 z-index 위, 음수 마진으로 처음엔 아래에 살짝 보임 */
 .homesheet{position:relative;z-index:2;margin-top:-140px;

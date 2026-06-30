@@ -19,6 +19,8 @@ import {
   listMyCards,
   createGroup,
   joinGroup,
+  upsertProfile,
+  listProfiles,
   type Group,
 } from "@/lib/db";
 
@@ -263,12 +265,14 @@ export default function WakiiApp() {
   // "우리 집" art: chosen at onboarding, changeable via long-press on home
   const [house, setHouse] = useState(DEFAULT_HOUSE);
   const [housePicker, setHousePicker] = useState(false);
-  const [avatar, setAvatar] = useState<string | null>(null); // 마이 프로필 사진(data URL)
+  const [avatar, setAvatar] = useState<string | null>(null); // 마이 프로필 사진(data URL or 업로드 URL)
   const avatarFileRef = useRef<HTMLInputElement>(null);
+  const [profileMap, setProfileMap] = useState<Record<string, string>>({}); // 이름 → 아바타 URL (팀원 포함)
   const [obStep, setObStep] = useState<ObStep>("login");
   const [addingGroup, setAddingGroup] = useState(false); // opening the group flow from "+"
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [groupNameDraft, setGroupNameDraft] = useState("");
+  const [groupCodeDraft, setGroupCodeDraft] = useState(""); // 만든 사람이 정하는 코드(=비번)
   const [joinCodeDraft, setJoinCodeDraft] = useState("");
   const [pendingGroup, setPendingGroup] = useState<Group | null>(null); // created/joined, awaiting confirm
   const [pendingJoinCode, setPendingJoinCode] = useState(""); // from an invite deep-link (/?j=CODE), joined after onboarding
@@ -428,6 +432,7 @@ export default function WakiiApp() {
     } catch {
       /* ignore */
     }
+    listProfiles().then(setProfileMap); // 팀원 아바타 포함
 
     // invite deep-link (/?j=CODE) — shared via KakaoTalk. Join automatically
     // instead of asking the user to read & type the code.
@@ -495,13 +500,27 @@ export default function WakiiApp() {
         c.height = h;
         c.getContext("2d")?.drawImage(img, 0, 0, w, h);
         const url = c.toDataURL("image/jpeg", 0.85);
-        setAvatar(url);
-        try {
-          localStorage.setItem("wakii.avatar", url);
-        } catch {
-          /* ignore */
-        }
+        setAvatar(url); // 즉시 반영(내 화면)
         toast("프로필 사진을 바꿨어요");
+        // 팀원에게도 보이도록 Storage 업로드 → profiles 테이블에 저장
+        const persist = (saved: string) => {
+          try {
+            localStorage.setItem("wakii.avatar", saved);
+          } catch {
+            /* ignore */
+          }
+          if (name) upsertProfile(name, saved).then(() => listProfiles().then(setProfileMap));
+        };
+        if (hasSupabase) {
+          uploadPhoto(url)
+            .then((publicUrl) => {
+              setAvatar(publicUrl);
+              persist(publicUrl);
+            })
+            .catch(() => persist(url));
+        } else {
+          persist(url);
+        }
       };
       img.src = String(reader.result || "");
     };
@@ -558,11 +577,21 @@ export default function WakiiApp() {
   };
   const doCreateGroup = async () => {
     const nm = groupNameDraft.trim();
+    const code = groupCodeDraft.trim();
     if (!nm) return;
+    if (code.length < 4) {
+      toast("코드는 4자 이상으로 정해주세요");
+      return;
+    }
     try {
-      const g = await createGroup(nm);
-      setPendingGroup(g);
+      const res = await createGroup(nm, code);
+      if (!res.ok) {
+        toast("이미 쓰는 코드예요 — 다른 코드로 해주세요");
+        return;
+      }
+      setPendingGroup(res.group);
       setGroupNameDraft("");
+      setGroupCodeDraft("");
       setObStep("code");
     } catch {
       toast("그룹 생성 실패 — 다시 시도해주세요");
@@ -633,6 +662,7 @@ export default function WakiiApp() {
   useEffect(() => {
     if (!hasSupabase) return;
     refreshRoom(currentRoom);
+    listProfiles().then(setProfileMap); // 새로 들어온 팀원 아바타 반영
     const unsub = subscribeRoom(currentRoom, () => refreshRoom(currentRoom));
     return unsub;
   }, [currentRoom, refreshRoom]);
@@ -1904,7 +1934,9 @@ export default function WakiiApp() {
                         </div>
                       )}
                       <div className="rc-who">
-                        <span className="rc-avatar">{p.who.slice(0, 1)}</span>
+                        <span className="rc-avatar">
+                          {profileMap[p.who] ? <img src={profileMap[p.who]} alt="" /> : p.who.slice(0, 1)}
+                        </span>
                         {p.who}
                       </div>
                     </div>
@@ -2297,6 +2329,7 @@ export default function WakiiApp() {
             {obStep === "create" && (
               <>
                 <div className="ob-logo">그룹 만들기</div>
+                <div className="ob-tag">참여 코드를 직접 정해 가족에게 공유하세요</div>
                 <div className="ob-name">
                   <input
                     autoFocus
@@ -2305,8 +2338,15 @@ export default function WakiiApp() {
                     onChange={(e) => setGroupNameDraft(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && doCreateGroup()}
                   />
+                  <input
+                    value={groupCodeDraft}
+                    placeholder="참여 코드 (예: umma2026)"
+                    style={{ textTransform: "uppercase", letterSpacing: ".08em" }}
+                    onChange={(e) => setGroupCodeDraft(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && doCreateGroup()}
+                  />
                   <button className="nm-go" onClick={doCreateGroup}>
-                    참여 코드 생성
+                    그룹 만들기
                   </button>
                   <div className="ob-back" onClick={() => setObStep("group")}>
                     ‹ 뒤로

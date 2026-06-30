@@ -75,19 +75,20 @@ function randomCode(): string {
 }
 
 export type Group = { code: string; name: string };
+export type CreateResult = { ok: true; group: Group } | { ok: false; reason: "taken" };
 
-// create a group with a unique code. Falls back to a local code when the
-// backend/table isn't available, so the onboarding flow is always walkable.
-export async function createGroup(name: string): Promise<Group> {
-  if (!supabase) return { code: randomCode(), name };
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const code = randomCode();
-    const { error } = await supabase.from("groups").insert({ code, name });
-    if (!error) return { code, name };
-    // unique-collision → retry; any other error (e.g. missing table) → local
-    if (!/duplicate|unique/i.test(error.message)) return { code, name };
-  }
-  return { code: randomCode(), name };
+// create a group. The creator chooses the code (it doubles as the room's
+// password — they share it with family). Codes are case-insensitive (stored
+// uppercased). A duplicate code is rejected so two groups can't collide; any
+// other backend error (e.g. groups table not yet created) falls back to a
+// local code so the onboarding flow stays walkable.
+export async function createGroup(name: string, code?: string): Promise<CreateResult> {
+  const c = (code?.trim() || randomCode()).toUpperCase();
+  if (!supabase) return { ok: true, group: { code: c, name } };
+  const { error } = await supabase.from("groups").insert({ code: c, name });
+  if (!error) return { ok: true, group: { code: c, name } };
+  if (/duplicate|unique/i.test(error.message)) return { ok: false, reason: "taken" };
+  return { ok: true, group: { code: c, name } }; // table missing → accept locally
 }
 
 // look up a group by its join code. If the table is missing (error) we accept
@@ -120,6 +121,28 @@ export async function listMyCards(author: string): Promise<{ createdAt: string; 
     createdAt: c.created_at,
     img: c.image_url,
   }));
+}
+
+// ── profiles (name → avatar photo, shared across devices) ───────────
+// Save/replace my avatar so teammates see it too. No-op without a backend
+// (mock mode keeps the avatar in localStorage only).
+export async function upsertProfile(name: string, avatarUrl: string) {
+  if (!supabase || !name) return;
+  await supabase
+    .from("profiles")
+    .upsert({ name, avatar_url: avatarUrl, updated_at: new Date().toISOString() });
+}
+
+// name → avatar URL for everyone with a profile (small table; fetch all).
+export async function listProfiles(): Promise<Record<string, string>> {
+  if (!supabase) return {};
+  const { data, error } = await supabase.from("profiles").select("name, avatar_url");
+  if (error) return {};
+  const map: Record<string, string> = {};
+  (data || []).forEach((p: { name: string; avatar_url: string | null }) => {
+    if (p.avatar_url) map[p.name] = p.avatar_url;
+  });
+  return map;
 }
 
 export async function addReaction(cardId: string, author: string, emoji: string) {

@@ -476,7 +476,7 @@ img.stamp-pill{height:30px;width:auto;}
 #s-walk .journey:active{cursor:grabbing;}
 .journey-inner{position:absolute;top:0;left:0;width:100%;display:flex;flex-direction:column;align-items:center;transform-origin:0 0;padding:14px 0 24px;}
 /* 섬: 작게 + 지그재그(좌/우 번갈아) */
-.j-isle{position:relative;width:52%;max-width:230px;display:flex;flex-direction:column;align-items:center;margin-top:-22px;}
+.j-isle{position:relative;width:50%;max-width:220px;display:flex;flex-direction:column;align-items:center;margin-top:10px;}
 .j-isle:first-child{margin-top:0;}
 .j-isle:nth-child(odd){align-self:flex-start;margin-left:9%;}
 .j-isle:nth-child(even){align-self:flex-end;margin-right:9%;}

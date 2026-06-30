@@ -420,9 +420,9 @@ export default function WakiiApp() {
   const [walkSel, setWalkSel] = useState(0); // highlighted family member (avatar row)
   // demo seed: 콜로세움만 완주(맨 아래), 에펠탑이 진행 중(~56%)이라 그 위에
   // 구름이 절반쯤 덮인 상태로 보인다.
-  const [activeCourseId, setActiveCourseId] = useState("eiffel_tower");
-  const [familyKm, setFamilyKm] = useState(8.6); // combined distance on the active course (에펠탑 15.4km ≈ 56%)
-  const [completedCourses, setCompletedCourses] = useState<string[]>(["colosseum"]);
+  const [activeCourseId, setActiveCourseId] = useState("taj_mahal");
+  const [familyKm, setFamilyKm] = useState(8.6); // 타지마할 15.3km ≈ 56%
+  const [completedCourses, setCompletedCourses] = useState<string[]>(["moai", "santorini", "statue_of_liberty"]);
   const [courseSheet, setCourseSheet] = useState(false);
   const [courseLoaded, setCourseLoaded] = useState(false);
   // journey map pan & zoom (the screen behaves like a real map)
@@ -1272,13 +1272,14 @@ export default function WakiiApp() {
   // 코스 진행은 방(그룹)별로 따로 — 방을 누르면 그 방의 여정/완주/스탬프가 뜬다.
   // 저장 포맷: wakii.course = { v, groups: { [groupCode]: {active, km, done} } }.
   // COURSE_SEED를 올리면 기존 저장 1회 무시(데모 상태로 리셋).
-  const COURSE_SEED = 4;
+  const COURSE_SEED = 5;
   const courseStore = useRef<Record<string, { active: string; km: number; done: string[] }>>({});
   // 저장값이 없는 방의 기본 시드: 첫 방은 데모(콜로세움 완주+에펠 진행), 나머지는 새 출발.
+  // 목업: 정사각형에 가까운 다양한 랜드마크 위주(에펠탑처럼 긴 건 제외)
   const seedFor = (idx: number) =>
     idx === 0
-      ? { active: "eiffel_tower", km: 8.6, done: ["colosseum"] }
-      : { active: "eiffel_tower", km: 0, done: [] };
+      ? { active: "taj_mahal", km: 8.6, done: ["moai", "santorini", "statue_of_liberty"] }
+      : { active: "moai", km: 5.0, done: ["taj_mahal"] };
 
   const activeGroup = myGroups[walkSel] || myGroups[0]; // 워키 상단 = 선택된 방
   const groupKey = activeGroup?.code;
@@ -1908,17 +1909,24 @@ export default function WakiiApp() {
                 ref={journeyInnerRef}
                 style={{ transform: `translate(${mapPan.x}px, ${mapPan.y}px) scale(${mapZoom})` }}
               >
-              {/* 미래(맨 위/멀리): 빈 섬 + 구름. 현재 코스 완주했을 때만 새 목표 선택 */}
-              <div
-                className={"j-isle j-future" + (isComplete ? " on" : "")}
-                onClick={() => isComplete && setCourseSheet(true)}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="j-island" src="/assets/walk/empty_island.png" alt="" draggable={false} />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="j-cloud" src="/assets/walk/cloud.png" alt="" draggable={false} />
-                {isComplete && <div className="j-hint">＋ 새 목표 고르기</div>}
-              </div>
+              {/* 미래(위/멀리): 빈 섬 + 구름을 여러 개 반복 → 위로 한참 스크롤해도 계속 이어지는 여정.
+                  active 바로 위(가장 가까운) 1개만 완주 시 새 목표 선택 가능 */}
+              {Array.from({ length: 12 }).map((_, k) => {
+                const nearest = k === 11; // active 바로 위
+                return (
+                  <div
+                    key={"future" + k}
+                    className={"j-isle j-future" + (isComplete && nearest ? " on" : "")}
+                    onClick={() => isComplete && nearest && setCourseSheet(true)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className="j-island" src="/assets/walk/empty_island.png" alt="" draggable={false} />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className="j-cloud" src="/assets/walk/cloud.png" alt="" draggable={false} />
+                    {isComplete && nearest && <div className="j-hint">＋ 새 목표 고르기</div>}
+                  </div>
+                );
+              })}
 
               {/* 진행 중 목표(가운데): 코스 섬 + 구름. 완주하면 선명해지고 recap 가능 */}
               <div
@@ -1931,7 +1939,6 @@ export default function WakiiApp() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img className="j-cloud" src="/assets/walk/cloud.png" alt="" draggable={false} />
                 )}
-                <div className="j-nm">{activeCourse.name_ko}{isComplete ? " 완주!" : ` ${pct}%`}</div>
               </div>
 
               {/* 완주한 코스(아래/가까이): 선명 랜드마크. 탭 → recap(사용자별 best 1) */}
@@ -1939,7 +1946,6 @@ export default function WakiiApp() {
                 <div key={id} className="j-isle j-done" onClick={() => openRecap(id)}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className="j-island" src={courseImg(id) || "/assets/walk/empty_island.png"} alt={courseById(id)?.name_ko} draggable={false} />
-                  <div className="j-nm">{courseById(id)?.name_ko}</div>
                 </div>
               ))}
               </div>

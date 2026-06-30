@@ -1,7 +1,21 @@
 # wakii — 작업 인수인계 (다음 세션용)
 
-_최종 업데이트: 2026-06-30._ 다음 세션 시작할 때 이 파일을 읽어달라고 하면 돼요. 예:
+_최종 업데이트: 2026-07-01._ 다음 세션 시작할 때 이 파일을 읽어달라고 하면 돼요. 예:
 > "docs/HANDOFF.md 읽고 이어서 작업하자."
+
+## ⚡ 이번 세션(2026-07-01) 요약 — 전면 다크 디자인 작업
+- **전 화면 다크 밤하늘 테마**: 뷰포트(`.viewport`)에 `home_bg.svg` **고정 배경**을 깔아 홈·방·워키·마이 모든 화면이 동일 배경. 각 화면은 투명(`#s-room`/`#s-walk`/`#s-my`), 스크롤해도 배경 안 사라짐. 기기 프레임·상태바도 다크. 라이트 카드들은 다크 글래스로, 글자 흰색/강조 민트(#74F1F1)로 재색상.
+- **홈 리뉴얼**: 미션 카드=완성형 PNG(`assets/오늘의 미션.png`, `.mission-img`), 로고=`assets/와키로고.png`, 집(`.househero`) 245→상황따라 조정·`margin:auto 0`로 중앙, 글래스 시트 그립 **드래그로 끌어올리기**(`onGripDown/Move/Up`→scrollTop), 하단 네비 가운데 아이콘 ＋(Frame1).
+- **방/워키**: 워키 상단 행=실제 그룹(myGroups) 연동, 워키 맵 **풀블리드**(박스 해제, 배경 투명). 마이 캘린더 점 민트.
+- **에셋 폴더 재구성**: `assets/icons/`(heart·write·text·voice·settings), `mission/`(box·text·icon), `home/`(home_bg·wakii_logo), `walk/`(mapbg·cloud·empty_island), `house/`·`courses/` 유지, `_ref/`(미사용 디자인 참고: Frame1, 홈UI, homesheet, mission-card, **mission-capture-screen.png/svg**). 한글 파일명 일부 남아있음(오늘의 미션.png, 와키로고.png — 동작은 함).
+- **편집 아이콘**: PhotoEditor 이모지→heart, 그림→write, 텍스트→text, 음성→voice. 마이 설정→settings.png.
+- **디자인 토큰**: `tailwind.config.ts`+globals.css 상단에 `--ds-*`/glass/accent/타입스케일/radius 토큰(bg-accent·text-display·rounded-glass 유틸). `--font-app` 정의됨.
+
+### ⚠️ 배포/캐시 주의
+push하면 Vercel 자동배포 정상 동작(빌드 통과 확인됨). **"화면에 반영 안 됨"은 대부분 브라우저/CDN 캐시** — 시크릿창 또는 강력 새로고침(⌘⇧R)으로 확인할 것. (CSS/JS 해시로 라이브 반영 여부 확인 가능.)
+
+### 🔜 이번 세션 미완료 — 다음에 할 것
+- **미션 촬영 화면 리디자인 미완**: 홈 "오늘의 미션" 탭 → `openUpload("mission")`(업로드 레이어/카메라)는 **기존 모양 그대로**. 디자인은 `assets/_ref/mission-capture-screen.png`·`.svg` 참고. 구성: 뒤로가기‹ + 미션 글래스 카드(=홈 미션카드 366×99 r30) + 큰 뷰파인더(366×488 r30, black .5 + white .3 stroke) + 하단 글래스 셔터(68×68 r34 white .15, 카메라 아이콘). **기능은 그대로, 외형만 입히면 됨**. 대상=`.uploadlayer`(WakiiApp ~1948줄)·`.ul-*` CSS.
 
 ## 프로젝트 개요
 - **wakii** — 가족이 사진(짤)을 올리고 반응/답장하며 함께 걷는 모바일 웹앱.

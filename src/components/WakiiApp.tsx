@@ -28,6 +28,36 @@ const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false 
 // role shown on each card by its position in the deck
 const roleLabel = (i: number) => (i === 0 ? "작성자" : `${i}차 반응자`);
 
+// 완주 리캡 큐레이션 — 작성자별 "best 1"(가장 반응 많은 사진) 한 장씩.
+// B안: 코스별 시작 시각(startedAt)이 아직 없어 여정 기간을 가를 수 없으므로
+// 지금은 그룹 방 사진 전체를 기준으로 실시간 계산한다. A안(완주 시점 스냅샷)으로
+// 갈 땐 deck 소스만 "그 코스 기간의 카드"로 바꾸면 된다.
+export type RecapPhoto = { who: string; img: string; count: number; emojis: string[] };
+function curateRecap(decks: Deck[]): RecapPhoto[] {
+  const byAuthor = new Map<string, Card[]>();
+  decks.forEach((d) =>
+    d.cards.forEach((c) => {
+      if (!c.img) return;
+      const list = byAuthor.get(c.who);
+      if (list) list.push(c);
+      else byAuthor.set(c.who, [c]);
+    }),
+  );
+  const out: RecapPhoto[] = [];
+  byAuthor.forEach((cards, who) => {
+    // 반응 수 → 동점이면 이모지 종류 수 (반응 0이어도 사진 있으면 한 장은 뽑힘)
+    const best = cards.slice().sort((a, b) => {
+      const ra = a.reactions?.length ?? 0;
+      const rb = b.reactions?.length ?? 0;
+      if (rb !== ra) return rb - ra;
+      return new Set(b.reactions).size - new Set(a.reactions).size;
+    })[0];
+    out.push({ who, img: best.img as string, count: best.reactions?.length ?? 0, emojis: best.reactions ?? [] });
+  });
+  // 반응 많은 사람 먼저
+  return out.sort((a, b) => b.count - a.count);
+}
+
 // today's mission, noun-ified for the mission deck label/footer
 const MISSION_NAME = "오늘의 풍경";
 
@@ -290,6 +320,7 @@ export default function WakiiApp() {
   const [recapTitle, setRecapTitle] = useState("");
   const [recapSub, setRecapSub] = useState("");
   const [recapCourseId, setRecapCourseId] = useState("");
+  const [recapPhotos, setRecapPhotos] = useState<RecapPhoto[]>([]);
 
   // walk — course system (A 구조: one active course = one landmark; the whole
   // family's steps combine into the shared distance; finishing resets to 0 and
@@ -1026,6 +1057,8 @@ export default function WakiiApp() {
     setRecapCourseId(courseId);
     setRecapTitle(`${c.name_ko} 완주!`);
     setRecapSub(`함께 ${c.distance_km}km · 가족이 함께 걸어 도착했어요`);
+    // 그룹의 모든 방 사진을 모아 사람별 best 1 큐레이션 (B안: 여정 기간 미반영)
+    setRecapPhotos(curateRecap(Object.values(rooms).flat()));
     setRecapShow(true);
   };
 
@@ -1858,7 +1891,29 @@ export default function WakiiApp() {
             )}
             <div className="rc-title">{recapTitle}</div>
             <div className="rc-sub">{recapSub}</div>
-            <div className="rc-empty">이 여정 동안 가족이 가장 많이 반응한 사진을<br />모아 보여드릴 예정이에요</div>
+            {recapPhotos.length > 0 ? (
+              <>
+                <div className="rc-caption">가족이 가장 많이 반응한 사진</div>
+                <div className="rc-grid">
+                  {recapPhotos.map((p, i) => (
+                    <div key={i} className="rc-card">
+                      <img className="rc-photo" src={p.img} alt="" />
+                      {p.count > 0 && (
+                        <div className="rc-react">
+                          {p.emojis[0] || "❤️"} {p.count}
+                        </div>
+                      )}
+                      <div className="rc-who">
+                        <span className="rc-avatar">{p.who.slice(0, 1)}</span>
+                        {p.who}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="rc-empty">이 여정 동안 가족이 올린 사진이<br />아직 없어요</div>
+            )}
           </div>
 
           {/* course select — "새 목표 고르기" (모든 코스 재선택 가능) */}

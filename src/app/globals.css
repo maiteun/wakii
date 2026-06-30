@@ -481,7 +481,7 @@ img.stamp-pill{height:30px;width:auto;}
 .j-isle:nth-child(odd){align-self:flex-start;margin-left:9%;}
 .j-isle:nth-child(even){align-self:flex-end;margin-right:9%;}
 .j-island{width:100%;height:auto;display:block;filter:drop-shadow(0 10px 16px rgba(0,0,0,.5));user-select:none;-webkit-user-drag:none;}
-.j-cloud{position:absolute;top:-6%;left:50%;transform:translateX(-50%);width:124%;height:auto;pointer-events:none;user-select:none;-webkit-user-drag:none;}
+.j-cloud{position:absolute;top:-16%;left:50%;transform:translateX(-50%);width:152%;height:auto;pointer-events:none;user-select:none;-webkit-user-drag:none;}
 .j-nm{margin-top:-2px;font-size:var(--fs-label);font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);}
 .j-done,.j-active.done{cursor:pointer;}
 .j-done:active .j-island,.j-active.done:active .j-island{transform:scale(.97);}

@@ -121,10 +121,11 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .home-step{font-size:13px;color:#dbe4ff;font-weight:700;}
 .home-step b{color:#fff;font-weight:800;font-size:15px;}
 .home-screen .mk{color:rgba(255,255,255,.72);}
-/* mission → 완성형 카드 PNG(366×99, 글래스 박스+텍스트+카메라 일체). 카드 전체가 탭 → 촬영 */
-.home-screen .mission{margin:8px 18px 0;padding:0;background:none;border:none;border-radius:30px;box-shadow:none;cursor:pointer;}
-.home-screen .mission:active{filter:brightness(1.1);}
-.home-screen .mission .mission-img{display:block;width:100%;height:auto;}
+/* mission → 글래스 박스(CSS) + 벡터 텍스트/카메라. 전부 선명. 카드 전체 탭 → 촬영 */
+.home-screen .mission{margin:8px 18px 0;display:flex;align-items:center;gap:12px;padding:16px 22px;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.30);border-radius:30px;box-shadow:none;cursor:pointer;}
+.home-screen .mission:active{background:rgba(255,255,255,.16);}
+.home-screen .mission .mission-text{display:block;height:54px;width:auto;flex:0 1 auto;min-width:0;}
+.home-screen .mission .mission-cam{width:32px;height:32px;margin-left:auto;flex-shrink:0;color:#fff;}
 /* hero(배경+집)는 뷰포트에 고정(sticky), 글래스 시트가 그 위로 스크롤되어 올라옴 */
 .home-hero{position:sticky;top:0;z-index:0;display:flex;flex-direction:column;min-height:100%;
   background:url('/assets/home/home_bg.svg') center/cover no-repeat;background-color:#0a1430;}

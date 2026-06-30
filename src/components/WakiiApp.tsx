@@ -1445,14 +1445,17 @@ export default function WakiiApp() {
                 </div>
               </div>
 
-              {/* 오늘의 미션 — 완성형 카드 PNG(366×99, 글래스 박스+텍스트+카메라 일체). 탭하면 촬영 */}
+              {/* 오늘의 미션 — 글래스 박스(CSS) + 벡터 텍스트(SVG) + 벡터 카메라. 전부 선명. 탭→촬영 */}
               <div className="mission" onClick={() => openUpload("mission")}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  className="mission-img"
-                  src="/assets/오늘의 미션.png"
+                  className="mission-text"
+                  src="/assets/mission/mission-text.svg"
                   alt="오늘의 미션 — 오늘은 하지예요! 1년 중 해가 가장 긴 날의 풍경을 담아보세요"
                 />
+                <svg className="mission-cam" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 4a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+                </svg>
               </div>
 
               <div

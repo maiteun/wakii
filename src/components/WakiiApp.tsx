@@ -1361,15 +1361,18 @@ export default function WakiiApp() {
   }, [screen]);
 
   // ---------- calendar detail ----------
-  // load my uploaded cards (June 2026) from the DB for the calendar
+  // load my uploaded cards (current month) from the DB for the calendar
   useEffect(() => {
     if (!hasSupabase || !author) return;
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
     listMyCards(author)
       .then((cards) => {
         const map: Record<number, string[]> = {};
         cards.forEach((c) => {
           const d = new Date(c.createdAt);
-          if (d.getFullYear() === 2026 && d.getMonth() === 5) {
+          if (d.getFullYear() === y && d.getMonth() === m) {
             (map[d.getDate()] = map[d.getDate()] || []).push(c.img || "");
           }
         });
@@ -1390,6 +1393,12 @@ export default function WakiiApp() {
     if (!imgs.length && !steps) return null;
     return { day: calSel, up: imgs.length, imgs, steps };
   })();
+
+  // calendar grid — 현재 달 기준(월 라벨·일수·시작 요일 동적)
+  const calNow = new Date();
+  const calMonthNum = calNow.getMonth() + 1; // 표시용 1-base
+  const calDaysInMonth = new Date(calNow.getFullYear(), calNow.getMonth() + 1, 0).getDate();
+  const calLeadEmpty = new Date(calNow.getFullYear(), calNow.getMonth(), 1).getDay(); // 0=일
 
   // ---------- step report (this week / this month) ----------
   const weekCols = [
@@ -1430,7 +1439,7 @@ export default function WakiiApp() {
           <div className={"screen home-screen" + (screen === "home" ? " active" : "")} id="s-home" ref={homeScrollRef}>
             <div className="home-hero">
               <div className="home-top">
-                <img className="home-logo" src="/assets/home/wakii_logo.svg" alt="wakii" />
+                <img className="home-logo" src="/assets/와키로고.png" alt="wakii" />
                 <div className="home-step">
                   👣 <b>6,200</b>
                 </div>
@@ -1835,17 +1844,17 @@ export default function WakiiApp() {
               <div className="mysub">가족 4 · 함께 걷는 중</div>
             </div>
             <div className="cal">
-              <h4>6월</h4>
+              <h4>{calMonthNum}월</h4>
               <div className="calgrid">
                 {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
                   <div key={d} className="caldow">
                     {d}
                   </div>
                 ))}
-                {Array.from({ length: 1 }).map((_, i) => (
+                {Array.from({ length: calLeadEmpty }).map((_, i) => (
                   <div key={"e" + i} className="calday empty" />
                 ))}
-                {Array.from({ length: 30 }).map((_, idx) => {
+                {Array.from({ length: calDaysInMonth }).map((_, idx) => {
                   const d = idx + 1;
                   return (
                     <div
@@ -1863,7 +1872,7 @@ export default function WakiiApp() {
             </div>
             {calDetail && (
               <div className="caldetail show">
-                <div className="cd-date">6월 {calDetail.day}일</div>
+                <div className="cd-date">{calMonthNum}월 {calDetail.day}일</div>
                 <div className="cd-row">
                   👣 그날 내 걸음{" "}
                   <b style={{ marginLeft: "auto", color: "#fff" }}>

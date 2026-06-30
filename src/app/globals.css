@@ -115,7 +115,7 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
    house island + glass mission card + glass gradient sheet) */
 .home-screen{background-color:#0a1430;padding-bottom:120px;}
 .home-top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 4px;}
-.home-logo{height:34px;width:auto;display:block;}
+.home-logo{width:122px;height:38px;display:block;}
 .home-step{font-size:13px;color:#dbe4ff;font-weight:700;}
 .home-step b{color:#fff;font-weight:800;font-size:15px;}
 .home-screen .mk{color:rgba(255,255,255,.72);}

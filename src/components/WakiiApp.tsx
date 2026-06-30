@@ -1950,13 +1950,9 @@ export default function WakiiApp() {
           {/* upload overlay */}
           <div className={"uploadlayer" + (uploadShow ? " show" : "")}>
             <div className="ul-top">
-              <span className="x" onClick={closeUpload}>
-                ✕
+              <span className="bk" onClick={closeUpload} aria-label="뒤로">
+                ‹
               </span>
-              <span className="ttl">
-                {uploadMode === "mission" ? "미션 촬영" : uploadMode === "reply" ? "답장" : "새 짤"}
-              </span>
-              <span style={{ width: 18 }} />
             </div>
             <div className="ul-stage">
               {!shotTaken && (
@@ -1977,14 +1973,21 @@ export default function WakiiApp() {
                         display: cameraActive ? "block" : "none",
                       }}
                     />
-                    <div className="ratio">3:4</div>
                   </div>
-                  <div className="ul-shutter" onClick={shoot} />
-                  {uploadMode === "new" && (
-                    <div className="ul-gallery" onClick={() => galleryInputRef.current?.click()}>
-                      🖼️
-                    </div>
-                  )}
+                  <div className="ul-controls">
+                    {uploadMode === "new" && (
+                      <div className="ul-gallery" onClick={() => galleryInputRef.current?.click()} aria-label="갤러리">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                          <path d="M22 16V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2zM11 12l2.03 2.71L16 11l4 5H8l3-4zM2 6v14a2 2 0 0 0 2 2h14v-2H4V6H2z" />
+                        </svg>
+                      </div>
+                    )}
+                    <button className="ul-shutter" onClick={shoot} aria-label="촬영">
+                      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                        <path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 4a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+                      </svg>
+                    </button>
+                  </div>
                 </>
               )}
               {/* after capture: full Instagram-style editor (all modes) */}

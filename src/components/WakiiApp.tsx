@@ -325,6 +325,26 @@ export default function WakiiApp() {
   const [phrasesOpen, setPhrasesOpen] = useState(false);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longFired = useRef(false);
+  // 홈 바텀시트 끌어올리기 — 그립을 마우스/터치로 드래그하면 스크롤
+  const homeScrollRef = useRef<HTMLDivElement>(null);
+  const sheetDragY = useRef<number | null>(null);
+  const onGripDown = (e: React.PointerEvent) => {
+    sheetDragY.current = e.clientY;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onGripMove = (e: React.PointerEvent) => {
+    if (sheetDragY.current == null || !homeScrollRef.current) return;
+    homeScrollRef.current.scrollTop -= e.clientY - sheetDragY.current;
+    sheetDragY.current = e.clientY;
+  };
+  const onGripUp = (e: React.PointerEvent) => {
+    sheetDragY.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  };
   const [roomViewMode, setRoomViewMode] = useState<"deck" | "review">("deck");
   const roomScreenRef = useRef<HTMLDivElement>(null);
 
@@ -1413,7 +1433,7 @@ export default function WakiiApp() {
 
         <div className="viewport" ref={viewportRef}>
           {/* ===== HOME ===== */}
-          <div className={"screen home-screen" + (screen === "home" ? " active" : "")} id="s-home">
+          <div className={"screen home-screen" + (screen === "home" ? " active" : "")} id="s-home" ref={homeScrollRef}>
             <div className="home-hero">
               <div className="home-top">
                 <img className="home-logo" src="/assets/wakii_logo.svg" alt="wakii" />
@@ -1422,13 +1442,12 @@ export default function WakiiApp() {
                 </div>
               </div>
 
-              {/* 오늘의 미션 — 카드를 탭하면 촬영 후 공유하기로 이동 (촬영은 하단 카메라로도 가능) */}
+              {/* 오늘의 미션 — Figma 프레임 에셋(글래스 카드 + 텍스트 + 아이콘). 탭하면 촬영 */}
               <div className="mission" onClick={() => openUpload("mission")}>
-                <span className="mlabel">오늘의 미션</span>
-                <div className="mtext">
-                  오늘은 하지예요! 1년 중 해가
-                  <br />가장 긴 날의 풍경을 담아보세요 ☀️
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="mission-text" src="/assets/mission-text.svg" alt="오늘의 미션" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="mission-icon" src="/assets/mission-icon.svg" alt="" />
               </div>
 
               <div
@@ -1444,7 +1463,15 @@ export default function WakiiApp() {
             {/* 방 선택 바텀시트 — 기본은 집 아래로 살짝 보이고, 위로 스크롤하면 올라옴.
                 시간/안읽음 배지는 아직 백엔드 필드가 없어 디자인 목업값으로 표시한다. */}
             <div className="homesheet">
-              <div className="sheet-grip" />
+              <div
+                className="sheet-handle"
+                onPointerDown={onGripDown}
+                onPointerMove={onGripMove}
+                onPointerUp={onGripUp}
+                onPointerCancel={onGripUp}
+              >
+                <div className="sheet-grip" />
+              </div>
               {myGroups.map((grp, i) => {
                 const demoTime = ["8분 전", "2일 전", "5일 전", "1주 전"][i % 4];
                 const demoUnread = [2, 0, 1, 0][i % 4];

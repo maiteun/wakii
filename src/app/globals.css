@@ -53,10 +53,10 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .home-step b{color:#fff;font-weight:800;font-size:15px;}
 .home-screen .mk{color:rgba(255,255,255,.72);}
 /* mission → glass card (Figma 374:2492: white .10 + 2px white .30, r30). 카드 전체가 탭 → 촬영 */
-.home-screen .mission{margin:8px 18px 0;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.30);border-radius:30px;box-shadow:none;cursor:pointer;}
+.home-screen .mission{margin:8px 18px 0;display:flex;align-items:center;gap:10px;min-height:84px;padding:14px 20px;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.30);border-radius:30px;box-shadow:none;cursor:pointer;}
 .home-screen .mission:active{background:rgba(255,255,255,.16);}
-.home-screen .mission .mlabel{color:rgba(255,255,255,.62);}
-.home-screen .mission .mtext{color:#fff;margin:5px 0 0;}
+.home-screen .mission .mission-text{height:56px;width:auto;flex:0 1 auto;}
+.home-screen .mission .mission-icon{width:30px;height:auto;margin-left:auto;flex-shrink:0;}
 /* hero(배경+집)는 뷰포트에 고정(sticky), 글래스 시트가 그 위로 스크롤되어 올라옴 */
 .home-hero{position:sticky;top:0;z-index:0;display:flex;flex-direction:column;min-height:100%;
   background:url('/assets/home_bg.svg') center/cover no-repeat;background-color:#0a1430;}
@@ -65,11 +65,14 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 /* bottom sheet (Figma 350:3551: dark gradient, rounded-top 30, 56px 원형 아바타).
    고정된 hero 위로 올라오도록 z-index 위, 음수 마진으로 처음엔 아래에 살짝 보임 */
 .homesheet{position:relative;z-index:2;margin-top:-140px;
-  background:linear-gradient(180deg,rgba(0,0,0,.40) 0%,rgba(0,0,0,.24) 53%,rgba(0,0,0,0) 100%);
-  backdrop-filter:blur(12px) saturate(1.1);-webkit-backdrop-filter:blur(12px) saturate(1.1);
+  background:linear-gradient(180deg,rgba(0,0,0,.22) 0%,rgba(0,0,0,.10) 53%,rgba(0,0,0,0) 100%);
+  backdrop-filter:blur(8px) saturate(1.05);-webkit-backdrop-filter:blur(8px) saturate(1.05);
   border:1px solid rgba(255,255,255,.05);border-bottom:none;border-radius:30px 30px 0 0;
-  padding:8px 0 16px;min-height:100%;}
-.sheet-grip{width:44px;height:5px;border-radius:100px;background:rgba(255,255,255,.4);margin:4px auto 12px;}
+  padding:0 0 16px;min-height:100%;}
+/* 드래그 핸들(시트 끌어올리기) — 그립을 더 큰 히트영역으로 감쌈 */
+.sheet-handle{padding:10px 0 8px;cursor:grab;touch-action:none;}
+.sheet-handle:active{cursor:grabbing;}
+.sheet-grip{width:44px;height:5px;border-radius:100px;background:rgba(255,255,255,.4);margin:0 auto;}
 .home-screen .room{gap:16px;padding:12px 32px;}
 .home-screen .room:active{background:rgba(255,255,255,.08);}
 .home-screen .ravatar{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:24px;}
@@ -85,7 +88,7 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .home-screen .rprev-share{color:#bcd0ff;}
 .mark{display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;cursor:pointer;user-select:none;}
 .mark .house{font-size:72px;line-height:1;filter:grayscale(1);}
-.mark .househero{width:322px;height:366px;max-width:92vw;object-fit:contain;pointer-events:none;}
+.mark .househero{width:350px;height:310px;max-width:96vw;object-fit:contain;pointer-events:none;}
 .mark .mk{font-size:11px;color:var(--g40);margin-top:2px;font-weight:700;letter-spacing:.04em;}
 /* house picker grid (onboarding + long-press sheet) */
 .housegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;max-height:48vh;overflow-y:auto;margin-top:6px;}

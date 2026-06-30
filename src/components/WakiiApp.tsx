@@ -33,6 +33,15 @@ const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false 
 
 // role shown on each card by its position in the deck
 const roleLabel = (i: number) => (i === 0 ? "" : `${i}차 반응자`);
+// 스탬프 화면 섬 흩뿌림 위치(디자인처럼 랜덤한 느낌). 인덱스로 순환.
+const STAMP_SCATTER: React.CSSProperties[] = [
+  { top: "5%", left: "4%", width: "47%" },
+  { top: "0%", left: "53%", width: "42%" },
+  { top: "34%", left: "27%", width: "50%" },
+  { top: "62%", left: "5%", width: "45%" },
+  { top: "57%", left: "53%", width: "42%" },
+  { top: "40%", left: "62%", width: "37%" },
+];
 
 // 홈 방 목록의 "n분 전" — 분/시간 단위까지 보여주는 상대 시각.
 const relTime = (iso: string): string => {
@@ -1831,8 +1840,9 @@ export default function WakiiApp() {
                   </div>
                 ))}
               </div>
-              <button className="stamp-pill" onClick={() => setStampOpen(true)}>
-                STAMP
+              <button className="stamp-pill" onClick={() => setStampOpen(true)} aria-label="스탬프">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/assets/walk/stamp-button.svg" alt="STAMP" />
               </button>
             </div>
             {/* 워키 여정 지도 — Figma 세번째 화면 섬 일러스트(완주 코스 여정). 탭 → 목표 코스 선택 */}
@@ -2169,7 +2179,8 @@ export default function WakiiApp() {
             <div className="stampscreen" onClick={() => setStampOpen(false)}>
               <div className="stamp-panel" onClick={(e) => e.stopPropagation()}>
                 <div className="stamp-head">
-                  <span className="stamp-pill">STAMP</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="stamp-pill" src="/assets/walk/stamp-button.svg" alt="STAMP" />
                   <span className="stamp-x" onClick={() => setStampOpen(false)}>
                     ✕
                   </span>
@@ -2185,6 +2196,7 @@ export default function WakiiApp() {
                       <div
                         key={i}
                         className="stamp-island"
+                        style={STAMP_SCATTER[i % STAMP_SCATTER.length]}
                         onClick={() => {
                           setStampOpen(false);
                           openRecap(id);

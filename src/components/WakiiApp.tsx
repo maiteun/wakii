@@ -887,7 +887,7 @@ export default function WakiiApp() {
         text: isText,
         // 텍스트는 중앙 기준(렌더에서 translateX(-50%))으로 12~88% 전 영역에 분산.
         // 이모지·사진은 좌측 모서리 기준 전체 폭 분산.
-        left: isText ? 12 + Math.random() * 76 : 4 + Math.random() * 92,
+        left: isText ? 28 + Math.random() * 44 : 4 + Math.random() * 92,
         size: img ? 46 + Math.random() * 34 : isText ? 18 + Math.random() * 12 : 20 + Math.random() * 18,
         dx: (Math.random() - 0.5) * (img ? 120 : isText ? 44 : 90),
         dy: -(420 + Math.random() * 360),

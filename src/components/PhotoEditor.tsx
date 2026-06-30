@@ -356,20 +356,28 @@ const PhotoEditor = forwardRef<
             ctx.fillText(s.content, cx, cy);
             ctx.shadowBlur = 0;
           } else {
-            // pill (time / weather / voice): white chip, dark text
-            const fs = 12 * s.scale * f;
+            // pill (time / weather / voice): glass chip, white text (홈 글래스 느낌)
+            const fs = 15 * s.scale * f;
             ctx.font = `700 ${fs}px sans-serif`;
-            const padX = 11 * s.scale * f,
-              padY = 6 * s.scale * f;
+            const padX = 13 * s.scale * f,
+              padY = 7 * s.scale * f;
             const tw = ctx.measureText(s.content).width;
             const pw = tw + padX * 2,
               ph = fs + padY * 2,
               r = ph / 2;
-            ctx.fillStyle = "rgba(255,255,255,.92)";
+            // 반투명 글래스 칩 + 흰 테두리 (캔버스라 실제 블러는 불가 → 반투명으로 근사)
+            ctx.fillStyle = "rgba(255,255,255,.18)";
             roundRect(ctx, cx - pw / 2, cy - ph / 2, pw, ph, r);
             ctx.fill();
-            ctx.fillStyle = "#1a1a1a";
+            ctx.lineWidth = 1.5 * f;
+            ctx.strokeStyle = "rgba(255,255,255,.45)";
+            roundRect(ctx, cx - pw / 2, cy - ph / 2, pw, ph, r);
+            ctx.stroke();
+            ctx.fillStyle = "#fff";
+            ctx.shadowColor = "rgba(0,0,0,.45)";
+            ctx.shadowBlur = 4 * f;
             ctx.fillText(s.content, cx, cy + 1);
+            ctx.shadowBlur = 0;
           }
         }
         return out.toDataURL("image/jpeg", 0.9);

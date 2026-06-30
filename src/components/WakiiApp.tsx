@@ -336,6 +336,7 @@ export default function WakiiApp() {
   // 갤러리에서 지금 가운데 보이는 카드 인덱스 — 반응은 이 카드에만 붙는다
   const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [galReact, setGalReact] = useState(false); // reaction row in the deck gallery
+  const [dgMenuOpen, setDgMenuOpen] = useState(false); // deck gallery ⋯ menu (delete/close)
   const [peekImg, setPeekImg] = useState<string | null>(null); // long-press → original photo, no reactions
   const [replyEmoji, setReplyEmoji] = useState(""); // reaction emoji pre-placed on a reply photo
   const [instantEmoji, setInstantEmoji] = useState<string | null>(null); // emoji long-press → instant (non-editable) reaction photo
@@ -485,8 +486,8 @@ export default function WakiiApp() {
       setGalleryItems([]);
       return;
     }
-    // author shown as the label below each card
-    setGalleryItems(deck.cards.map((c) => ({ image: buildGalleryImage(c), text: nameOf(c.who) })));
+    // 작성자는 카드 좌상단 글래스 칩(.dg-author)으로 보여주므로 갤러리 하단 라벨은 비운다
+    setGalleryItems(deck.cards.map((c) => ({ image: buildGalleryImage(c), text: "" })));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openDeckIdx, currentRoom, rooms, profileMap]);
 
@@ -496,6 +497,7 @@ export default function WakiiApp() {
     if (openDeckIdx == null) return;
     const len = rooms[currentRoom]?.[openDeckIdx]?.cards.length ?? 1;
     setActiveCardIdx(Math.max(0, len - 1));
+    setDgMenuOpen(false); // 새 덱 열면 ⋯ 메뉴 닫기
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openDeckIdx, currentRoom]);
 
@@ -2513,9 +2515,6 @@ export default function WakiiApp() {
                   📷 답장
                 </button>
               )}
-              <button className="b-close" onClick={() => setOpenDeckIdx(null)}>
-                닫기
-              </button>
             </div>
           </div>
         )}

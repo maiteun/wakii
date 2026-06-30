@@ -30,7 +30,8 @@
       "Bash(sips -g pixelWidth -g pixelHeight figma_home.png)",
       "Bash(echo \"downloaded $\\(sips -g pixelWidth -g pixelHeight figma_home.png)",
       "mcp__claude_ai_Figma__get_metadata",
-      "mcp__claude_ai_Figma__get_design_context"
+      "mcp__claude_ai_Figma__get_design_context",
+      "Bash(node _chk.mjs)"
     ]
   }
 }

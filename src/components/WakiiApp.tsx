@@ -233,6 +233,8 @@ export default function WakiiApp() {
   // "우리 집" art: chosen at onboarding, changeable via long-press on home
   const [house, setHouse] = useState(DEFAULT_HOUSE);
   const [housePicker, setHousePicker] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null); // 마이 프로필 사진(data URL)
+  const avatarFileRef = useRef<HTMLInputElement>(null);
   const [obStep, setObStep] = useState<ObStep>("login");
   const [addingGroup, setAddingGroup] = useState(false); // opening the group flow from "+"
   const [myGroups, setMyGroups] = useState<Group[]>([]);
@@ -390,6 +392,8 @@ export default function WakiiApp() {
     try {
       const h = localStorage.getItem("wakii.house");
       if (h) setHouse(h);
+      const av = localStorage.getItem("wakii.avatar");
+      if (av) setAvatar(av);
     } catch {
       /* ignore */
     }
@@ -441,6 +445,36 @@ export default function WakiiApp() {
     } catch {
       /* ignore */
     }
+  };
+  // profile photo: pick from device, downscale to ~400px, persist as data URL
+  const pickAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const S = 400;
+        const scale = Math.min(1, S / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        c.getContext("2d")?.drawImage(img, 0, 0, w, h);
+        const url = c.toDataURL("image/jpeg", 0.85);
+        setAvatar(url);
+        try {
+          localStorage.setItem("wakii.avatar", url);
+        } catch {
+          /* ignore */
+        }
+        toast("프로필 사진을 바꿨어요");
+      };
+      img.src = String(reader.result || "");
+    };
+    reader.readAsDataURL(f);
   };
   // routing after identity (name + house) is set: invite link → auto-join,
   // otherwise the group step
@@ -1599,8 +1633,18 @@ export default function WakiiApp() {
           {/* ===== MY ===== */}
           <div className={"screen" + (screen === "my" ? " active" : "")} id="s-my">
             <div className="myhero">
-              <div className="myava">🙂</div>
-              <div className="myname">나</div>
+              <div className="myava-wrap" onClick={() => avatarFileRef.current?.click()}>
+                <div className="myava">{avatar ? <img src={avatar} alt="프로필" /> : "🙂"}</div>
+                <span className="myava-edit">＋</span>
+              </div>
+              <input
+                ref={avatarFileRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={pickAvatar}
+              />
+              <div className="myname">{name || "나"}</div>
               <div className="mysub">가족 4 · 함께 걷는 중</div>
             </div>
             <div className="cal">

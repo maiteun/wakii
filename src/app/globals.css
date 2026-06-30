@@ -219,7 +219,10 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 
 /* ===== MY ===== */
 .myhero{display:flex;flex-direction:column;align-items:center;padding:18px 0 12px;border-bottom:1px solid var(--g08);}
-.myava{width:60px;height:60px;border-radius:50%;background:var(--g25);display:flex;align-items:center;justify-content:center;font-size:26px;}
+.myava-wrap{position:relative;width:60px;height:60px;cursor:pointer;}
+.myava{width:60px;height:60px;border-radius:50%;background:var(--g25);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden;}
+.myava img{width:100%;height:100%;object-fit:cover;}
+.myava-edit{position:absolute;right:-1px;bottom:-1px;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--paper);}
 .myname{font-size:14px;font-weight:800;margin-top:8px;}
 .mysub{font-size:10px;color:var(--g40);margin-top:2px;}
 .cal{padding:14px 16px;}

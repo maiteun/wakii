@@ -121,11 +121,10 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .home-step{font-size:13px;color:#dbe4ff;font-weight:700;}
 .home-step b{color:#fff;font-weight:800;font-size:15px;}
 .home-screen .mk{color:rgba(255,255,255,.72);}
-/* mission → glass card (Figma 374:2492: white .10 + 2px white .30, r30). 카드 전체가 탭 → 촬영 */
-.home-screen .mission{margin:8px 18px 0;display:flex;align-items:center;gap:10px;min-height:84px;padding:14px 22px;background:url('/assets/mission/mission-box.png') center/100% 100% no-repeat;border:none;border-radius:30px;box-shadow:none;cursor:pointer;}
+/* mission → 완성형 카드 PNG(366×99, 글래스 박스+텍스트+카메라 일체). 카드 전체가 탭 → 촬영 */
+.home-screen .mission{margin:8px 18px 0;padding:0;background:none;border:none;border-radius:30px;box-shadow:none;cursor:pointer;}
 .home-screen .mission:active{filter:brightness(1.1);}
-.home-screen .mission .mission-text{height:56px;width:auto;flex:0 1 auto;}
-.home-screen .mission .mission-icon{width:30px;height:auto;margin-left:auto;flex-shrink:0;}
+.home-screen .mission .mission-img{display:block;width:100%;height:auto;}
 /* hero(배경+집)는 뷰포트에 고정(sticky), 글래스 시트가 그 위로 스크롤되어 올라옴 */
 .home-hero{position:sticky;top:0;z-index:0;display:flex;flex-direction:column;min-height:100%;
   background:url('/assets/home/home_bg.svg') center/cover no-repeat;background-color:#0a1430;}

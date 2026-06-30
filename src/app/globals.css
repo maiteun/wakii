@@ -52,21 +52,31 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .home-step{font-size:13px;color:#dbe4ff;font-weight:700;}
 .home-step b{color:#fff;font-weight:800;font-size:15px;}
 .home-screen .mk{color:rgba(255,255,255,.72);}
-/* mission → glass card (Rectangle 6: white .10 + 3px white .30, r30) */
-.home-screen .mission{margin:8px 18px 0;background:rgba(255,255,255,.10);border:3px solid rgba(255,255,255,.30);border-radius:30px;box-shadow:none;}
+/* mission → glass card (Figma 374:2492: white .10 + 2px white .30, r30). 카드 전체가 탭 → 촬영 */
+.home-screen .mission{margin:8px 18px 0;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.30);border-radius:30px;box-shadow:none;cursor:pointer;}
+.home-screen .mission:active{background:rgba(255,255,255,.16);}
 .home-screen .mission .mlabel{color:rgba(255,255,255,.62);}
-.home-screen .mission .mtext{color:#fff;}
-.home-screen .mission .mbtn{background:#fff;color:#1a1a1a;}
+.home-screen .mission .mtext{color:#fff;margin:5px 0 0;}
+/* default home view = hero(집·미션) 한 화면. 바텀시트는 아래에 살짝 보이다가 스크롤로 올라옴 */
+.home-screen{scroll-snap-type:y proximity;}
+.home-hero{display:flex;flex-direction:column;min-height:calc(100% - 116px);scroll-snap-align:start;}
 /* floating island sits on top of the sheet */
-.home-screen .mark{position:relative;z-index:2;}
-/* bottom glass sheet (Frame 1: white .20→.12→0, rounded-top 30) */
-.homesheet{position:relative;z-index:1;margin-top:-34px;background:linear-gradient(180deg,rgba(255,255,255,.20) 0%,rgba(255,255,255,.12) 66%,rgba(255,255,255,0) 100%);backdrop-filter:blur(10px) saturate(1.2);-webkit-backdrop-filter:blur(10px) saturate(1.2);border-radius:30px 30px 0 0;padding:18px 0 10px;min-height:300px;}
-.home-screen .room:active{background:rgba(255,255,255,.10);}
-.home-screen .ravatar{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.home-screen .mark{position:relative;z-index:2;margin-top:auto;}
+/* bottom sheet (Figma 350:3551: dark gradient, rounded-top 30, 56px 원형 아바타) */
+.homesheet{position:relative;z-index:1;margin-top:-24px;scroll-snap-align:start;
+  background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,.30) 53%,rgba(0,0,0,.12) 100%);
+  backdrop-filter:blur(12px) saturate(1.1);-webkit-backdrop-filter:blur(12px) saturate(1.1);
+  border:1px solid rgba(255,255,255,.06);border-bottom:none;border-radius:30px 30px 0 0;
+  padding:8px 0 16px;min-height:calc(100% - 56px);}
+.sheet-grip{width:44px;height:5px;border-radius:100px;background:rgba(255,255,255,.4);margin:4px auto 12px;}
+.home-screen .room{gap:16px;padding:12px 32px;}
+.home-screen .room:active{background:rgba(255,255,255,.08);}
+.home-screen .ravatar{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:24px;}
 .home-screen .ravatar.on{background:rgba(255,255,255,.30);}
 .home-screen .ravatar img{width:100%;height:100%;object-fit:cover;}
-.home-screen .rname{color:#fff;}
-.home-screen .rprev{color:rgba(255,255,255,.6);}
+.home-screen .rname{color:#fff;font-size:20px;font-weight:700;letter-spacing:-.04em;line-height:24px;}
+.home-screen .room-add .rname{font-size:17px;}
+.home-screen .rprev{color:rgba(255,255,255,.5);font-size:15px;line-height:20px;letter-spacing:-.04em;}
 .home-screen .rprev-share{color:#bcd0ff;}
 .mark{display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;cursor:pointer;user-select:none;}
 .mark .house{font-size:72px;line-height:1;filter:grayscale(1);}
@@ -276,14 +286,20 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .report-chart.dense .rc-lbl{display:none;}
 
 /* ===== glass nav ===== */
-.nav{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,.38));backdrop-filter:blur(22px) saturate(1.8);-webkit-backdrop-filter:blur(22px) saturate(1.8);border:1px solid rgba(255,255,255,.65);border-radius:28px;padding:7px 9px;box-shadow:0 10px 30px rgba(0,0,0,.18),inset 0 1px 1px rgba(255,255,255,.75),inset 0 -1px 2px rgba(255,255,255,.25);z-index:70;}
-.nav .tab{display:flex;flex-direction:column;align-items:center;gap:2px;width:50px;padding:5px 0;cursor:pointer;border-radius:16px;}
-.nav .tab .ni{font-size:18px;filter:grayscale(1);opacity:.5;}
-.nav .tab .nl{font-size:8px;color:var(--g55);font-weight:600;}
-.nav .tab.on .ni{opacity:1;}
-.nav .tab.on .nl{color:var(--ink);font-weight:800;}
-.nav .upload{width:46px;height:46px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;margin:0 2px;box-shadow:0 4px 12px rgba(0,0,0,.25);}
-.nav .divider{width:1px;height:26px;background:rgba(0,0,0,.12);margin:0 4px;}
+/* glass nav (Figma 374:2491) — 알약형 글래스(홈·카메라·워키) + 분리된 원형 마이.
+   기본 아이콘 흰색, 활성 화면은 민트(#74f1f1)로 불이 켜짐. */
+.nav{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;z-index:70;}
+.navpill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:9px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25);}
+.nav .tab{display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;cursor:pointer;color:#fff;}
+.nav .tab .ni{width:28px;height:28px;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));transition:color .15s;}
+.nav .tab:active{transform:scale(.92);}
+.nav .tab.on{color:#74f1f1;}
+.nav .tab.on .ni{filter:drop-shadow(0 0 6px rgba(116,241,241,.7));}
+.navmy{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.15);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 30px rgba(0,0,0,.25);cursor:pointer;color:#fff;}
+.navmy .ni{width:30px;height:30px;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));transition:color .15s;}
+.navmy:active{transform:scale(.95);}
+.navmy.on{color:#74f1f1;}
+.navmy.on .ni{filter:drop-shadow(0 0 6px rgba(116,241,241,.7));}
 
 /* toast */
 .toast{position:absolute;left:50%;bottom:88px;transform:translateX(-50%) translateY(8px);background:var(--ink);color:#fff;font-size:11px;font-weight:600;border-radius:11px;padding:9px 16px;opacity:0;transition:opacity .3s,transform .3s;z-index:100;white-space:nowrap;pointer-events:none;}

@@ -1414,34 +1414,36 @@ export default function WakiiApp() {
         <div className="viewport" ref={viewportRef}>
           {/* ===== HOME ===== */}
           <div className={"screen home-screen" + (screen === "home" ? " active" : "")} id="s-home">
-            <div className="home-top">
-              <img className="home-logo" src="/assets/wakii_logo.svg" alt="wakii" />
-              <div className="home-step">
-                👣 <b>6,200</b>
+            <div className="home-hero">
+              <div className="home-top">
+                <img className="home-logo" src="/assets/wakii_logo.svg" alt="wakii" />
+                <div className="home-step">
+                  👣 <b>6,200</b>
+                </div>
+              </div>
+
+              {/* 오늘의 미션 — 카드를 탭하면 촬영 후 공유하기로 이동 (촬영은 하단 카메라로도 가능) */}
+              <div className="mission" onClick={() => openUpload("mission")}>
+                <span className="mlabel">오늘의 미션</span>
+                <div className="mtext">
+                  오늘은 하지예요! 1년 중 해가
+                  <br />가장 긴 날의 풍경을 담아보세요 ☀️
+                </div>
+              </div>
+
+              <div
+                className="mark"
+                onPointerDown={() => startPress(() => setHousePicker(true))}
+                onPointerUp={() => endPress(() => {})}
+                onPointerLeave={cancelPress}
+              >
+                <img className="househero" src={houseImg(house)} alt="우리 집" draggable={false} />
               </div>
             </div>
 
-            <div className="mission">
-              <span className="mlabel">오늘의 미션</span>
-              <div className="mtext">
-                오늘은 하지예요! 1년 중 해가
-                <br />가장 긴 날의 풍경을 담아보세요 ☀️
-              </div>
-              <button className="mbtn" onClick={() => openUpload("mission")}>
-                📷 촬영 후 공유하기
-              </button>
-            </div>
-
-            <div
-              className="mark"
-              onPointerDown={() => startPress(() => setHousePicker(true))}
-              onPointerUp={() => endPress(() => {})}
-              onPointerLeave={cancelPress}
-            >
-              <img className="househero" src={houseImg(house)} alt="우리 집" draggable={false} />
-            </div>
-
+            {/* 방 선택 바텀시트 — 기본은 집 아래로 살짝 보이고, 위로 스크롤하면 올라옴 */}
             <div className="homesheet">
+              <div className="sheet-grip" />
               {myGroups.map((grp, i) => (
                 <div key={grp.code} className="room" onClick={() => openRoom(grp.name, "🏠")}>
                   <div className={"ravatar" + (i === 0 ? " on" : "")}>
@@ -1452,7 +1454,7 @@ export default function WakiiApp() {
                   </div>
                 </div>
               ))}
-              <div className="room" onClick={openAddGroup}>
+              <div className="room room-add" onClick={openAddGroup}>
                 <div className="ravatar">＋</div>
                 <div className="rmeta">
                   <div className="rname">그룹 추가</div>
@@ -1520,10 +1522,11 @@ export default function WakiiApp() {
                       {/* closed stack — tap to open the circular gallery */}
                       <div className="deck" onClick={() => setOpenDeckIdx(di)}>
                         {deck.cards.map((c, i) => {
-                          const depth = n - 1 - i;
+                          // 최초 사진(i=0)이 맨 앞·맨 위, 이후 반응들이 뒤로 차곡차곡 쌓인다
+                          const depth = i;
                           const style: React.CSSProperties = {
                             transform: `translateX(calc(-50% + ${depth * -4}px)) translateY(${depth * 5}px) scale(${1 - depth * 0.03})`,
-                            zIndex: 10 + i,
+                            zIndex: 10 + (n - 1 - i),
                             opacity: depth > 3 ? 0 : 1,
                           };
                           if (c.img) {
@@ -2100,23 +2103,30 @@ export default function WakiiApp() {
           <div className={"toast" + (toastShown ? " show" : "")}>{toastMsg}</div>
         </div>
 
-        {/* glass nav */}
+        {/* glass nav — 알약형 글래스(홈·카메라·워키) + 분리된 원형 마이 버튼.
+            기본은 흰색, 활성 화면 아이콘은 민트로 불이 켜짐. 카메라는 촬영 후 공유하기. */}
         <div className="nav">
-          <div className={"tab" + (screen === "home" ? " on" : "")} onClick={() => go("home")}>
-            <span className="ni">🏠</span>
-            <span className="nl">홈</span>
+          <div className="navpill">
+            <div className={"tab" + (screen === "home" ? " on" : "")} onClick={() => go("home")} aria-label="홈">
+              <svg className="ni" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M12 2.6 3 11h2.4v9h5.1v-5.4h3V20h5.1v-9H21z" />
+              </svg>
+            </div>
+            <div className="tab cam" onClick={() => openUpload("mission")} aria-label="촬영 후 공유">
+              <svg className="ni" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 4a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+              </svg>
+            </div>
+            <div className={"tab" + (screen === "walk" ? " on" : "")} onClick={() => go("walk")} aria-label="워키">
+              <svg className="ni" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9 7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z" />
+              </svg>
+            </div>
           </div>
-          <div className="upload" onClick={() => openUpload("new")}>
-            ＋
-          </div>
-          <div className={"tab" + (screen === "walk" ? " on" : "")} onClick={() => go("walk")}>
-            <span className="ni">👣</span>
-            <span className="nl">워키</span>
-          </div>
-          <div className="divider" />
-          <div className={"tab" + (screen === "my" ? " on" : "")} onClick={() => go("my")}>
-            <span className="ni">👤</span>
-            <span className="nl">마이</span>
+          <div className={"navmy" + (screen === "my" ? " on" : "")} onClick={() => go("my")} aria-label="마이">
+            <svg className="ni" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z" />
+            </svg>
           </div>
         </div>
 

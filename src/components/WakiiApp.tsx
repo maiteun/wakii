@@ -2050,6 +2050,19 @@ export default function WakiiApp() {
               onPointerMove={cancelPress}
               onPointerLeave={cancelPress}
             >
+              {openDeck.cards[0]?.mine && (
+                <button
+                  className="dg-del"
+                  title="이 사진 내리기"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteOpenDeck();
+                  }}
+                >
+                  ✕
+                </button>
+              )}
               <CircularGallery
                 items={galleryItems}
                 bend={3}
@@ -2200,11 +2213,6 @@ export default function WakiiApp() {
               {!openDeck.isMission && (
                 <button className="b-reply" onClick={() => startReply("")}>
                   📷 답장
-                </button>
-              )}
-              {openDeck.cards[0]?.mine && (
-                <button className="b-del" onClick={deleteOpenDeck}>
-                  🗑 내리기
                 </button>
               )}
               <button className="b-close" onClick={() => setOpenDeckIdx(null)}>

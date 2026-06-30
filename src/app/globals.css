@@ -352,6 +352,7 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .dg-top b{font-size:15px;font-weight:800;}
 .dg-top .dg-x{margin-left:auto;font-size:20px;cursor:pointer;opacity:.85;}
 .dg-stage{position:relative;flex:1;min-height:0;}
+.dg-del{position:absolute;top:10px;right:14px;z-index:30;width:30px;height:30px;border:none;border-radius:999px;background:rgba(255,90,80,.92);color:#fff;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35);}
 /* reaction palette — emojis + 텍스트 all on one row */
 .rx-bar{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:nowrap;padding:8px 10px;}
 .rx-btn{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);border:none;border-radius:50%;width:46px;height:46px;font-size:24px;line-height:1;cursor:pointer;color:#fff;font-family:inherit;user-select:none;touch-action:none;transition:transform .12s,background .12s;flex:0 0 auto;}

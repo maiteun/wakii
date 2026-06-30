@@ -15,6 +15,7 @@ import {
   createPhotoDeck,
   addReplyCard,
   addReaction,
+  deleteDeck,
   listMyCards,
   createGroup,
   joinGroup,
@@ -731,6 +732,31 @@ export default function WakiiApp() {
     if (idx != null) setOpenDeckIdx(idx); // reopen the gallery on the same deck
     if (emoji) spawnBubble(emoji);
     toast("답장을 보냈어요");
+  };
+
+  // ---------- take down my photo (delete the open deck) ----------
+  const deleteOpenDeck = async () => {
+    const idx = openDeckIdx;
+    if (idx == null) return;
+    const deck = decks?.[idx];
+    if (!deck || !deck.cards[0]?.mine) return;
+    if (typeof window !== "undefined" && !window.confirm("이 사진을 내릴까요? 되돌릴 수 없어요.")) return;
+    setOpenDeckIdx(null);
+    if (hasSupabase && deck.id) {
+      try {
+        await deleteDeck(deck.id);
+        refreshRoom(currentRoom);
+      } catch {
+        toast("삭제 실패 — 잠시 후 다시 시도해주세요");
+        return;
+      }
+    } else {
+      setRooms((prev) => ({
+        ...prev,
+        [currentRoom]: (prev[currentRoom] || []).filter((_, i) => i !== idx),
+      }));
+    }
+    toast("사진을 내렸어요");
   };
 
   // ---------- text / AI phrase reactions ----------
@@ -2043,6 +2069,11 @@ export default function WakiiApp() {
               {!openDeck.isMission && (
                 <button className="b-reply" onClick={() => startReply("")}>
                   📷 답장
+                </button>
+              )}
+              {openDeck.cards[0]?.mine && (
+                <button className="b-del" onClick={deleteOpenDeck}>
+                  🗑 내리기
                 </button>
               )}
               <button className="b-close" onClick={() => setOpenDeckIdx(null)}>

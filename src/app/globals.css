@@ -391,6 +391,7 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .dg-acts .b-reply{background:#fff;color:var(--ink);}
 .dg-acts .b-react{background:rgba(255,255,255,.18);color:#fff;}
 .dg-acts .b-close{background:transparent;color:rgba(255,255,255,.7);}
+.dg-acts .b-del{background:rgba(255,90,80,.9);color:#fff;}
 
 /* ===== mission deck cards: blue + neon glow ===== */
 .card.mission{border-color:#3B82F6;background:linear-gradient(160deg,#3a5a8a,#1e3a6a);box-shadow:0 0 8px rgba(59,130,246,.7),0 0 18px rgba(59,130,246,.45),0 6px 16px rgba(0,0,0,.18);}

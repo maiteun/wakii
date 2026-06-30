@@ -127,6 +127,20 @@ export async function addReaction(cardId: string, author: string, emoji: string)
   await supabase.from("reactions").insert({ card_id: cardId, author, emoji });
 }
 
+// Take down a whole deck (the user's post + its thread). Cascade removes the
+// deck's cards + reactions; we also remove the photos from Storage.
+export async function deleteDeck(deckId: string) {
+  if (!supabase) return;
+  const { data: cards } = await supabase.from("cards").select("image_url").eq("deck_id", deckId);
+  const files = (cards || [])
+    .map((c: { image_url: string | null }) => c.image_url)
+    .filter((u): u is string => Boolean(u))
+    .map((u) => u.split("/").pop() as string)
+    .filter(Boolean);
+  await supabase.from("decks").delete().eq("id", deckId);
+  if (files.length) await supabase.storage.from(PHOTO_BUCKET).remove(files);
+}
+
 // Fetch every deck (newest first) for a room, with cards + reactions,
 // mapped into the UI's Deck shape. `me` decides the `mine` flag.
 export async function listRoom(room: string, me: string): Promise<Deck[]> {

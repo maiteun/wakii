@@ -86,7 +86,12 @@ export async function createGroup(name: string, code?: string, avatarUrl?: strin
   const c = (code?.trim() || randomCode()).toUpperCase();
   const group: Group = { code: c, name, avatar: avatarUrl };
   if (!supabase) return { ok: true, group };
-  const { error } = await supabase.from("groups").insert({ code: c, name, avatar_url: avatarUrl ?? null });
+  let { error } = await supabase.from("groups").insert({ code: c, name, avatar_url: avatarUrl ?? null });
+  // groups_avatar.sql 미실행 → avatar_url 컬럼 없음. 사진 없이라도 그룹은 저장(참여 가능해야 함).
+  if (error && /avatar_url/i.test(error.message)) {
+    ({ error } = await supabase.from("groups").insert({ code: c, name }));
+    group.avatar = undefined;
+  }
   if (!error) return { ok: true, group };
   if (/duplicate|unique/i.test(error.message)) return { ok: false, reason: "taken" };
   return { ok: true, group }; // table missing → accept locally

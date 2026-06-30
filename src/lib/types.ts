@@ -9,6 +9,7 @@ export type Card = {
   reply?: boolean;
   img?: string; // captured + edited photo (URL or data URL)
   reactions?: string[]; // emojis reacted to this card
+  photoReactions?: { emoji: string; img: string }[]; // 즉석 원형 사진 반응(이모지 배지 + 사진)
 };
 
 export type Deck = {

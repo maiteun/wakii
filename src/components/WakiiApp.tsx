@@ -48,13 +48,13 @@ function curateRecap(decks: Deck[]): RecapPhoto[] {
   const out: RecapPhoto[] = [];
   byAuthor.forEach((cards, who) => {
     // 반응 수 → 동점이면 이모지 종류 수 (반응 0이어도 사진 있으면 한 장은 뽑힘)
+    const rcount = (c: Card) => (c.reactions?.length ?? 0) + (c.photoReactions?.length ?? 0);
     const best = cards.slice().sort((a, b) => {
-      const ra = a.reactions?.length ?? 0;
-      const rb = b.reactions?.length ?? 0;
-      if (rb !== ra) return rb - ra;
+      const diff = rcount(b) - rcount(a);
+      if (diff !== 0) return diff;
       return new Set(b.reactions).size - new Set(a.reactions).size;
     })[0];
-    out.push({ who, img: best.img as string, count: best.reactions?.length ?? 0, emojis: best.reactions ?? [] });
+    out.push({ who, img: best.img as string, count: rcount(best), emojis: best.reactions ?? [] });
   });
   // 반응 많은 사람 먼저
   return out.sort((a, b) => b.count - a.count);
@@ -709,6 +709,30 @@ export default function WakiiApp() {
       if (cardId) addReaction(cardId, author, emoji).then(() => refreshRoom(currentRoom));
     }
   };
+  // 즉석 원형 사진 반응: 이모지 반응처럼 덱에 저장 → 재진입 시 같은 모션으로 재생.
+  const recordPhotoReaction = (emoji: string, img: string) => {
+    if (openDeckIdx == null) return;
+    setRooms((prev) => {
+      const list = prev[currentRoom];
+      if (!list || !list[openDeckIdx] || !list[openDeckIdx].cards[0]) return prev;
+      const next = list.map((dk, i) => {
+        if (i !== openDeckIdx) return dk;
+        const cards = dk.cards.slice();
+        cards[0] = { ...cards[0], photoReactions: [...(cards[0].photoReactions || []), { emoji, img }] };
+        return { ...dk, cards };
+      });
+      return { ...prev, [currentRoom]: next };
+    });
+    if (hasSupabase) {
+      const cardId = openDeck?.cards[0]?.id;
+      if (cardId) {
+        uploadPhoto(img)
+          .then((url) => addReaction(cardId, author, emoji, url))
+          .then(() => refreshRoom(currentRoom))
+          .catch(() => {});
+      }
+    }
+  };
   const pickEmoji = (e: string) => {
     spawnBubble(e);
     toast(e + " 반응을 남겼어요");
@@ -745,11 +769,18 @@ export default function WakiiApp() {
   useEffect(() => {
     if (openDeckIdx == null) return;
     const deck = rooms[currentRoom]?.[openDeckIdx];
-    const rx = deck ? deck.cards.flatMap((c) => c.reactions || []) : [];
-    if (!rx.length) return;
+    // 이모지 반응 + 즉석 사진 반응을 한 풀로 섞어 같은 모션으로 재생
+    const items: { emoji: string; img?: string }[] = deck
+      ? [
+          ...deck.cards.flatMap((c) => (c.reactions || []).map((e) => ({ emoji: e }))),
+          ...deck.cards.flatMap((c) => c.photoReactions || []),
+        ]
+      : [];
+    if (!items.length) return;
     let i = 0;
     const id = setInterval(() => {
-      spawnBubble(rx[i % rx.length], undefined, 3);
+      const it = items[i % items.length];
+      spawnBubble(it.emoji, it.img, it.img ? 2 : 3);
       i++;
     }, 1500);
     return () => clearInterval(id);
@@ -803,9 +834,9 @@ export default function WakiiApp() {
   const onInstantSend = (dataUrl: string) => {
     const emoji = instantEmoji;
     setInstantEmoji(null);
-    // reaction is ephemeral: the photo (with emoji badge) just showers up the
-    // screen — it is NOT saved to the deck (only 답장 adds a card).
+    // 사진(이모지 배지)이 화면 위로 촤르륵 떠오르고, 덱에 저장돼 재진입 시 재생됨.
     spawnBubble(emoji || "", dataUrl);
+    recordPhotoReaction(emoji || "", dataUrl);
     toast("반응을 보냈어요");
   };
 
@@ -1426,7 +1457,7 @@ export default function WakiiApp() {
                   .map(({ deck, di }) => {
                   const n = deck.cards.length;
                   const names = Array.from(new Set(deck.cards.map((c) => c.who)));
-                  const rxTotal = deck.cards.reduce((s, c) => s + (c.reactions?.length || 0), 0);
+                  const rxTotal = deck.cards.reduce((s, c) => s + (c.reactions?.length || 0) + (c.photoReactions?.length || 0), 0);
                   return (
                     <div key={di} className="deckwrap">
                       <div className="decklabel">

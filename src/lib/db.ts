@@ -145,9 +145,16 @@ export async function listProfiles(): Promise<Record<string, string>> {
   return map;
 }
 
-export async function addReaction(cardId: string, author: string, emoji: string) {
+export async function addReaction(
+  cardId: string,
+  author: string,
+  emoji: string,
+  imageUrl?: string,
+) {
   if (!supabase) return;
-  await supabase.from("reactions").insert({ card_id: cardId, author, emoji });
+  await supabase
+    .from("reactions")
+    .insert({ card_id: cardId, author, emoji, image_url: imageUrl ?? null });
 }
 
 // Take down a whole deck (the user's post + its thread). Cascade removes the
@@ -177,10 +184,21 @@ export async function listRoom(room: string, me: string): Promise<Deck[]> {
 
   const cardIds = (decks || []).flatMap((d: { cards?: { id: string }[] }) => (d.cards || []).map((c) => c.id));
   const reactionsByCard: Record<string, string[]> = {};
+  const photoReactionsByCard: Record<string, { emoji: string; img: string }[]> = {};
   if (cardIds.length) {
-    const { data: rx } = await supabase.from("reactions").select("card_id, emoji").in("card_id", cardIds);
-    (rx || []).forEach((r: { card_id: string; emoji: string }) => {
-      (reactionsByCard[r.card_id] = reactionsByCard[r.card_id] || []).push(r.emoji);
+    const { data: rx } = await supabase
+      .from("reactions")
+      .select("card_id, emoji, image_url")
+      .in("card_id", cardIds);
+    (rx || []).forEach((r: { card_id: string; emoji: string; image_url: string | null }) => {
+      if (r.image_url) {
+        (photoReactionsByCard[r.card_id] = photoReactionsByCard[r.card_id] || []).push({
+          emoji: r.emoji,
+          img: r.image_url,
+        });
+      } else {
+        (reactionsByCard[r.card_id] = reactionsByCard[r.card_id] || []).push(r.emoji);
+      }
     });
   }
 
@@ -200,6 +218,7 @@ export async function listRoom(room: string, me: string): Promise<Deck[]> {
         reply: c.is_reply,
         img: c.image_url || undefined,
         reactions: reactionsByCard[c.id] || [],
+        photoReactions: photoReactionsByCard[c.id] || [],
       }));
     return { id: d.id, label: d.label, when: relWhen(d.created_at), isMission: d.is_mission, cards };
   });

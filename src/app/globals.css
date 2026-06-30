@@ -477,6 +477,9 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 /* floating reaction bubbles */
 .bubble{position:absolute;z-index:84;pointer-events:none;opacity:1;animation:bubblefloat 1.4s ease-out forwards;}
 @keyframes bubblefloat{to{transform:translateY(var(--dy)) translateX(var(--dx));opacity:0;}}
+/* 텍스트 반응 — left%를 '중앙'으로 삼아(translateX(-50%)) 화면 전반에 분산. */
+.bubble.txt{white-space:nowrap;color:#fff;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.55);animation-name:bubblefloat-txt;}
+@keyframes bubblefloat-txt{from{transform:translate(-50%,0);opacity:1;}to{transform:translate(calc(-50% + var(--dx)),var(--dy));opacity:0;}}
 /* instant-photo reaction bubble: circular photo with an emoji top-right badge */
 .photobubble{aspect-ratio:1;border-radius:50%;background-size:cover;background-position:center;box-shadow:0 8px 22px rgba(0,0,0,.32);border:3px solid rgba(255,255,255,.92);overflow:visible;}
 .photobubble .pb-badge{position:absolute;right:-6px;top:-6px;font-size:var(--fs-title);filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));}

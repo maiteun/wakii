@@ -32,7 +32,7 @@ import {
 const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false });
 
 // role shown on each card by its position in the deck
-const roleLabel = (i: number) => (i === 0 ? "작성자" : `${i}차 반응자`);
+const roleLabel = (i: number) => (i === 0 ? "" : `${i}차 반응자`);
 
 // 홈 방 목록의 "n분 전" — 분/시간 단위까지 보여주는 상대 시각.
 const relTime = (iso: string): string => {
@@ -278,7 +278,7 @@ const stepsByDay: Record<number, number> = {
   1: 5400, 5: 7100, 8: 3200, 11: 8800, 12: 6600, 13: 4100, 17: 9200, 23: 5800, 24: 6200, 25: 7400, 26: 6200,
 };
 
-type Bubble = { id: number; emoji: string; img?: string; left: number; size: number; dx: number; dy: number; dur: number; delay: number };
+type Bubble = { id: number; emoji: string; img?: string; text?: boolean; left: number; size: number; dx: number; dy: number; dur: number; delay: number };
 type UploadMode = "new" | "mission" | "room" | "reply";
 
 export default function WakiiApp() {
@@ -861,28 +861,32 @@ export default function WakiiApp() {
   };
   // iMessage-style shower rising from across the bottom edge. With `img` set,
   // each bubble is the captured photo thumbnail (emoji as a corner badge).
-  const spawnBubble = (e: string, img?: string, count?: number) => {
+  const spawnBubble = (e: string, img?: string, count?: number, isText?: boolean) => {
     const made: Bubble[] = [];
-    // photos: fewer on screen and ~0.5× speed (slower, calmer rise)
-    const n = count ?? (img ? 6 : 16);
+    // photos: fewer on screen and ~0.5× speed. 텍스트: 더 적게·더 천천히·넓게 시차를 둬서
+    // 화면 전반에서 부드럽게 올라오게 한다(한쪽 쏠림 X).
+    const n = count ?? (img ? 6 : isText ? 11 : 16);
     for (let i = 0; i < n; i++) {
       made.push({
         id: bubbleId.current++,
         emoji: e,
         img,
-        // photos spread across the FULL width too (like the emoji shower),
-        // not clustered to one side
-        left: 4 + Math.random() * 92,
-        size: img ? 46 + Math.random() * 34 : 20 + Math.random() * 18,
-        dx: (Math.random() - 0.5) * (img ? 120 : 90),
+        text: isText,
+        // 텍스트는 중앙 기준(렌더에서 translateX(-50%))으로 12~88% 전 영역에 분산.
+        // 이모지·사진은 좌측 모서리 기준 전체 폭 분산.
+        left: isText ? 12 + Math.random() * 76 : 4 + Math.random() * 92,
+        size: img ? 46 + Math.random() * 34 : isText ? 18 + Math.random() * 12 : 20 + Math.random() * 18,
+        dx: (Math.random() - 0.5) * (img ? 120 : isText ? 44 : 90),
         dy: -(420 + Math.random() * 360),
-        dur: img ? 4.8 + Math.random() * 3.2 : 2.4 + Math.random() * 1.6,
-        delay: Math.random() * 0.6,
+        // 텍스트는 4.4~7.4s로 느리게(기존 2.4~4.0보다 천천히)
+        dur: img ? 4.8 + Math.random() * 3.2 : isText ? 4.4 + Math.random() * 3.0 : 2.4 + Math.random() * 1.6,
+        // 텍스트는 시차를 넓게(0~1.1s) 둬서 한꺼번에 안 올라옴
+        delay: Math.random() * (isText ? 1.1 : 0.6),
       });
     }
     setBubbles((b) => [...b, ...made]);
     const ids = made.map((m) => m.id);
-    setTimeout(() => setBubbles((b) => b.filter((x) => !ids.includes(x.id))), img ? 9400 : 4600);
+    setTimeout(() => setBubbles((b) => b.filter((x) => !ids.includes(x.id))), img ? 9400 : isText ? 8200 : 4600);
   };
 
   // while a deck's gallery is open, its saved reactions keep gently floating
@@ -1010,7 +1014,7 @@ export default function WakiiApp() {
   const sendTextReaction = (text: string) => {
     const t = text.trim().slice(0, 10);
     if (!t) return;
-    spawnBubble(t);
+    spawnBubble(t, undefined, undefined, true);
     toast("“" + t + "” 남겼어요");
     recordReaction(t);
   };
@@ -1018,7 +1022,7 @@ export default function WakiiApp() {
   const playPhrase = (text: string) => {
     setPhrasesOpen(false);
     setGalReact(false);
-    spawnBubble(text);
+    spawnBubble(text, undefined, undefined, true);
     toast("“" + text + "” 남겼어요");
     recordReaction(text);
   };
@@ -1577,7 +1581,7 @@ export default function WakiiApp() {
                 ‹
               </span>
               <span className="ttl">
-                {currentRoom} {currentRoomEmoji}
+                {currentRoom}
               </span>
               <span className="cam" onClick={() => openUpload("room")}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1643,7 +1647,9 @@ export default function WakiiApp() {
                               className={"card" + (c.mine ? " mine" : "") + (deck.isMission ? " mission" : "")}
                               style={style}
                             >
-                              <div className="meta">{deck.isMission ? nameOf(c.who) : roleLabel(i)}</div>
+                              {(deck.isMission ? nameOf(c.who) : roleLabel(i)) && (
+                                <div className="meta">{deck.isMission ? nameOf(c.who) : roleLabel(i)}</div>
+                              )}
                               {!c.img && c.ov && <div className="ov">{c.ov}</div>}
                               <div className="seq">{i + 1}</div>
                               {c.reply &&
@@ -2314,7 +2320,7 @@ export default function WakiiApp() {
                 ) : (
                   <div
                     key={b.id}
-                    className="bubble"
+                    className={"bubble" + (b.text ? " txt" : "")}
                     style={
                       {
                         left: b.left + "%",

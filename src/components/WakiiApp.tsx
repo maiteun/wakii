@@ -1520,7 +1520,8 @@ export default function WakiiApp() {
                 {currentRoom} {currentRoomEmoji}
               </span>
               <span className="cam" onClick={() => openUpload("room")}>
-                📷
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="cam-ic" src="/assets/mission/mission-icon.svg" alt="촬영" />
               </span>
             </div>
             <div className="vtoggle">
@@ -1973,8 +1974,6 @@ export default function WakiiApp() {
                         display: cameraActive ? "block" : "none",
                       }}
                     />
-                  </div>
-                  <div className="ul-controls">
                     {uploadMode === "new" && (
                       <div className="ul-gallery" onClick={() => galleryInputRef.current?.click()} aria-label="갤러리">
                         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -1982,12 +1981,12 @@ export default function WakiiApp() {
                         </svg>
                       </div>
                     )}
-                    <button className="ul-shutter" onClick={shoot} aria-label="촬영">
-                      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                        <path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 4a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
-                      </svg>
-                    </button>
                   </div>
+                  <button className="ul-shutter" onClick={shoot} aria-label="촬영">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                      <path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 4a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+                    </svg>
+                  </button>
                 </>
               )}
               {/* after capture: full Instagram-style editor (all modes) */}

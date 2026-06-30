@@ -1478,7 +1478,7 @@ export default function WakiiApp() {
                 return (
                   <div key={grp.code} className="room" onClick={() => openRoom(grp.name, "🏠")}>
                     <div className={"ravatar" + (i === 0 ? " on" : "")}>
-                      {grp.avatar ? <img src={grp.avatar} alt="" /> : "🏠"}
+                      {grp.avatar ? <img src={grp.avatar} alt="" /> : null}
                     </div>
                     <div className="rmeta">
                       <div className="rname">{grp.name}</div>

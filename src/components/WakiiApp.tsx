@@ -1335,8 +1335,10 @@ export default function WakiiApp() {
     setRecapCourseId(courseId);
     setRecapTitle(`${c.name_ko} 완주!`);
     setRecapSub(`함께 ${c.distance_km}km · 가족이 함께 걸어 도착했어요`);
-    // 그룹의 모든 방 사진을 모아 사람별 best 1 큐레이션 (B안: 여정 기간 미반영)
-    setRecapPhotos(curateRecap(Object.values(rooms).flat()));
+    // 선택된 방(activeGroup)의 사진만 모아 사용자별 best 1장씩 큐레이션 → 방의 사용자 n명이면 n장.
+    // (목 데이터: 완주 '기간' 필터는 데이터가 생기면 여기서 createdAt 범위로 거르면 됨)
+    const roomDecks = (activeGroup && rooms[activeGroup.name]) || Object.values(rooms).flat();
+    setRecapPhotos(curateRecap(roomDecks));
     setRecapShow(true);
   };
 

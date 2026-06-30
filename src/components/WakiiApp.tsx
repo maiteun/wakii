@@ -1958,7 +1958,16 @@ export default function WakiiApp() {
             <div className="ul-stage">
               {!shotTaken && (
                 <>
-                  {uploadMode === "mission" && <div className="ul-prompt">💡 오늘의 미션 촬영</div>}
+                  {uploadMode === "mission" && (
+                    <div className="ul-mcard">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        className="mission-text"
+                        src="/assets/mission/mission-text.svg"
+                        alt="오늘의 미션 — 오늘은 하지예요! 1년 중 해가 가장 긴 날의 풍경을 담아보세요"
+                      />
+                    </div>
+                  )}
                   <div className="vf">
                     <video
                       ref={videoRef}

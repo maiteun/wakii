@@ -697,7 +697,10 @@ export default function WakiiApp() {
   const doCreateGroup = async () => {
     const nm = groupNameDraft.trim();
     const code = groupCodeDraft.trim();
-    if (!nm) return;
+    if (!nm) {
+      toast("그룹 이름을 입력해주세요");
+      return;
+    }
     if (code.length < 4) {
       toast("코드는 4자 이상으로 정해주세요");
       return;

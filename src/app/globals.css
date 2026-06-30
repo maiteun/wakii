@@ -502,7 +502,7 @@ img.stamp-pill{height:30px;width:auto;}
 .navmy.on .ni{filter:drop-shadow(0 0 6px rgba(116,241,241,.7));}
 
 /* toast */
-.toast{position:absolute;left:50%;bottom:88px;transform:translateX(-50%) translateY(8px);background:var(--ink);color:#fff;font-size:var(--fs-caption);font-weight:600;border-radius:11px;padding:9px 16px;opacity:0;transition:opacity .3s,transform .3s;z-index:100;white-space:nowrap;pointer-events:none;}
+.toast{position:absolute;left:50%;bottom:88px;transform:translateX(-50%) translateY(8px);background:var(--ink);color:#fff;font-size:var(--fs-caption);font-weight:600;border-radius:11px;padding:9px 16px;opacity:0;transition:opacity .3s,transform .3s;z-index:200;white-space:nowrap;pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 .hintline{text-align:center;font-size:var(--fs-caption);color:#555;margin-top:14px;max-width:340px;line-height:1.6;}

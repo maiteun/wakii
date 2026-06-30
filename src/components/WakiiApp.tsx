@@ -348,6 +348,29 @@ export default function WakiiApp() {
   const [currentRoom, setCurrentRoom] = useState("");
   const [currentRoomEmoji, setCurrentRoomEmoji] = useState("🏠");
   const [openDeckIdx, setOpenDeckIdx] = useState<number | null>(null);
+  // 내가 확인(열어본) 덱 추적 — 안 본 덱만 민트로 표시(부담 없는 안읽음 표시)
+  const [viewedDecks, setViewedDecks] = useState<Set<string>>(new Set());
+  const deckKey = (deck: Deck, di: number) => `${currentRoom}#${deck.id ?? di}`;
+  const markDeckViewed = (key: string) =>
+    setViewedDecks((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      try {
+        localStorage.setItem("wakii.viewedDecks", JSON.stringify(Array.from(next)));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem("wakii.viewedDecks");
+      if (s) setViewedDecks(new Set(JSON.parse(s)));
+    } catch {
+      /* ignore */
+    }
+  }, []);
   // 갤러리에서 지금 가운데 보이는 카드 인덱스 — 반응은 이 카드에만 붙는다
   const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [galReact, setGalReact] = useState(false); // reaction row in the deck gallery
@@ -1705,8 +1728,10 @@ export default function WakiiApp() {
                   const authorKeys = Array.from(new Set(deck.cards.map((c) => c.who)));
                   // 이 덱에 반응한 사람들(중복 제거) — 실제 DB의 reactions.author 기반
                   const reactors = Array.from(new Set(deck.cards.flatMap((c) => c.reactors || [])));
+                  const dkey = deckKey(deck, di);
+                  const unread = !viewedDecks.has(dkey);
                   return (
-                    <div key={di} className="deckwrap">
+                    <div key={di} className={"deckwrap" + (unread ? " unread" : "")}>
                       <div className="decklabel">
                         {deck.isMission ? (
                           <span className="dl-author">
@@ -1755,7 +1780,7 @@ export default function WakiiApp() {
                       </div>
 
                       {/* closed stack — tap to open the circular gallery */}
-                      <div className="deck" onClick={() => setOpenDeckIdx(di)}>
+                      <div className="deck" onClick={() => { markDeckViewed(dkey); setOpenDeckIdx(di); }}>
                         {deck.cards.map((c, i) => {
                           // 최초 사진(i=0)이 맨 앞·맨 위, 이후 반응들이 뒤로 차곡차곡 쌓인다
                           const depth = i;

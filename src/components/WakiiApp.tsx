@@ -2146,9 +2146,9 @@ export default function WakiiApp() {
                 <path d="M12 2.6 3 11h2.4v9h5.1v-5.4h3V20h5.1v-9H21z" />
               </svg>
             </div>
-            <div className="tab cam" onClick={() => openUpload("mission")} aria-label="촬영 후 공유">
+            <div className="tab cam" onClick={() => openUpload("mission")} aria-label="사진 추가">
               <svg className="ni" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 4a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+                <path d="M10.8 4h2.4v6.8H20v2.4h-6.8V20h-2.4v-6.8H4v-2.4h6.8z" />
               </svg>
             </div>
             <div className={"tab" + (screen === "walk" ? " on" : "")} onClick={() => go("walk")} aria-label="워키">

@@ -88,7 +88,7 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .home-screen .rprev-share{color:#bcd0ff;}
 .mark{display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;cursor:pointer;user-select:none;}
 .mark .house{font-size:72px;line-height:1;filter:grayscale(1);}
-.mark .househero{width:350px;height:310px;max-width:96vw;object-fit:contain;pointer-events:none;}
+.mark .househero{width:245px;height:217px;max-width:96vw;object-fit:contain;pointer-events:none;}
 .mark .mk{font-size:11px;color:var(--g40);margin-top:2px;font-weight:700;letter-spacing:.04em;}
 /* house picker grid (onboarding + long-press sheet) */
 .housegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;max-height:48vh;overflow-y:auto;margin-top:6px;}

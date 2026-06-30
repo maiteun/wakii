@@ -252,12 +252,6 @@ const initialRooms: RoomsData = {
   ],
 };
 
-const walkRooms = [
-  { nm: "엄마아빠", e: "🏠" },
-  { nm: "언니", e: "👩" },
-  { nm: "동생", e: "🐣" },
-  { nm: "할머니", e: "👵" },
-];
 const uploadedDays: Record<number, number> = {
   1: 2, 5: 1, 8: 3, 11: 1, 12: 2, 13: 1, 17: 1, 23: 2, 24: 1, 25: 3, 26: 1,
 };
@@ -1181,7 +1175,7 @@ export default function WakiiApp() {
   const courseKm = activeCourse.distance_km;
   const pct = Math.min(100, Math.round((familyKm / courseKm) * 100));
   const isComplete = familyKm >= courseKm;
-  const activeMember = walkRooms[walkSel] || walkRooms[0];
+  const activeGroup = myGroups[walkSel] || myGroups[0]; // 워키 상단 = 실제 그룹(홈과 동일)
 
   // recap of a course. The photo-curation rule (좋아요 수/이모지 종류 등) is TBD,
   // so the photo section is an empty placeholder for now.
@@ -1656,16 +1650,18 @@ export default function WakiiApp() {
           <div className={"screen" + (screen === "walk" ? " active" : "")} id="s-walk">
             <div className="sec-title">워키 여정</div>
             <div className="walkstories">
-              {walkRooms.map((r, i) => (
+              {myGroups.map((grp, i) => (
                 <div
-                  key={i}
+                  key={grp.code}
                   className={"wstory" + (i === walkSel ? " on" : "")}
                   onClick={() => setWalkSel(i)}
                 >
                   <div className="ring">
-                    <div className="inner">{r.e}</div>
+                    <div className="inner">
+                      {grp.avatar ? <img src={grp.avatar} alt="" /> : grp.name.slice(0, 1)}
+                    </div>
                   </div>
-                  <div className="nm">{r.nm}</div>
+                  <div className="nm">{grp.name}</div>
                 </div>
               ))}
             </div>
@@ -1804,8 +1800,8 @@ export default function WakiiApp() {
                 {/* family position marker — moves up the path toward the landmark */}
                 <g>
                   <circle cx={markerX} cy={markerY} r="15" fill="#fff" stroke="#5b4bd6" strokeWidth="2.5" />
-                  <text x={markerX} y={markerY + 5} fontSize="15" textAnchor="middle">
-                    {activeMember.e}
+                  <text x={markerX} y={markerY + 5} fontSize="13" fontWeight="700" textAnchor="middle" fill="#5b4bd6">
+                    {activeGroup ? activeGroup.name.slice(0, 1) : "👣"}
                   </text>
                 </g>
                 </svg>

@@ -1863,10 +1863,54 @@ export default function WakiiApp() {
                 <img src="/assets/walk/stamp-button.svg" alt="STAMP" />
               </button>
             </div>
-            {/* 워키 여정 지도 — Figma 세번째 화면 섬 일러스트(완주 코스 여정). 탭 → 목표 코스 선택 */}
-            <div className="journey" onClick={() => setCourseSheet(true)}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="journey-map" src="/assets/walk/journey-map.png" alt="워키 여정" draggable={false} />
+
+            {/* 진행 중(구름 덮인 목표가 있으면) 방 행 아래 % 완주 표시 — 기존 UI 유지 */}
+            {!isComplete && (
+              <div className="walkprogress">
+                <b>{activeCourse.name_ko}</b>까지 <b className="wp-pct">{pct}%</b>
+                <span className="wp-km">
+                  {familyKm.toLocaleString("ko-KR", { maximumFractionDigits: 1 })}/{courseKm}km
+                </span>
+              </div>
+            )}
+
+            {/* 워키 여정 — 레이어드 섬(near=완주/선명, 중간=진행중+구름, far=미래 empty+구름).
+                완주 랜드마크 탭→recap / 미래 섬은 현재 코스 완주 시에만 코스 선택 가능 */}
+            <div className="journey">
+              {/* 미래(맨 위/멀리): 빈 섬 + 구름. 현재 코스 완주했을 때만 새 목표 선택 */}
+              <div
+                className={"j-isle j-future" + (isComplete ? " on" : "")}
+                onClick={() => isComplete && setCourseSheet(true)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="j-island" src="/assets/walk/empty_island.png" alt="" draggable={false} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="j-cloud" src="/assets/walk/cloud.png" alt="" draggable={false} />
+                {isComplete && <div className="j-hint">＋ 새 목표 고르기</div>}
+              </div>
+
+              {/* 진행 중 목표(가운데): 코스 섬 + 구름. 완주하면 선명해지고 recap 가능 */}
+              <div
+                className={"j-isle j-active" + (isComplete ? " done" : "")}
+                onClick={() => isComplete && openRecap(activeCourseId)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="j-island" src={courseImg(activeCourseId) || "/assets/walk/empty_island.png"} alt={activeCourse.name_ko} draggable={false} />
+                {!isComplete && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img className="j-cloud" src="/assets/walk/cloud.png" alt="" draggable={false} />
+                )}
+                <div className="j-nm">{activeCourse.name_ko}{isComplete ? " 완주!" : ` ${pct}%`}</div>
+              </div>
+
+              {/* 완주한 코스(아래/가까이): 선명 랜드마크. 탭 → recap(사용자별 best 1) */}
+              {[...completedCourses].reverse().map((id) => (
+                <div key={id} className="j-isle j-done" onClick={() => openRecap(id)}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="j-island" src={courseImg(id) || "/assets/walk/empty_island.png"} alt={courseById(id)?.name_ko} draggable={false} />
+                  <div className="j-nm">{courseById(id)?.name_ko}</div>
+                </div>
+              ))}
             </div>
           </div>
 

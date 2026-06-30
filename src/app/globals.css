@@ -463,9 +463,23 @@ img.stamp-pill{height:30px;width:auto;}
 /* 아바타 크게 + 활성=민트 링 + 글로우(디자인 68px 발광 원) */
 #s-walk .wstory .ring{width:64px;height:64px;}
 #s-walk .wstory.on .ring{background:#74f1f1;box-shadow:0 0 16px rgba(116,241,241,.85);}
-/* 워키 여정 지도 — 섬 일러스트 풀폭(Figma 세번째 화면) */
-#s-walk .journey{width:100%;cursor:pointer;}
-#s-walk .journey-map{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none;}
+/* 진행 % (방 행 아래) — 구름 덮인 목표가 있을 때 */
+.walkprogress{margin:0 18px 4px;color:rgba(255,255,255,.85);font-size:var(--fs-label);font-weight:600;}
+.walkprogress b{color:#fff;font-weight:800;}
+.walkprogress .wp-pct{color:#74f1f1;}
+.walkprogress .wp-km{margin-left:8px;color:rgba(255,255,255,.55);}
+/* 워키 여정 — 레이어드 섬 스택(near=완주 아래, far=미래 위). Figma '세번째 화면' */
+#s-walk .journey{position:relative;display:flex;flex-direction:column;align-items:center;padding:8px 0 48px;}
+.j-isle{position:relative;width:80%;max-width:330px;display:flex;flex-direction:column;align-items:center;margin-top:-34px;}
+.j-isle:first-child{margin-top:6px;}
+.j-island{width:100%;height:auto;display:block;filter:drop-shadow(0 12px 18px rgba(0,0,0,.5));user-select:none;-webkit-user-drag:none;}
+.j-cloud{position:absolute;top:-4%;left:50%;transform:translateX(-50%);width:122%;height:auto;pointer-events:none;user-select:none;-webkit-user-drag:none;}
+.j-nm{margin-top:-4px;font-size:var(--fs-body);font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);}
+.j-done,.j-active.done{cursor:pointer;}
+.j-done:active .j-island,.j-active.done:active .j-island{transform:scale(.97);}
+.j-future{opacity:.92;}
+.j-future.on{cursor:pointer;}
+.j-hint{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);background:rgba(116,241,241,.2);border:1px solid rgba(116,241,241,.5);color:#fff;font-weight:800;font-size:var(--fs-label);border-radius:15px;padding:7px 16px;white-space:nowrap;}
 #s-walk .walkbadges .wb-nm{color:rgba(255,255,255,.75);}
 /* 스탬프 화면 (Figma 스탬프화면 402×874): 스크림 .6 + 글래스 패널 .3 r30, 완주 섬 컬렉션 */
 .stampscreen{position:absolute;inset:0;z-index:68;background:rgba(0,0,0,.6);}

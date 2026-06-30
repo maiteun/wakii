@@ -1,7 +1,74 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* ============================================================
+   마실 / wakii — DESIGN TOKENS
+   ▸ src/app/globals.css 의  "@tailwind utilities;"  바로 아래에 붙여넣기
+   ▸ 기존 :root(--ink, --g08, --line …)는 그대로 둠
+     (포팅된 프로토타입 CSS가 그 hex 값에 의존하므로 절대 덮어쓰지 않음)
+   ▸ 여기 토큰 = tailwind 유틸(bg-accent / text-display / rounded-glass …)
+     + 신규·리팩터 컴포넌트의 단일 소스
+   ============================================================ */
+:root{
+  /* ---- color : tailwind alpha 패턴용 RGB 트리플릿 (--ds-* 네임스페이스) ---- */
+  --ds-ink:     26 26 26;      /* #1A1A1A  텍스트 */
+  --ds-bg:      10 20 48;      /* #0A1430  다크 베이스(홈·워크 기준). 라이트로 갈 거면 → 251 250 249 */
+  --ds-surface: 255 255 255;   /* #FFFFFF */
+  --ds-line:    227 225 223;   /* #E3E1DF */
+  --ds-muted:   122 122 122;   /* #7A7A7A */
+  --ds-accent:  116 241 241;   /* #74F1F1  민트 — 선택/활성 전용 */
 
+  /* ---- glass (Figma Glass: Refraction80 · Depth20 · Dispersion50 · Frost8 · Splay0 · Light -45/80%) ---- */
+  --glass-fill:    rgba(255,255,255,.30);  /* 큰 글래스 패널 fill */
+  --glass-stroke:  rgba(255,255,255,.30);  /* 2px white .30 */
+
+  /* ---- active / mission glow : 민트 ---- */
+  --accent-fill:   rgba(116,241,241,.15);  /* Figma fill   74F1F1 15% */
+  --accent-stroke: rgba(116,241,241,.5);   /* Figma stroke 74F1F1 50% */
+  --glow-accent:   0 0 16px rgba(116,241,241,1); /* drop shadow blur16 spread0 */
+
+  /* ---- type scale (px) : 신규 작업 위계 ---- */
+  --fs-display: 30px;  /* 걸음 게이지 주인공 숫자(예: 18.3) */
+  --fs-title:   20px;  /* 타이틀·라벨·미션 배너 텍스트 */
+  --fs-body:    15px;  /* 본문·버튼 */
+  --fs-meta:    12px;  /* 캡션·단위(/25km)·날짜 — 부모 본문은 이 밑으로 내리지 않음 */
+
+  /* ---- radius ---- */
+  --r-glass: 30px;
+  --r-card:  16px;
+  --r-btn:   12px;
+  --r-chip:  10px;
+  --r-pill:  999px;
+
+  /* ---- font : tailwind font-sans(=var(--font-app)) 구동. 앱 본문 폰트와 동일 ---- */
+  --font-app: 'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;
+}
+
+/* ---- 상태 헬퍼 (클래스 기반 — 이 앱은 className으로 스타일하므로 JSX에 바로) ---- */
+/* 글래스 패널/필을 '선택·활성'으로 점등 (홈 nav 선택칸, STAMP 라벨 등) */
+.is-active{
+  background: var(--accent-fill);
+  border-color: var(--accent-stroke);
+  box-shadow: var(--glow-accent);
+}
+/* 이미 자기 글래스 필이 있는 요소(미션 카드 덱 등)에 민트 글로우만 덧댐 */
+.glow-accent{ box-shadow: var(--glow-accent); }
+
+
+/* ============================================================
+   (선택) 미션 강조색 파랑 → 민트 통일
+   ▸ 쓰려면 아래 주석(/* */)을 풀고, 이 블록만 globals.css "맨 끝"으로 옮길 것
+     (기존 .card.mission 규칙보다 뒤에 있어야 덮어씀)
+   ============================================================ */
+/*
+.card.mission{
+  border-color:#74F1F1;
+  background:linear-gradient(160deg,#1f4a4a,#0e2e2e);
+  box-shadow:0 0 8px rgba(116,241,241,.7), 0 0 18px rgba(116,241,241,.45), 0 6px 16px rgba(0,0,0,.18);
+}
+.decklabel .mission-names{ color:#74F1F1; }
+.missionchip{ color:#74F1F1; }
+*/
 /* ===================================================================
    KHUX prototype styles — ported verbatim from khux-prototype-full.html
    so the deployed app matches the original design exactly.
@@ -319,6 +386,39 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 #s-my .rc-lbl{color:rgba(255,255,255,.5);}
 #s-my .myitem{color:rgba(255,255,255,.8);border-bottom-color:rgba(255,255,255,.08);}
 #s-my .myitem .chev{color:rgba(255,255,255,.4);}
+
+/* ===== 방 — 밤하늘 배경 + 흰색/민트 글자, 라이트 카드 → 다크 글래스 ===== */
+#s-room{background:url('/assets/home/home_bg.svg') center/cover no-repeat;background-color:#0a1430;}
+#s-room .rhead{background:rgba(10,20,48,.55);backdrop-filter:blur(10px) saturate(1.1);-webkit-backdrop-filter:blur(10px) saturate(1.1);border-bottom-color:rgba(255,255,255,.1);}
+#s-room .rhead .bk{color:rgba(255,255,255,.7);}
+#s-room .rhead .ttl{color:#fff;}
+#s-room .rhead .cam{filter:none;}
+#s-room .vtoggle{background:rgba(255,255,255,.12);}
+#s-room .vtoggle span{color:rgba(255,255,255,.55);}
+#s-room .vtoggle span.on{background:rgba(255,255,255,.92);color:var(--ink);}
+#s-room .decklabel{color:rgba(255,255,255,.55);}
+#s-room .decklabel b{color:#fff;}
+#s-room .decklabel .cnt{background:rgba(255,255,255,.14);color:rgba(255,255,255,.8);}
+#s-room .decklabel .rxcnt{color:#74f1f1;}
+#s-room .missionchip{color:rgba(255,255,255,.7);}
+#s-room .review .daydate{color:rgba(255,255,255,.85);}
+#s-room .roomcode{color:rgba(255,255,255,.28);}
+#s-room .deckacts .b-react{background:rgba(255,255,255,.14);color:#fff;}
+#s-room .deckacts .b-close{color:rgba(255,255,255,.5);}
+#s-room .deckacts .b-reply{background:#fff;color:var(--ink);}
+
+/* ===== 워키 — 밤하늘 배경 + 흰색/민트 ===== */
+#s-walk{background:url('/assets/home/home_bg.svg') center/cover no-repeat;background-color:#0a1430;}
+#s-walk .sec-title{color:#fff;}
+#s-walk .wstory .nm{color:rgba(255,255,255,.75);}
+#s-walk .wstory.on .ring{background:#74f1f1;}
+#s-walk .walkbadges .wb-nm{color:rgba(255,255,255,.75);}
+#s-walk .walkgoal{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);backdrop-filter:blur(8px) saturate(1.05);-webkit-backdrop-filter:blur(8px) saturate(1.05);}
+#s-walk .walkgoal.done{border-color:#74f1f1;}
+#s-walk .walkgoal .gname{color:#fff;}
+#s-walk .walkgoal .gdist{color:rgba(255,255,255,.6);}
+#s-walk .walkgoal .gpct{color:#74f1f1;}
+#s-walk .wg-newgoal{background:#74f1f1;color:#0a1430;}
 
 /* ===== glass nav ===== */
 /* glass nav (Figma 374:2491) — 알약형 글래스(홈·카메라·워키) + 분리된 원형 마이.

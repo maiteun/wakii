@@ -11,6 +11,8 @@ import { HOUSES, houseImg, DEFAULT_HOUSE } from "@/lib/houses";
 import {
   listRoom,
   subscribeRoom,
+  listRoomSummaries,
+  subscribeAllRooms,
   uploadPhoto,
   createPhotoDeck,
   addReplyCard,
@@ -23,6 +25,7 @@ import {
   listProfiles,
   type Group,
   type Profile,
+  type RoomSummary,
 } from "@/lib/db";
 
 // WebGL gallery is client-only (uses window / WebGL at runtime)
@@ -30,6 +33,22 @@ const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false 
 
 // role shown on each card by its position in the deck
 const roleLabel = (i: number) => (i === 0 ? "작성자" : `${i}차 반응자`);
+
+// 홈 방 목록의 "n분 전" — 분/시간 단위까지 보여주는 상대 시각.
+const relTime = (iso: string): string => {
+  const sec = Math.max(0, Math.floor((Date.now() - +new Date(iso)) / 1000));
+  if (sec < 60) return "방금";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}분 전`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}시간 전`;
+  const day = Math.floor(hr / 24);
+  if (day === 1) return "어제";
+  if (day < 7) return `${day}일 전`;
+  const wk = Math.floor(day / 7);
+  if (wk < 5) return `${wk}주 전`;
+  return `${Math.floor(day / 30)}개월 전`;
+};
 
 // 완주 리캡 큐레이션 — 작성자별 "best 1"(가장 반응 많은 사진) 한 장씩.
 // B안: 코스별 시작 시각(startedAt)이 아직 없어 여정 기간을 가를 수 없으므로
@@ -306,6 +325,10 @@ export default function WakiiApp() {
 
   // rooms — start empty on the backend (real data); seeded demo only in mock mode
   const [rooms, setRooms] = useState<RoomsData>(hasSupabase ? {} : initialRooms);
+  // 홈 방 목록: 방별 최근 활동 시각 + 안 읽은 수
+  const [roomSummaries, setRoomSummaries] = useState<Record<string, RoomSummary>>({});
+  // 이 기기가 각 방을 마지막으로 본 시각(방 입장 시 갱신) — 안 읽은 수 계산용
+  const seenAtRef = useRef<Record<string, string>>({});
   const [currentRoom, setCurrentRoom] = useState("");
   const [currentRoomEmoji, setCurrentRoomEmoji] = useState("🏠");
   const [openDeckIdx, setOpenDeckIdx] = useState<number | null>(null);
@@ -414,6 +437,14 @@ export default function WakiiApp() {
   const go = (id: ScreenId) => setScreen(id);
 
   const openRoom = (name: string, emoji: string) => {
+    // 이 방을 본 시각 기록 → 안 읽은 수 초기화(이 기기 기준)
+    seenAtRef.current = { ...seenAtRef.current, [name]: new Date().toISOString() };
+    try {
+      localStorage.setItem("wakii.seen", JSON.stringify(seenAtRef.current));
+    } catch {
+      /* ignore */
+    }
+    setRoomSummaries((s) => (s[name] ? { ...s, [name]: { ...s[name], unread: 0 } } : s));
     setCurrentRoom(name);
     setCurrentRoomEmoji(emoji);
     setOpenDeckIdx(null);
@@ -733,6 +764,29 @@ export default function WakiiApp() {
     const unsub = subscribeRoom(currentRoom, () => refreshRoom(currentRoom));
     return unsub;
   }, [currentRoom, refreshRoom]);
+
+  // 홈 방 목록 요약(최근 활동·안 읽은 수) — 마운트 시 last-seen 로드
+  useEffect(() => {
+    try {
+      seenAtRef.current = JSON.parse(localStorage.getItem("wakii.seen") || "{}");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const refreshSummaries = useCallback(() => {
+    if (!hasSupabase) return;
+    const names = myGroups.map((g) => g.name);
+    listRoomSummaries(names, author, seenAtRef.current).then(setRoomSummaries).catch(() => {});
+  }, [myGroups, author]);
+
+  // 홈에 있을 때 요약을 불러오고, 누군가 새 글/답장을 올리면 실시간 갱신
+  useEffect(() => {
+    if (!hasSupabase || screen !== "home") return;
+    refreshSummaries();
+    const unsub = subscribeAllRooms(refreshSummaries);
+    return unsub;
+  }, [screen, refreshSummaries]);
 
   // mock DB fallback: persist rooms to localStorage
   useEffect(() => {
@@ -1480,19 +1534,25 @@ export default function WakiiApp() {
               >
                 <div className="sheet-grip" />
               </div>
-              {myGroups.map((grp, i) => {
-                const demoTime = ["8분 전", "2일 전", "5일 전", "1주 전"][i % 4];
-                const demoUnread = [2, 0, 1, 0][i % 4];
+              {myGroups.map((grp) => {
+                const sum = roomSummaries[grp.name];
+                const unread = sum?.unread ?? 0;
+                // 최근 활동 시각: Supabase면 실데이터, 목업이면 첫 덱의 상대시각
+                const timeLabel = sum?.lastIso
+                  ? relTime(sum.lastIso)
+                  : !hasSupabase
+                    ? rooms[grp.name]?.[0]?.when ?? ""
+                    : "";
                 return (
                   <div key={grp.code} className="room" onClick={() => openRoom(grp.name, "🏠")}>
-                    <div className={"ravatar" + (i === 0 ? " on" : "")}>
+                    <div className={"ravatar" + (unread > 0 ? " on" : "")}>
                       {grp.avatar ? <img src={grp.avatar} alt="" /> : null}
                     </div>
                     <div className="rmeta">
                       <div className="rname">{grp.name}</div>
-                      <div className="rtime">{demoTime}</div>
+                      {timeLabel && <div className="rtime">{timeLabel}</div>}
                     </div>
-                    {demoUnread > 0 && <span className="rbadge">{demoUnread}</span>}
+                    {unread > 0 && <span className="rbadge">{unread}</span>}
                   </div>
                 );
               })}

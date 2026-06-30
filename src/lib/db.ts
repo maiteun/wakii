@@ -231,6 +231,56 @@ export async function listRoom(room: string, me: string): Promise<Deck[]> {
   });
 }
 
+// Home list summary per room: last activity time + unread count (posts by
+// others newer than the device's last-seen time for that room).
+export type RoomSummary = { lastIso: string | null; unread: number };
+export async function listRoomSummaries(
+  rooms: string[],
+  me: string,
+  seen: Record<string, string>,
+): Promise<Record<string, RoomSummary>> {
+  const out: Record<string, RoomSummary> = {};
+  const sb = supabase;
+  if (!sb || rooms.length === 0) return out;
+
+  const { data: decks } = await sb.from("decks").select("id, room").in("room", rooms);
+  const deckRoom: Record<string, string> = {};
+  (decks || []).forEach((d: { id: string; room: string }) => {
+    deckRoom[d.id] = d.room;
+  });
+  const deckIds = Object.keys(deckRoom);
+  if (!deckIds.length) return out;
+
+  const { data: cards } = await sb
+    .from("cards")
+    .select("deck_id, author, created_at")
+    .in("deck_id", deckIds);
+  (cards || []).forEach((c: { deck_id: string; author: string; created_at: string }) => {
+    const room = deckRoom[c.deck_id];
+    if (!room) return;
+    const s = out[room] || (out[room] = { lastIso: null, unread: 0 });
+    if (!s.lastIso || +new Date(c.created_at) > +new Date(s.lastIso)) s.lastIso = c.created_at;
+    const seenIso = seen[room];
+    const unseen = !seenIso || +new Date(c.created_at) > +new Date(seenIso);
+    if (unseen && c.author !== me) s.unread += 1;
+  });
+  return out;
+}
+
+// Live-refresh the home list: fire cb() on any new deck/card in any room.
+export function subscribeAllRooms(cb: () => void) {
+  const sb = supabase;
+  if (!sb) return () => {};
+  const ch = sb
+    .channel("home-summary")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "decks" }, cb)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "cards" }, cb)
+    .subscribe();
+  return () => {
+    sb.removeChannel(ch);
+  };
+}
+
 // Subscribe to any change in a room's data; calls cb() so the caller refetches.
 export function subscribeRoom(room: string, cb: () => void) {
   const sb = supabase;

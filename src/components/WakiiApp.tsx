@@ -1870,8 +1870,12 @@ export default function WakiiApp() {
                     onClick={() => setWalkSel(i)}
                   >
                     <div className="ring">
-                      <div className="inner">
-                        {grp.avatar ? <img src={grp.avatar} alt="" /> : grp.name.slice(0, 1)}
+                      {/* 배경이미지로 렌더 → iOS에서도 확실히 원형 클립(img+overflow 버그 회피) */}
+                      <div
+                        className="inner"
+                        style={grp.avatar ? { backgroundImage: `url(${grp.avatar})` } : undefined}
+                      >
+                        {grp.avatar ? null : grp.name.slice(0, 1)}
                       </div>
                     </div>
                     <div className="nm">{grp.name}</div>

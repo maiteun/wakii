@@ -281,8 +281,7 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .wstory{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
 .wstory .ring{width:52px;height:52px;border-radius:50%;padding:3px;background:var(--g25);box-sizing:border-box;flex-shrink:0;}
 .wstory.on .ring{background:var(--ink);}
-.wstory .inner{width:100%;height:100%;border-radius:50%;background:var(--g15);display:flex;align-items:center;justify-content:center;font-size:var(--fs-title);font-weight:800;color:var(--g70);overflow:hidden;}
-.wstory .inner img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;}
+.wstory .inner{width:100%;height:100%;border-radius:50%;background:var(--g15) center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:var(--fs-title);font-weight:800;color:var(--g70);overflow:hidden;}
 .wstory .nm{font-size:var(--fs-caption);color:var(--g70);font-weight:600;}
 .walkbadges{display:flex;gap:12px;padding:2px 16px 6px;overflow-x:auto;}
 .walkbadges::-webkit-scrollbar{height:0;}

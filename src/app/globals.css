@@ -429,6 +429,9 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 #s-room .decklabel .rxcnt{color:#74f1f1;}
 /* 덱 라벨: 작성자 프로필+이름, 그 옆 반응한 사람들 아바타 좌르륵 */
 .dl-author{display:flex;align-items:center;gap:7px;min-width:0;}
+.dl-avas{display:flex;align-items:center;flex-shrink:0;}
+.dl-avas .dl-ava{margin-left:-7px;border:1.5px solid rgba(255,255,255,.85);}
+.dl-avas .dl-ava:first-child{margin-left:0;}
 .dl-ava{width:24px;height:24px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.7);color:#fff;font-size:var(--fs-caption);font-weight:800;}
 .dl-ava img{width:100%;height:100%;object-fit:cover;display:block;}
 .dl-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}

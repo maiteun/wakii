@@ -1681,14 +1681,29 @@ export default function WakiiApp() {
                   .reverse()
                   .map(({ deck, di }) => {
                   const n = deck.cards.length;
-                  const names = Array.from(new Set(deck.cards.map((c) => nameOf(c.who))));
+                  // 미션 덱은 작성자가 여럿 — 작성자 키(이메일) 중복 제거 후 아바타+이름 표시
+                  const authorKeys = Array.from(new Set(deck.cards.map((c) => c.who)));
                   // 이 덱에 반응한 사람들(중복 제거) — 실제 DB의 reactions.author 기반
                   const reactors = Array.from(new Set(deck.cards.flatMap((c) => c.reactors || [])));
                   return (
                     <div key={di} className="deckwrap">
                       <div className="decklabel">
                         {deck.isMission ? (
-                          <b className="mission-names">{names.join(" · ")}</b>
+                          <span className="dl-author">
+                            <span className="dl-avas">
+                              {authorKeys.slice(0, 5).map((a) => (
+                                <span key={a} className="dl-ava">
+                                  {avatarOf(a) ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={avatarOf(a)} alt="" />
+                                  ) : (
+                                    nameOf(a).slice(0, 1)
+                                  )}
+                                </span>
+                              ))}
+                            </span>
+                            <b className="mission-names">{authorKeys.map(nameOf).join(" · ")}</b>
+                          </span>
                         ) : (
                           <span className="dl-author">
                             <span className="dl-ava">

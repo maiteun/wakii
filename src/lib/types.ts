@@ -10,6 +10,7 @@ export type Card = {
   img?: string; // captured + edited photo (URL or data URL)
   reactions?: string[]; // emojis reacted to this card
   photoReactions?: { emoji: string; img: string }[]; // 즉석 원형 사진 반응(이모지 배지 + 사진)
+  reactors?: string[]; // 이 카드에 반응한 사람들(작성자 키=이메일) — 중복 제거
 };
 
 export type Deck = {

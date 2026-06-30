@@ -192,12 +192,13 @@ export async function listRoom(room: string, me: string): Promise<Deck[]> {
   const cardIds = (decks || []).flatMap((d: { cards?: { id: string }[] }) => (d.cards || []).map((c) => c.id));
   const reactionsByCard: Record<string, string[]> = {};
   const photoReactionsByCard: Record<string, { emoji: string; img: string }[]> = {};
+  const reactorsByCard: Record<string, string[]> = {}; // 반응한 사람(author) 중복 제거
   if (cardIds.length) {
     const { data: rx } = await supabase
       .from("reactions")
-      .select("card_id, emoji, image_url")
+      .select("card_id, emoji, image_url, author")
       .in("card_id", cardIds);
-    (rx || []).forEach((r: { card_id: string; emoji: string; image_url: string | null }) => {
+    (rx || []).forEach((r: { card_id: string; emoji: string; image_url: string | null; author: string | null }) => {
       if (r.image_url) {
         (photoReactionsByCard[r.card_id] = photoReactionsByCard[r.card_id] || []).push({
           emoji: r.emoji,
@@ -205,6 +206,10 @@ export async function listRoom(room: string, me: string): Promise<Deck[]> {
         });
       } else {
         (reactionsByCard[r.card_id] = reactionsByCard[r.card_id] || []).push(r.emoji);
+      }
+      if (r.author) {
+        const list = (reactorsByCard[r.card_id] = reactorsByCard[r.card_id] || []);
+        if (!list.includes(r.author)) list.push(r.author);
       }
     });
   }
@@ -226,6 +231,7 @@ export async function listRoom(room: string, me: string): Promise<Deck[]> {
         img: c.image_url || undefined,
         reactions: reactionsByCard[c.id] || [],
         photoReactions: photoReactionsByCard[c.id] || [],
+        reactors: reactorsByCard[c.id] || [],
       }));
     return { id: d.id, label: d.label, when: relWhen(d.created_at), isMission: d.is_mission, cards };
   });

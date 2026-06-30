@@ -312,6 +312,12 @@ export default function WakiiApp() {
   // 작성자 키(이메일) → 표시 이름 / 아바타. 프로필 없으면 키 그대로(시드 데이터 등).
   const nameOf = (key: string) => profileMap[key]?.name || key;
   const avatarOf = (key: string) => profileMap[key]?.avatar;
+  // 팀원 프로필(DB) + 내 프로필(로컬)을 합쳐 갱신 — profiles 테이블이 비어도 내 사진/이름은 항상 보이게.
+  const syncProfiles = useCallback(() => {
+    listProfiles().then((m) =>
+      setProfileMap(email ? { ...m, [email]: { name: name || m[email]?.name, avatar: avatar || m[email]?.avatar } } : m),
+    );
+  }, [email, name, avatar]);
   const [obStep, setObStep] = useState<ObStep>("login");
   const [addingGroup, setAddingGroup] = useState(false); // opening the group flow from "+"
   const [myGroups, setMyGroups] = useState<Group[]>([]);
@@ -520,15 +526,20 @@ export default function WakiiApp() {
     if (nm) setName(nm);
     if (em) setEmail(em);
     setMyGroups(grps);
+    let av = "";
     try {
       const h = localStorage.getItem("wakii.house");
       if (h) setHouse(h);
-      const av = localStorage.getItem("wakii.avatar");
+      av = localStorage.getItem("wakii.avatar") || "";
       if (av) setAvatar(av);
     } catch {
       /* ignore */
     }
-    listProfiles().then(setProfileMap); // 팀원 아바타 포함
+    // 팀원 아바타(DB) + 내 프로필(로컬)을 합친다. profiles 테이블이 아직 비어 있어도
+    // 내 사진/이름은 로컬값으로 항상 보이게 한다.
+    listProfiles().then((m) =>
+      setProfileMap(em ? { ...m, [em]: { name: nm || m[em]?.name, avatar: av || m[em]?.avatar } } : m),
+    );
 
     // invite deep-link (/?j=CODE) — shared via KakaoTalk. Join automatically
     // instead of asking the user to read & type the code.
@@ -599,7 +610,7 @@ export default function WakiiApp() {
           }
           if (email) {
             setProfileMap((m) => ({ ...m, [email]: { name, avatar: saved } })); // 내 화면 즉시 매핑
-            upsertProfile(email, name, saved).then(() => listProfiles().then(setProfileMap));
+            upsertProfile(email, name, saved).then(() => syncProfiles());
           }
         };
         if (hasSupabase) {
@@ -651,7 +662,7 @@ export default function WakiiApp() {
       /* ignore */
     }
     setProfileMap((m) => ({ ...m, [em]: { name: v, avatar: m[em]?.avatar } })); // 내 화면 즉시 매핑
-    upsertProfile(em, v, avatar || undefined).then(() => listProfiles().then(setProfileMap));
+    upsertProfile(em, v, avatar || undefined).then(() => syncProfiles());
     setObStep("house"); // pick "우리 집" before joining/creating a group
   };
   // social login UI — real OAuth (Kakao/Naver/Google/Apple) is wired later.
@@ -774,10 +785,10 @@ export default function WakiiApp() {
   useEffect(() => {
     if (!hasSupabase) return;
     refreshRoom(currentRoom);
-    listProfiles().then(setProfileMap); // 새로 들어온 팀원 아바타 반영
+    syncProfiles(); // 새로 들어온 팀원 아바타 + 내 프로필 반영
     const unsub = subscribeRoom(currentRoom, () => refreshRoom(currentRoom));
     return unsub;
-  }, [currentRoom, refreshRoom]);
+  }, [currentRoom, refreshRoom, syncProfiles]);
 
   // 홈 방 목록 요약(최근 활동·안 읽은 수) — 마운트 시 last-seen 로드
   useEffect(() => {
@@ -835,7 +846,10 @@ export default function WakiiApp() {
       const next = list.map((dk, i) => {
         if (i !== openDeckIdx) return dk;
         const cards = dk.cards.slice();
-        cards[ci] = { ...cards[ci], reactions: [...(cards[ci].reactions || []), emoji] };
+        const reactors = (cards[ci].reactors || []).includes(author)
+          ? cards[ci].reactors
+          : [...(cards[ci].reactors || []), author];
+        cards[ci] = { ...cards[ci], reactions: [...(cards[ci].reactions || []), emoji], reactors };
         return { ...dk, cards };
       });
       return { ...prev, [currentRoom]: next };
@@ -855,7 +869,10 @@ export default function WakiiApp() {
       const next = list.map((dk, i) => {
         if (i !== openDeckIdx) return dk;
         const cards = dk.cards.slice();
-        cards[ci] = { ...cards[ci], photoReactions: [...(cards[ci].photoReactions || []), { emoji, img }] };
+        const reactors = (cards[ci].reactors || []).includes(author)
+          ? cards[ci].reactors
+          : [...(cards[ci].reactors || []), author];
+        cards[ci] = { ...cards[ci], photoReactions: [...(cards[ci].photoReactions || []), { emoji, img }], reactors };
         return { ...dk, cards };
       });
       return { ...prev, [currentRoom]: next };
@@ -1025,6 +1042,31 @@ export default function WakiiApp() {
       }));
     }
     toast("사진을 내렸어요");
+  };
+
+  // ---------- 지금 보고 있는 카드 사진 저장하기 ----------
+  const saveActivePhoto = async () => {
+    const url = openDeck?.cards[activeCardIdx]?.img;
+    if (!url) {
+      toast("저장할 사진이 없어요");
+      return;
+    }
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const obj = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = obj;
+      a.download = `wakii-${Date.now()}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(obj);
+      toast("사진을 저장했어요");
+    } catch {
+      // 크로스오리진 등으로 blob 저장 실패 시 새 탭으로 열어 길게 눌러 저장하게
+      window.open(url, "_blank");
+    }
   };
 
   // ---------- text / AI phrase reactions ----------
@@ -1514,7 +1556,7 @@ export default function WakiiApp() {
           <div className={"screen home-screen" + (screen === "home" ? " active" : "")} id="s-home" ref={homeScrollRef}>
             <div className="home-hero">
               <div className="home-top">
-                <img className="home-logo" src="/assets/와키로고.png" alt="wakii" />
+                <img className="home-logo" src="/assets/home/logo.png" alt="wakii" />
                 <div className="home-step">
                   <b>6,200</b>
                 </div>
@@ -1628,18 +1670,43 @@ export default function WakiiApp() {
                   .map(({ deck, di }) => {
                   const n = deck.cards.length;
                   const names = Array.from(new Set(deck.cards.map((c) => nameOf(c.who))));
-                  const rxTotal = deck.cards.reduce((s, c) => s + (c.reactions?.length || 0) + (c.photoReactions?.length || 0), 0);
+                  // 이 덱에 반응한 사람들(중복 제거) — 실제 DB의 reactions.author 기반
+                  const reactors = Array.from(new Set(deck.cards.flatMap((c) => c.reactors || [])));
                   return (
                     <div key={di} className="deckwrap">
                       <div className="decklabel">
                         {deck.isMission ? (
                           <b className="mission-names">{names.join(" · ")}</b>
                         ) : (
-                          <>
-                            <b>{nameOf(deck.label)}</b>가 시작 · {deck.when}
-                          </>
+                          <span className="dl-author">
+                            <span className="dl-ava">
+                              {avatarOf(deck.label) ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={avatarOf(deck.label)} alt="" />
+                              ) : (
+                                nameOf(deck.label).slice(0, 1)
+                              )}
+                            </span>
+                            <span className="dl-txt">
+                              <b>{nameOf(deck.label)}</b>가 시작 · {deck.when}
+                            </span>
+                          </span>
                         )}
-                        {rxTotal > 0 && <span className="rxcnt">🙂 {rxTotal}</span>}
+                        {reactors.length > 0 && (
+                          <span className="dl-reactors" title={reactors.map(nameOf).join(", ")}>
+                            {reactors.slice(0, 5).map((r) => (
+                              <span key={r} className="dl-rava">
+                                {avatarOf(r) ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={avatarOf(r)} alt="" />
+                                ) : (
+                                  nameOf(r).slice(0, 1)
+                                )}
+                              </span>
+                            ))}
+                            {reactors.length > 5 && <span className="dl-rmore">+{reactors.length - 5}</span>}
+                          </span>
+                        )}
                         <span className="cnt">{n}장</span>
                       </div>
 
@@ -2186,35 +2253,46 @@ export default function WakiiApp() {
                   </span>
                   <span className="dg-name">{nameOf(openDeck.cards[activeCardIdx]?.who || openDeck.label)}</span>
                 </div>
-                <div className="dg-morewrap">
-                  <button
-                    className="dg-more"
-                    aria-label="더보기"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDgMenuOpen((v) => !v);
-                    }}
-                  >
-                    ⋯
-                  </button>
-                  {dgMenuOpen && (
-                    <div className="dg-menu" onClick={(e) => e.stopPropagation()}>
-                      {openDeck.cards[0]?.mine && (
+                <div className="dg-headbtns">
+                  <div className="dg-morewrap">
+                    <button
+                      className="dg-icbtn"
+                      aria-label="더보기"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDgMenuOpen((v) => !v);
+                      }}
+                    >
+                      ⋯
+                    </button>
+                    {dgMenuOpen && (
+                      <div className="dg-menu" onClick={(e) => e.stopPropagation()}>
+                        {openDeck.cards[0]?.mine && (
+                          <button
+                            className="dg-mi del"
+                            onClick={() => {
+                              setDgMenuOpen(false);
+                              deleteOpenDeck();
+                            }}
+                          >
+                            사진 내리기
+                          </button>
+                        )}
                         <button
-                          className="dg-mi del"
+                          className="dg-mi"
                           onClick={() => {
                             setDgMenuOpen(false);
-                            deleteOpenDeck();
+                            saveActivePhoto();
                           }}
                         >
-                          사진 내리기
+                          사진 저장하기
                         </button>
-                      )}
-                      <button className="dg-mi" onClick={() => setOpenDeckIdx(null)}>
-                        닫기
-                      </button>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
+                  <button className="dg-icbtn" aria-label="나가기" onClick={() => setOpenDeckIdx(null)}>
+                    ✕
+                  </button>
                 </div>
               </div>
               <CircularGallery

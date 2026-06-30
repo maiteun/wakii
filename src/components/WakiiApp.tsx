@@ -1712,13 +1712,12 @@ export default function WakiiApp() {
                           <span className="dl-author">
                             <span className="dl-avas">
                               {authorKeys.slice(0, 5).map((a) => (
-                                <span key={a} className="dl-ava">
-                                  {avatarOf(a) ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={avatarOf(a)} alt="" />
-                                  ) : (
-                                    nameOf(a).slice(0, 1)
-                                  )}
+                                <span
+                                  key={a}
+                                  className="dl-ava"
+                                  style={avatarOf(a) ? { backgroundImage: `url(${avatarOf(a)})` } : undefined}
+                                >
+                                  {avatarOf(a) ? null : nameOf(a).slice(0, 1)}
                                 </span>
                               ))}
                             </span>
@@ -1726,13 +1725,11 @@ export default function WakiiApp() {
                           </span>
                         ) : (
                           <span className="dl-author">
-                            <span className="dl-ava">
-                              {avatarOf(deck.label) ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={avatarOf(deck.label)} alt="" />
-                              ) : (
-                                nameOf(deck.label).slice(0, 1)
-                              )}
+                            <span
+                              className="dl-ava"
+                              style={avatarOf(deck.label) ? { backgroundImage: `url(${avatarOf(deck.label)})` } : undefined}
+                            >
+                              {avatarOf(deck.label) ? null : nameOf(deck.label).slice(0, 1)}
                             </span>
                             <span className="dl-txt">
                               <b>{nameOf(deck.label)}</b>가 시작 · {deck.when}

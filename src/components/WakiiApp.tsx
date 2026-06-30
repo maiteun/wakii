@@ -2128,7 +2128,6 @@ export default function WakiiApp() {
           <div className={"sharesheet housesheet" + (housePicker ? " show" : "")} onClick={() => setHousePicker(false)}>
             <div className="ss-panel" onClick={(e) => e.stopPropagation()}>
               <div className="grip" />
-              <h4>우리 집 바꾸기</h4>
               <div className="housegrid">
                 {HOUSES.map((hh) => (
                   <div

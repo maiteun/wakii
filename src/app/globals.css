@@ -296,6 +296,30 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .rc-lbl{font-size:8px;color:var(--g40);margin-top:4px;font-weight:600;}
 .report-chart.dense .rc-lbl{display:none;}
 
+/* 마이 — 모든 화면 공통 배경(홈 밤하늘)과 동일 + 다크 글래스 카드 */
+#s-my{background:url('/assets/home/home_bg.svg') center/cover no-repeat;background-color:#0a1430;}
+#s-my .myhero{border-bottom-color:rgba(255,255,255,.10);}
+#s-my .myname{color:#fff;}
+#s-my .mysub{color:rgba(255,255,255,.6);}
+#s-my .cal h4,#s-my .report-head h4{color:#fff;}
+#s-my .caldow{color:rgba(255,255,255,.5);}
+#s-my .calday{color:rgba(255,255,255,.85);}
+#s-my .calday.has{background:rgba(255,255,255,.14);color:#fff;}
+#s-my .calday.sel{outline-color:#fff;}
+#s-my .caldetail,#s-my .report{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);backdrop-filter:blur(8px) saturate(1.05);-webkit-backdrop-filter:blur(8px) saturate(1.05);}
+#s-my .caldetail .cd-date{color:#fff;}
+#s-my .caldetail .cd-row{color:rgba(255,255,255,.75);}
+#s-my .report-toggle{background:rgba(255,255,255,.12);}
+#s-my .report-toggle span{color:rgba(255,255,255,.55);}
+#s-my .report-toggle span.on{background:rgba(255,255,255,.9);color:var(--ink);}
+#s-my .rs-item{background:rgba(255,255,255,.08);}
+#s-my .rs-num{color:#fff;}
+#s-my .rs-lbl{color:rgba(255,255,255,.6);}
+#s-my .rc-bar{background:#74f1f1;}
+#s-my .rc-lbl{color:rgba(255,255,255,.5);}
+#s-my .myitem{color:rgba(255,255,255,.8);border-bottom-color:rgba(255,255,255,.08);}
+#s-my .myitem .chev{color:rgba(255,255,255,.4);}
+
 /* ===== glass nav ===== */
 /* glass nav (Figma 374:2491) — 알약형 글래스(홈·카메라·워키) + 분리된 원형 마이.
    기본 아이콘 흰색, 활성 화면은 민트(#74f1f1)로 불이 켜짐. */

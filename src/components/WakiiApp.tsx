@@ -1866,7 +1866,7 @@ export default function WakiiApp() {
                 <div className="cd-date">6월 {calDetail.day}일</div>
                 <div className="cd-row">
                   👣 그날 내 걸음{" "}
-                  <b style={{ marginLeft: "auto", color: "var(--ink)" }}>
+                  <b style={{ marginLeft: "auto", color: "#fff" }}>
                     {calDetail.steps.toLocaleString()}
                   </b>
                 </div>

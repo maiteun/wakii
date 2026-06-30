@@ -232,10 +232,10 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .ul-top .bk{font-size:28px;line-height:1;cursor:pointer;color:#fff;width:32px;}
 .ul-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;position:relative;padding:0 18px 36px;}
 /* 미션 글래스 카드 — 홈 미션카드와 동일(366×99 r30), 뷰파인더 위 */
-.ul-mcard{width:91%;max-width:330px;display:flex;align-items:center;padding:16px 22px;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.30);border-radius:30px;}
+.ul-mcard{width:91%;display:flex;align-items:center;padding:16px 22px;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.30);border-radius:30px;}
 .ul-mcard .mission-text{display:block;height:54px;width:auto;max-width:100%;}
 /* 뷰파인더: SVG 366/402=91% 폭, 366:488 비율, r30, 검정 */
-.vf{width:91%;max-width:330px;aspect-ratio:366/488;border:1px solid rgba(255,255,255,.10);border-radius:30px;background:linear-gradient(180deg,#05070c 0%,#19243e 100%);position:relative;overflow:hidden;}
+.vf{width:91%;aspect-ratio:366/488;border:1px solid rgba(255,255,255,.10);border-radius:30px;background:linear-gradient(180deg,#05070c 0%,#19243e 100%);position:relative;overflow:hidden;}
 .vf .ratio{position:absolute;top:6px;left:6px;font-size:var(--fs-caption);color:rgba(255,255,255,.7);background:rgba(0,0,0,.4);padding:1px 4px;border-radius:3px;}
 .vf .ed-stk{position:absolute;background:rgba(255,255,255,.9);color:#222;font-size:var(--fs-caption);font-weight:700;padding:2px 5px;border-radius:4px;}
 /* 갤러리 아이콘 — 뷰파인더 안쪽 좌하단(SVG x46 y607) */

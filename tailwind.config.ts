@@ -21,7 +21,8 @@ const config: Config = {
         display: ["var(--fs-display)", { fontWeight: "800" }], // 30  게이지 주인공 숫자
         title:   ["var(--fs-title)",   { fontWeight: "800" }], // 20  타이틀·라벨
         body:    ["var(--fs-body)",    { fontWeight: "500" }], // 15  본문·버튼
-        meta:    ["var(--fs-meta)",    { fontWeight: "500" }], // 12  캡션·단위·날짜
+        label:   ["var(--fs-label)",   { fontWeight: "700" }], // 13  라벨·메타
+        caption: ["var(--fs-caption)", { fontWeight: "700" }], // 11  캡션·단위·날짜
       },
       borderRadius: {
         glass: "var(--r-glass)", // 30

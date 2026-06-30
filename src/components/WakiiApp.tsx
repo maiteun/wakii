@@ -1268,19 +1268,27 @@ export default function WakiiApp() {
 
   // ---------- walk ----------
   // ---------- course system ----------
-  // load saved course progress. Bumping COURSE_SEED resets everyone once to the
-  // new demo state (so a previously-stored 100% doesn't hide the cloud).
-  const COURSE_SEED = 3;
+  // 코스 진행은 방(그룹)별로 따로 — 방을 누르면 그 방의 여정/완주/스탬프가 뜬다.
+  // 저장 포맷: wakii.course = { v, groups: { [groupCode]: {active, km, done} } }.
+  // COURSE_SEED를 올리면 기존 저장 1회 무시(데모 상태로 리셋).
+  const COURSE_SEED = 4;
+  const courseStore = useRef<Record<string, { active: string; km: number; done: string[] }>>({});
+  // 저장값이 없는 방의 기본 시드: 첫 방은 데모(콜로세움 완주+에펠 진행), 나머지는 새 출발.
+  const seedFor = (idx: number) =>
+    idx === 0
+      ? { active: "eiffel_tower", km: 8.6, done: ["colosseum"] }
+      : { active: "eiffel_tower", km: 0, done: [] };
+
+  const activeGroup = myGroups[walkSel] || myGroups[0]; // 워키 상단 = 선택된 방
+  const groupKey = activeGroup?.code;
+
+  // 1) 마운트 시 전체 맵 로드
   useEffect(() => {
     try {
       const raw = localStorage.getItem("wakii.course");
       if (raw) {
         const o = JSON.parse(raw);
-        if (o.v === COURSE_SEED) {
-          if (typeof o.active === "string") setActiveCourseId(o.active);
-          if (typeof o.km === "number") setFamilyKm(o.km);
-          if (Array.isArray(o.done)) setCompletedCourses(o.done);
-        }
+        if (o.v === COURSE_SEED && o.groups) courseStore.current = o.groups;
       }
     } catch {
       /* ignore */
@@ -1288,23 +1296,36 @@ export default function WakiiApp() {
     setCourseLoaded(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 2) 선택한 방이 바뀌면 그 방의 진행 상태를 뷰 상태로 로드(없으면 시드)
   useEffect(() => {
-    if (!courseLoaded) return;
+    if (!courseLoaded || !groupKey) return;
+    const cur = courseStore.current[groupKey] || seedFor(walkSel);
+    setActiveCourseId(cur.active);
+    setFamilyKm(cur.km);
+    setCompletedCourses(cur.done);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseLoaded, groupKey]);
+
+  // 3) 진행 상태가 바뀌면 현재 방 키 아래에 저장(방 전환 직후엔 2)가 먼저 로드하므로 안전)
+  useEffect(() => {
+    if (!courseLoaded || !groupKey) return;
+    courseStore.current = {
+      ...courseStore.current,
+      [groupKey]: { active: activeCourseId, km: familyKm, done: completedCourses },
+    };
     try {
-      localStorage.setItem(
-        "wakii.course",
-        JSON.stringify({ v: COURSE_SEED, active: activeCourseId, km: familyKm, done: completedCourses }),
-      );
+      localStorage.setItem("wakii.course", JSON.stringify({ v: COURSE_SEED, groups: courseStore.current }));
     } catch {
       /* ignore */
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseLoaded, activeCourseId, familyKm, completedCourses]);
 
   const activeCourse = courseById(activeCourseId) || COURSES[0];
   const courseKm = activeCourse.distance_km;
   const pct = Math.min(100, Math.round((familyKm / courseKm) * 100));
   const isComplete = familyKm >= courseKm;
-  const activeGroup = myGroups[walkSel] || myGroups[0]; // 워키 상단 = 실제 그룹(홈과 동일)
 
   // recap of a course. The photo-curation rule (좋아요 수/이모지 종류 등) is TBD,
   // so the photo section is an empty placeholder for now.

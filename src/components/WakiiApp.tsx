@@ -426,9 +426,10 @@ export default function WakiiApp() {
   const [courseSheet, setCourseSheet] = useState(false);
   const [courseLoaded, setCourseLoaded] = useState(false);
   // journey map pan & zoom (the screen behaves like a real map)
-  const [mapZoom, setMapZoom] = useState(0.82);
+  const [mapZoom, setMapZoom] = useState(1);
   const [mapPan, setMapPan] = useState({ x: 0, y: 0 });
   const mapViewRef = useRef<HTMLDivElement>(null);
+  const journeyInnerRef = useRef<HTMLDivElement>(null);
   const mapPtrs = useRef<Map<number, { x: number; y: number }>>(new Map());
   const mapDrag = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
   const mapPinch = useRef<{ dist: number; zoom: number; px: number; py: number; mx: number; my: number } | null>(null);
@@ -1409,10 +1410,11 @@ export default function WakiiApp() {
   // keep the map from being dragged off into empty space (small overscroll only)
   const clampPan = (p: { x: number; y: number }, z: number) => {
     const el = mapViewRef.current;
+    const inner = journeyInnerRef.current;
     const vw = el?.clientWidth || 360;
     const vh = el?.clientHeight || 560;
-    const cw = W * z;
-    const ch = H * z;
+    const cw = (inner?.offsetWidth || W) * z;
+    const ch = (inner?.offsetHeight || H) * z;
     const m = 20; // allowed overscroll margin
     const ax = cw <= vw
       ? Math.max((vw - cw) / 2 - m, Math.min((vw - cw) / 2 + m, p.x))
@@ -1494,20 +1496,14 @@ export default function WakiiApp() {
   useEffect(() => {
     if (mapInited.current || screen !== "walk") return;
     const el = mapViewRef.current;
-    if (!el) return;
+    const inner = journeyInnerRef.current;
+    if (!el || !inner) return;
     const vw = el.clientWidth || 360;
     const vh = el.clientHeight || 560;
-    let minX = Infinity,
-      maxX = -Infinity;
-    for (let i = 0; i <= curIdx; i++) {
-      const [x] = pts[i];
-      minX = Math.min(minX, x - 84);
-      maxX = Math.max(maxX, x + 84);
-    }
-    const startY = pts[0][1];
-    const z = clampZoom((vw * 0.94) / (maxX - minX)); // fit width only
+    // 섬 스택을 가로 중앙 정렬하고, 가까운(완주) 섬이 있는 '아래'를 먼저 보여준다.
+    const z = 1;
     setMapZoom(z);
-    setMapPan(clampPan({ x: vw / 2 - ((minX + maxX) / 2) * z, y: vh - 34 - startY * z }, z));
+    setMapPan(clampPan({ x: (vw - inner.offsetWidth * z) / 2, y: vh - inner.offsetHeight * z }, z));
     mapInited.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen]);
@@ -1899,7 +1895,19 @@ export default function WakiiApp() {
 
             {/* 워키 여정 — 레이어드 섬(near=완주/선명, 중간=진행중+구름, far=미래 empty+구름).
                 완주 랜드마크 탭→recap / 미래 섬은 현재 코스 완주 시에만 코스 선택 가능 */}
-            <div className="journey">
+            <div
+              className="journey"
+              ref={mapViewRef}
+              onPointerDown={onMapPointerDown}
+              onPointerMove={onMapPointerMove}
+              onPointerUp={onMapPointerUp}
+              onPointerCancel={onMapPointerUp}
+            >
+              <div
+                className="journey-inner"
+                ref={journeyInnerRef}
+                style={{ transform: `translate(${mapPan.x}px, ${mapPan.y}px) scale(${mapZoom})` }}
+              >
               {/* 미래(맨 위/멀리): 빈 섬 + 구름. 현재 코스 완주했을 때만 새 목표 선택 */}
               <div
                 className={"j-isle j-future" + (isComplete ? " on" : "")}
@@ -1934,6 +1942,21 @@ export default function WakiiApp() {
                   <div className="j-nm">{courseById(id)?.name_ko}</div>
                 </div>
               ))}
+              </div>
+              <div className="journey-zoom">
+                <button
+                  onClick={() => { const el = mapViewRef.current; if (el) zoomAt(el.clientWidth / 2, el.clientHeight / 2, 1.25); }}
+                  aria-label="확대"
+                >
+                  ＋
+                </button>
+                <button
+                  onClick={() => { const el = mapViewRef.current; if (el) zoomAt(el.clientWidth / 2, el.clientHeight / 2, 1 / 1.25); }}
+                  aria-label="축소"
+                >
+                  －
+                </button>
+              </div>
             </div>
           </div>
 

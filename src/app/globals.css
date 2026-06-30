@@ -469,17 +469,29 @@ img.stamp-pill{height:30px;width:auto;}
 .walkprogress .wp-pct{color:#74f1f1;}
 .walkprogress .wp-km{margin-left:8px;color:rgba(255,255,255,.55);}
 /* 워키 여정 — 레이어드 섬 스택(near=완주 아래, far=미래 위). Figma '세번째 화면' */
-#s-walk .journey{position:relative;display:flex;flex-direction:column;align-items:center;padding:8px 0 48px;}
-.j-isle{position:relative;width:80%;max-width:330px;display:flex;flex-direction:column;align-items:center;margin-top:-34px;}
-.j-isle:first-child{margin-top:6px;}
-.j-island{width:100%;height:auto;display:block;filter:drop-shadow(0 12px 18px rgba(0,0,0,.5));user-select:none;-webkit-user-drag:none;}
-.j-cloud{position:absolute;top:-4%;left:50%;transform:translateX(-50%);width:122%;height:auto;pointer-events:none;user-select:none;-webkit-user-drag:none;}
-.j-nm{margin-top:-4px;font-size:var(--fs-body);font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);}
+/* 워키 화면을 세로 플렉스로 → journey가 남은 영역을 채우는 pan/zoom 뷰포트 */
+#s-walk{display:flex;flex-direction:column;}
+/* journey = pan/zoom 뷰포트(드래그·휠·핀치). inner를 transform으로 이동/확대 */
+#s-walk .journey{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;cursor:grab;}
+#s-walk .journey:active{cursor:grabbing;}
+.journey-inner{position:absolute;top:0;left:0;width:100%;display:flex;flex-direction:column;align-items:center;transform-origin:0 0;padding:14px 0 24px;}
+/* 섬: 작게 + 지그재그(좌/우 번갈아) */
+.j-isle{position:relative;width:52%;max-width:230px;display:flex;flex-direction:column;align-items:center;margin-top:-22px;}
+.j-isle:first-child{margin-top:0;}
+.j-isle:nth-child(odd){align-self:flex-start;margin-left:9%;}
+.j-isle:nth-child(even){align-self:flex-end;margin-right:9%;}
+.j-island{width:100%;height:auto;display:block;filter:drop-shadow(0 10px 16px rgba(0,0,0,.5));user-select:none;-webkit-user-drag:none;}
+.j-cloud{position:absolute;top:-6%;left:50%;transform:translateX(-50%);width:124%;height:auto;pointer-events:none;user-select:none;-webkit-user-drag:none;}
+.j-nm{margin-top:-2px;font-size:var(--fs-label);font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);}
 .j-done,.j-active.done{cursor:pointer;}
 .j-done:active .j-island,.j-active.done:active .j-island{transform:scale(.97);}
 .j-future{opacity:.92;}
 .j-future.on{cursor:pointer;}
-.j-hint{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);background:rgba(116,241,241,.2);border:1px solid rgba(116,241,241,.5);color:#fff;font-weight:800;font-size:var(--fs-label);border-radius:15px;padding:7px 16px;white-space:nowrap;}
+.j-hint{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);background:rgba(116,241,241,.2);border:1px solid rgba(116,241,241,.5);color:#fff;font-weight:800;font-size:var(--fs-caption);border-radius:15px;padding:6px 12px;white-space:nowrap;}
+/* 확대/축소 버튼 */
+.journey-zoom{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:8px;z-index:5;}
+.journey-zoom button{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;font-size:var(--fs-title);font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
+.journey-zoom button:active{transform:scale(.92);}
 #s-walk .walkbadges .wb-nm{color:rgba(255,255,255,.75);}
 /* 스탬프 화면 (Figma 스탬프화면 402×874): 스크림 .6 + 글래스 패널 .3 r30, 완주 섬 컬렉션 */
 .stampscreen{position:absolute;inset:0;z-index:68;background:rgba(0,0,0,.6);}

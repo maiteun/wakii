@@ -279,10 +279,10 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .walkstories{display:flex;gap:12px;padding:12px 16px 6px;overflow-x:auto;}
 .walkstories::-webkit-scrollbar{height:0;}
 .wstory{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
-.wstory .ring{width:52px;height:52px;border-radius:50%;padding:2px;background:var(--g25);}
+.wstory .ring{width:52px;height:52px;border-radius:50%;padding:3px;background:var(--g25);box-sizing:border-box;flex-shrink:0;}
 .wstory.on .ring{background:var(--ink);}
-.wstory .inner{width:100%;height:100%;border-radius:50%;background:var(--g15);display:flex;align-items:center;justify-content:center;font-size:var(--fs-title);font-weight:800;color:var(--g70);overflow:hidden;border:2px solid var(--paper);}
-.wstory .inner img{width:100%;height:100%;object-fit:cover;}
+.wstory .inner{width:100%;height:100%;border-radius:50%;background:var(--g15);display:flex;align-items:center;justify-content:center;font-size:var(--fs-title);font-weight:800;color:var(--g70);overflow:hidden;}
+.wstory .inner img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;}
 .wstory .nm{font-size:var(--fs-caption);color:var(--g70);font-weight:600;}
 .walkbadges{display:flex;gap:12px;padding:2px 16px 6px;overflow-x:auto;}
 .walkbadges::-webkit-scrollbar{height:0;}
@@ -461,8 +461,8 @@ img.stamp-pill{height:30px;width:auto;}
 .stamp-pill:active{opacity:.8;}
 #s-walk .wstory .nm{color:rgba(255,255,255,.75);}
 /* 아바타 크게 + 활성=민트 링 + 글로우(디자인 68px 발광 원) */
-#s-walk .wstory .ring{width:64px;height:64px;}
-#s-walk .wstory.on .ring{background:#74f1f1;box-shadow:0 0 16px rgba(116,241,241,.85);}
+#s-walk .wstory .ring{width:64px;height:64px;background:rgba(255,255,255,.28);}
+#s-walk .wstory.on .ring{background:#74f1f1;box-shadow:0 0 0 2px rgba(116,241,241,.45),0 0 14px rgba(116,241,241,.55);}
 /* 진행 % (방 행 아래) — 구름 덮인 목표가 있을 때 */
 .walkprogress{margin:0 18px 4px;color:rgba(255,255,255,.85);font-size:var(--fs-label);font-weight:600;}
 .walkprogress b{color:#fff;font-weight:800;}

@@ -7,13 +7,15 @@
   overflow: hidden;
   touch-action: none;
   --pos: 0;
+  /* 자체 쌓임 맥락(낮은 z)로 가둬서 카드(z100)가 반응 버블(z84) 위로 안 올라오게 */
+  z-index: 1;
 }
 
 .dcz-card {
   position: absolute;
   top: 50%;
   left: 50%;
-  height: 50%;
+  height: 62%;
   aspect-ratio: 3 / 4;
   border-radius: 18px;
   overflow: hidden;

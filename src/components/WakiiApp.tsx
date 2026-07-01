@@ -28,8 +28,8 @@ import {
   type RoomSummary,
 } from "@/lib/db";
 
-// WebGL gallery is client-only (uses window / WebGL at runtime)
-const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false });
+// 덱 카드 커버플로우(가운데 크게 + 양옆 1/3, 한 스와이프에 한 장)
+import DeckCarousel from "./DeckCarousel";
 // 완주 리캡용 3D 돔 갤러리 — DOM/제스처 사용, 클라이언트 전용
 const DomeGallery = dynamic(() => import("./DomeGallery"), { ssr: false });
 
@@ -2513,18 +2513,7 @@ export default function WakiiApp() {
                   </button>
                 </div>
               </div>
-              <CircularGallery
-                items={galleryItems}
-                bend={0}
-                textColor="#ffffff"
-                borderRadius={0.06}
-                font="600 30px sans-serif"
-                fontUrl={undefined}
-                scrollSpeed={3}
-                scrollEase={0.08}
-                loop={false}
-                onActiveChange={setActiveCardIdx}
-              />
+              <DeckCarousel items={galleryItems} active={activeCardIdx} onActive={setActiveCardIdx} />
               {/* floating reaction bubbles (emoji/text, or the instant photo) */}
               {bubbles.map((b) =>
                 b.img ? (

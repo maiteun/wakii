@@ -1,0 +1,42 @@
+/* 덱 카드 커버플로우 — 가운데 크게, 양옆 카드가 1/3쯤 보이는 3장 구성.
+   한 번 스와이프에 한 장씩 스냅 이동. 롱프레스 확대는 부모(.dg-stage)가 처리. */
+.dcz {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  --pos: 0;
+}
+
+.dcz-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  height: 76%;
+  aspect-ratio: 3 / 4;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #1a1a1a;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+  transform-origin: center center;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+  will-change: transform;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 드래그 중엔 손가락을 1:1로 따라오도록 transition 제거 */
+.dcz.dragging .dcz-card {
+  transition: none;
+}
+
+.dcz-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}

@@ -1760,7 +1760,7 @@ export default function WakiiApp() {
                               {avatarOf(deck.label) ? null : nameOf(deck.label).slice(0, 1)}
                             </span>
                             <span className="dl-txt">
-                              <b>{nameOf(deck.label)}</b>가 시작 · {deck.when}
+                              <b>{nameOf(deck.label)}</b> · {deck.when}
                             </span>
                           </span>
                         )}

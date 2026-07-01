@@ -88,8 +88,8 @@ const PhotoEditor = forwardRef<
   // plus the chosen reaction emoji (centre) when replying.
   useEffect(() => {
     const init: Sticker[] = [
-      { id: idRef.current++, type: "time", content: nowTime(), x: 21, y: 9, scale: 1 },
-      { id: idRef.current++, type: "weather", content: weather || MOCK_WEATHER, x: 79, y: 9, scale: 1 },
+      { id: idRef.current++, type: "time", content: nowTime(), x: 23, y: 8, scale: 1 },
+      { id: idRef.current++, type: "weather", content: weather || MOCK_WEATHER, x: 73, y: 8, scale: 1 },
     ];
     if (initialEmoji) init.push({ id: idRef.current++, type: "emoji", content: initialEmoji, x: 50, y: 50, scale: 2 });
     setStickers(init);
@@ -365,18 +365,22 @@ const PhotoEditor = forwardRef<
             const pw = tw + padX * 2,
               ph = fs + padY * 2,
               r = ph / 2;
+            // 칩이 사진 밖으로 넘쳐 잘리지 않도록 중심을 캔버스 안으로 clamp
+            const mg = 8 * f;
+            const px = Math.max(pw / 2 + mg, Math.min(COMPW - pw / 2 - mg, cx));
+            const py = Math.max(ph / 2 + mg, Math.min(COMPH - ph / 2 - mg, cy));
             // 반투명 글래스 칩 + 흰 테두리 (캔버스라 실제 블러는 불가 → 반투명으로 근사)
             ctx.fillStyle = "rgba(255,255,255,.18)";
-            roundRect(ctx, cx - pw / 2, cy - ph / 2, pw, ph, r);
+            roundRect(ctx, px - pw / 2, py - ph / 2, pw, ph, r);
             ctx.fill();
             ctx.lineWidth = 1.5 * f;
             ctx.strokeStyle = "rgba(255,255,255,.45)";
-            roundRect(ctx, cx - pw / 2, cy - ph / 2, pw, ph, r);
+            roundRect(ctx, px - pw / 2, py - ph / 2, pw, ph, r);
             ctx.stroke();
             ctx.fillStyle = "#fff";
             ctx.shadowColor = "rgba(0,0,0,.45)";
             ctx.shadowBlur = 4 * f;
-            ctx.fillText(s.content, cx, cy + 1);
+            ctx.fillText(s.content, px, py + 1);
             ctx.shadowBlur = 0;
           }
         }

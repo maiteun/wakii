@@ -116,6 +116,17 @@ function downscaleImage(file: File, max = 400): Promise<string> {
 // today's mission, noun-ified for the mission deck label/footer
 const MISSION_NAME = "오늘의 풍경";
 
+// 닫힌 덱 = 사진 더미. 앞(depth 0)이 가장 크고 중앙, 뒤로 갈수록 서로 다른
+// 위치·각도로 모서리가 삐져나와 "여러 장이 쌓여 있다"가 직관적으로 보인다.
+// (단순 그리드/캐러셀이 아니라 자연스럽게 쌓인 콜라주)
+const STACK = [
+  { x: 0, y: 6, rot: 2, sc: 1.0 }, // 맨 앞 — 가장 크게 중앙
+  { x: -54, y: 24, rot: -12, sc: 0.95 }, // 왼쪽 아래로 삐죽
+  { x: 52, y: -6, rot: 7, sc: 0.93 }, // 오른쪽 위로 삐죽
+  { x: -34, y: -20, rot: -8, sc: 0.91 }, // 왼쪽 위 모서리
+  { x: 32, y: 30, rot: 5, sc: 0.89 }, // 아래쪽으로 한 겹 더
+];
+
 // map an Open-Meteo weather code to an emoji
 function weatherEmoji(code: number): string {
   if (code === 0) return "☀️";
@@ -1785,12 +1796,21 @@ export default function WakiiApp() {
                       {/* closed stack — tap to open the circular gallery */}
                       <div className="deck" onClick={() => { markDeckViewed(dkey); setOpenDeckIdx(di); }}>
                         {deck.cards.map((c, i) => {
-                          // 최초 사진(i=0)이 맨 앞·맨 위, 이후 반응들이 뒤로 차곡차곡 쌓인다
+                          // 최초 사진(i=0)이 맨 앞·맨 크게 중앙, 뒤로 갈수록 서로 다른
+                          // 위치·각도로 모서리가 삐져나와 "여러 장 쌓임"이 보인다.
                           const depth = i;
-                          const style: React.CSSProperties = {
-                            transform: `translateX(calc(-50% + ${depth * -4}px)) translateY(${depth * 5}px) scale(${1 - depth * 0.03})`,
-                            zIndex: 10 + (n - 1 - i),
-                            opacity: depth > 3 ? 0 : 1,
+                          const p = STACK[Math.min(depth, STACK.length - 1)];
+                          const mag = Math.hypot(p.x, p.y) || 1;
+                          const spread = 5; // hover 시 각 사진이 벌어지는 정도(px)
+                          const style: React.CSSProperties & Record<`--${string}`, string | number> = {
+                            "--tx": `${p.x}px`,
+                            "--ty": `${p.y}px`,
+                            "--rot": `${p.rot}deg`,
+                            "--sc": p.sc,
+                            "--sx": `${depth === 0 ? 0 : (p.x / mag) * spread}px`,
+                            "--sy": `${depth === 0 ? -3 : (p.y / mag) * spread}px`,
+                            zIndex: 30 - depth,
+                            opacity: depth > 4 ? 0 : 1,
                           };
                           if (c.img) {
                             style.backgroundImage = `url(${c.img})`;

@@ -195,9 +195,13 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .decklabel{display:flex;align-items:center;gap:6px;font-size:var(--fs-caption);color:var(--g40);margin-bottom:3px;}
 .decklabel b{color:var(--g70);font-weight:700;}
 .decklabel .cnt{margin-left:auto;background:var(--g08);border-radius:8px;padding:1px 8px;font-size:var(--fs-caption);color:var(--g55);font-weight:700;}
-.deck{position:relative;height:274px;cursor:pointer;user-select:none;perspective:1000px;transition:height .3s;}
+.deck{position:relative;height:282px;cursor:pointer;user-select:none;perspective:1000px;transition:transform .3s cubic-bezier(.22,1,.36,1);transform-origin:center 58%;}
 .deck.open{height:300px;}
-.card{position:absolute;left:50%;top:6px;width:188px;aspect-ratio:3/4;border-radius:17px;overflow:hidden;background:linear-gradient(160deg,#8a8a8a,#5e5e5e);border:3px solid var(--parent);box-shadow:0 6px 16px rgba(0,0,0,.16);transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .4s;transform-origin:center center;transform-style:preserve-3d;}
+/* 사진 더미: 위치(--tx/--ty)·각도(--rot)·크기(--sc)를 카드마다 다르게 줘 겹쳐 쌓인다 */
+.card{position:absolute;left:50%;top:20px;width:184px;aspect-ratio:3/4;border-radius:15px;overflow:hidden;background:linear-gradient(160deg,#8a8a8a,#5e5e5e);border:3px solid var(--parent);box-shadow:0 8px 20px rgba(0,0,0,.24),0 2px 5px rgba(0,0,0,.14);transform:translate(-50%,0) translate(var(--tx,0),var(--ty,0)) rotate(var(--rot,0deg)) scale(var(--sc,1));transition:transform .34s cubic-bezier(.22,1,.36,1),opacity .3s,box-shadow .34s;transform-origin:center center;transform-style:preserve-3d;}
+/* hover: 콜라주 전체 살짝 확대 + 각 사진이 자기 방향으로 벌어져 "쌓인 카드"가 드러남 */
+.deck:hover{transform:scale(1.02);}
+.deck:hover .card{transform:translate(-50%,0) translate(calc(var(--tx,0) + var(--sx,0)),calc(var(--ty,0) + var(--sy,0))) rotate(var(--rot,0deg)) scale(var(--sc,1));box-shadow:0 12px 26px rgba(0,0,0,.28),0 3px 7px rgba(0,0,0,.16);}
 .card.mine{border-color:var(--me);background:linear-gradient(160deg,#6a6a6a,#3a3a3a);}
 .card .meta{position:absolute;top:7px;left:8px;font-size:var(--fs-caption);color:rgba(255,255,255,.92);font-weight:700;}
 .card .ov{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);font-size:var(--fs-display);filter:grayscale(1);}

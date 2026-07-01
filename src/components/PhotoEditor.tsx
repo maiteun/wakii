@@ -88,8 +88,8 @@ const PhotoEditor = forwardRef<
   // plus the chosen reaction emoji (centre) when replying.
   useEffect(() => {
     const init: Sticker[] = [
-      { id: idRef.current++, type: "time", content: nowTime(), x: 23, y: 8, scale: 1 },
-      { id: idRef.current++, type: "weather", content: weather || MOCK_WEATHER, x: 73, y: 8, scale: 1 },
+      { id: idRef.current++, type: "time", content: nowTime(), x: 21, y: 7, scale: 0.7 },
+      { id: idRef.current++, type: "weather", content: weather || MOCK_WEATHER, x: 75, y: 7, scale: 0.7 },
     ];
     if (initialEmoji) init.push({ id: idRef.current++, type: "emoji", content: initialEmoji, x: 50, y: 50, scale: 2 });
     setStickers(init);

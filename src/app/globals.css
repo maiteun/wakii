@@ -456,8 +456,9 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .dl-rmore{margin-left:5px;font-size:var(--fs-caption);color:rgba(255,255,255,.7);font-weight:700;}
 .decklabel .dl-reactors + .cnt{margin-left:8px;}
 #s-room .missionchip{color:rgba(255,255,255,.75);}
-/* 카드 테두리 네온 — 미션=민트 네온, 그 외(읽음·안읽음 동일)=흰색 네온 */
-#s-room .deckwrap .deck .card{border-color:rgba(255,255,255,.9);box-shadow:0 0 9px rgba(255,255,255,.45),0 6px 16px rgba(0,0,0,.16);}
+/* 카드 테두리 — 읽음=흰색(무광) / 안읽음(내가 안 본 사이 업데이트)=흰색 네온 / 미션=민트 네온 */
+#s-room .deckwrap .deck .card{border-color:rgba(255,255,255,.9);box-shadow:0 6px 16px rgba(0,0,0,.16);}
+#s-room .deckwrap.unread .deck .card{border-color:#fff;box-shadow:0 0 10px rgba(255,255,255,.6),0 6px 16px rgba(0,0,0,.16);}
 #s-room .deckwrap .deck .card.mission{border-color:#74f1f1;box-shadow:0 0 10px rgba(116,241,241,.6),0 6px 16px rgba(0,0,0,.16);}
 #s-room .decklabel .mission-names{color:#74f1f1;}
 #s-room .review .daydate{color:rgba(255,255,255,.85);}

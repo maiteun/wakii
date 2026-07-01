@@ -17,10 +17,12 @@ const wrapSigned = (deg) => {
 };
 
 /**
- * @param {{ images?: {src: string, alt?: string}[], maxCards?: number, cardWidth?: number, cardHeight?: number, perspective?: number, speed?: number }} props
+ * @param {{ images?: {src: string, alt?: string}[], center?: string, centerSize?: number, maxCards?: number, cardWidth?: number, cardHeight?: number, perspective?: number, speed?: number }} props
  */
 export default function CircleCards({
   images = /** @type {{src: string, alt?: string}[]} */ ([]),
+  center = "", // 링 한가운데(회전 축)에 고정으로 뜨는 완주 랜드마크 이미지
+  centerSize = 150,
   maxCards = 12,
   cardWidth = 108,
   cardHeight = 144,
@@ -138,6 +140,14 @@ export default function CircleCards({
           })}
         </div>
       </div>
+      {center && (
+        <div
+          className={"cc-center" + (activeIndex !== null ? " cc-center--hidden" : "")}
+          style={{ width: `${centerSize}px`, height: `${centerSize}px` }}
+        >
+          <img src={center} alt="" draggable={false} />
+        </div>
+      )}
     </div>
   );
 }

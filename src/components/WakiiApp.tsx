@@ -2283,18 +2283,24 @@ export default function WakiiApp() {
             <span className="rc-x" onClick={() => setRecapShow(false)}>
               ✕
             </span>
-            {courseImg(recapCourseId) ? (
-              <img className="rc-hero" src={courseImg(recapCourseId) as string} alt="" />
-            ) : (
-              <div className="rc-flag">🏁</div>
-            )}
+            {/* 사진(링)이 있으면 랜드마크는 링 한가운데에 뜨므로 상단 히어로는 생략 */}
+            {recapImgs.length === 0 &&
+              (courseImg(recapCourseId) ? (
+                <img className="rc-hero" src={courseImg(recapCourseId) as string} alt="" />
+              ) : (
+                <div className="rc-flag">🏁</div>
+              ))}
             <div className="rc-title">{recapTitle}</div>
             <div className="rc-sub">{recapSub}</div>
             {recapImgs.length > 0 ? (
               <>
                 <div className="rc-caption">가족이 남긴 순간들</div>
                 <div className="rc-hint">천천히 돌아가는 사진을 탭하면 멈추고 크게 볼 수 있어요</div>
-                <div className="rc-dome">{recapShow && <CircleCards images={recapImgs} />}</div>
+                <div className="rc-dome">
+                  {recapShow && (
+                    <CircleCards images={recapImgs} center={(courseImg(recapCourseId) as string) || ""} />
+                  )}
+                </div>
               </>
             ) : (
               <div className="rc-empty">이 여정 동안 가족이 올린 사진이<br />아직 없어요</div>

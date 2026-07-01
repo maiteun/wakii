@@ -1,6 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================================
+   Min Sans (민산스) 웹폰트 — 눈누 jsDelivr CDN, 9굵기 전체
+   ▸ @font-face 이름을 'Min Sans'(띄어쓰기)로 등록 → font-family:'Min Sans' 로 사용
+   ============================================================ */
+@font-face{font-family:'Min Sans';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/MinSans-Thin.woff') format('woff');font-weight:100;font-display:swap;}
+@font-face{font-family:'Min Sans';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2508-1@1.0/MinSans-ExtraLight.woff2') format('woff2');font-weight:200;font-display:swap;}
+@font-face{font-family:'Min Sans';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/MinSans-Light.woff') format('woff');font-weight:300;font-display:swap;}
+@font-face{font-family:'Min Sans';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/MinSans-Regular.woff') format('woff');font-weight:400;font-display:swap;}
+@font-face{font-family:'Min Sans';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/MinSans-Medium.woff') format('woff');font-weight:500;font-display:swap;}
+@font-face{font-family:'Min Sans';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2508-1@1.0/MinSans-Bold.woff2') format('woff2');font-weight:600;font-display:swap;}
+@font-face{font-family:'Min Sans';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/MinSans-Bold.woff') format('woff');font-weight:700;font-display:swap;}
+@font-face{font-family:'Min Sans';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2508-1@1.0/MinSans-ExtraBold.woff2') format('woff2');font-weight:800;font-display:swap;}
+@font-face{font-family:'Min Sans';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/MinSans-Black.woff') format('woff');font-weight:900;font-display:swap;}
+
 /* ============================================================
    마실 / wakii — DESIGN TOKENS
    ▸ src/app/globals.css 의  "@tailwind utilities;"  바로 아래에 붙여넣기
@@ -42,7 +57,7 @@
   --r-pill:  999px;
 
   /* ---- font : tailwind font-sans(=var(--font-app)) 구동. 앱 본문 폰트와 동일 ---- */
-  --font-app: 'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;
+  --font-app: 'Min Sans','Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;
 }
 
 /* ---- 상태 헬퍼 (클래스 기반 — 이 앱은 className으로 스타일하므로 JSX에 바로) ---- */
@@ -81,7 +96,7 @@
   --g25:#C7C7C7;--g15:#DEDEDE;--g08:#ECEBEA;--g04:#F4F3F2;--paper:#FBFAF9;--line:#E3E1DF;
   --me:#2E2E2E;--parent:#9E9E9E;
 }
-body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 12px 40px;}
+body{background:#D8D6D3;font-family:'Min Sans','Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 12px 40px;}
 .head{text-align:center;margin-bottom:16px;}
 .head .eye{font-size:var(--fs-caption);letter-spacing:.3em;text-transform:uppercase;color:#888;font-weight:700;}
 .head h1{font-size:var(--fs-title);font-weight:800;margin-top:5px;color:#222;}

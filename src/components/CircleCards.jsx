@@ -5,11 +5,12 @@ import "./CircleCards.css";
 
 // 완주 리캡용 3D 원형 카드 캐러셀.
 // - 카드들이 원 둘레에 배치돼 Y축 기준으로 아주 천천히 자동 회전한다.
+// - 좌우로 드래그(스와이프)하거나 스크롤(휠)하면 손으로도 돌릴 수 있다(잠시 뒤 자동회전 재개).
 // - 카드를 탭하면 회전이 멈추고, 그 카드가 정면으로 와서 크게 보인다.
 // - 배경(스크림)이나 카드를 다시 탭하면 다시 천천히 돌기 시작한다.
 //
-// 참고: https://web-motion-catalog.com/samples/circlecards/ (원주가 너무 커서 축소,
-// 스크롤 대신 자동 회전 + 훨씬 느린 속도 + 탭하면 멈춤/포커스로 변형)
+// 참고: https://web-motion-catalog.com/samples/circlecards/ (원주 축소 + 느린 자동회전
+// + 수동 드래그/스크롤 + 탭하면 멈춤/포커스로 변형)
 
 const wrapSigned = (deg) => {
   const a = (((deg + 180) % 360) + 360) % 360;
@@ -42,11 +43,22 @@ export default function CircleCards({
 
   const ringRef = useRef(null);
   const baseRef = useRef(0); // 누적 회전각(연속값)
-  const pausedRef = useRef(false);
+  const pausedRef = useRef(false); // 자동회전 일시정지(포커스/드래그 중)
   const rafRef = useRef(0);
   const lastTsRef = useRef(0);
 
+  // 수동 드래그/스크롤
+  const draggingRef = useRef(false);
+  const movedRef = useRef(false);
+  const startXRef = useRef(0);
+  const startBaseRef = useRef(0);
+  const resumeTimerRef = useRef(0);
+  const activeIndexRef = useRef(null);
+
   const [activeIndex, setActiveIndex] = useState(null);
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
 
   const applyRing = useCallback((deg) => {
     const el = ringRef.current;
@@ -79,6 +91,7 @@ export default function CircleCards({
 
   const focusCard = useCallback(
     (i) => {
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
       pausedRef.current = true;
       const cardAngle = i * step;
       // 정면(net 0)으로 오도록: base + cardAngle ≡ 0 → base = -cardAngle. 현재 위치에서 최단 경로로.
@@ -95,6 +108,7 @@ export default function CircleCards({
   );
 
   const resume = useCallback(() => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
     setActiveIndex(null);
     pausedRef.current = false;
     lastTsRef.current = 0;
@@ -102,10 +116,87 @@ export default function CircleCards({
     if (el) el.style.transition = "none";
   }, []);
 
+  // ── 수동 드래그/스크롤로도 돌릴 수 있게 (자동회전과 병행) ──────────────
+  const beginManual = useCallback(() => {
+    pausedRef.current = true;
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    const el = ringRef.current;
+    if (el) el.style.transition = "none";
+  }, []);
+
+  const endManual = useCallback(() => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    // 손을 뗀 뒤 잠시 있다가 자동회전 재개 (포커스 중이면 재개 안 함)
+    resumeTimerRef.current = window.setTimeout(() => {
+      if (activeIndexRef.current === null) {
+        lastTsRef.current = 0;
+        pausedRef.current = false;
+      }
+    }, 1600);
+  }, []);
+
+  const onPointerMove = useCallback(
+    (e) => {
+      if (!draggingRef.current) return;
+      const dx = e.clientX - startXRef.current;
+      if (Math.abs(dx) > 4) movedRef.current = true;
+      baseRef.current = startBaseRef.current + dx * 0.45; // 0.45deg/px
+      applyRing(baseRef.current);
+    },
+    [applyRing],
+  );
+
+  const onPointerUp = useCallback(() => {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+    endManual();
+  }, [onPointerMove, endManual]);
+
+  const onPointerDown = useCallback(
+    (e) => {
+      if (activeIndexRef.current !== null) return; // 포커스 중엔 드래그 안 함
+      draggingRef.current = true;
+      movedRef.current = false;
+      startXRef.current = e.clientX;
+      startBaseRef.current = baseRef.current;
+      beginManual();
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+    },
+    [beginManual, onPointerMove, onPointerUp],
+  );
+
+  const onWheel = useCallback(
+    (e) => {
+      if (activeIndexRef.current !== null) return;
+      beginManual();
+      baseRef.current += (e.deltaY + e.deltaX) * 0.15;
+      applyRing(baseRef.current);
+      endManual();
+    },
+    [applyRing, beginManual, endManual],
+  );
+
+  useEffect(
+    () => () => {
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    },
+    [onPointerMove, onPointerUp],
+  );
+
   if (count === 0) return null;
 
   return (
-    <div className={"cc-root" + (activeIndex !== null ? " cc-focused" : "")} style={{ perspective: `${perspective}px` }}>
+    <div
+      className={"cc-root" + (activeIndex !== null ? " cc-focused" : "")}
+      style={{ perspective: `${perspective}px` }}
+      onPointerDown={onPointerDown}
+      onWheel={onWheel}
+    >
       {activeIndex !== null && <div className="cc-scrim" onClick={resume} />}
       <div className="cc-stage">
         {center && (
@@ -139,6 +230,10 @@ export default function CircleCards({
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (movedRef.current) {
+                    movedRef.current = false;
+                    return; // 드래그였으면 포커스하지 않음
+                  }
                   if (isActive) resume();
                   else focusCard(i);
                 }}

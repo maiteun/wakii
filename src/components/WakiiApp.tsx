@@ -1377,12 +1377,20 @@ export default function WakiiApp() {
 
   // recap of a course. The photo-curation rule (좋아요 수/이모지 종류 등) is TBD,
   // so the photo section is an empty placeholder for now.
-  // 리캡 사진 구성 — 반드시 '이 방(roomDecks)'의 사진만 사용한다(방 간 섞임 금지).
+  // 리캡 사진 구성 — 반드시 '이 방(roomDecks)'의 사진만 사용(방 간 섞임 금지).
+  // TOP K: 작성자별 best 1장(반응 많은 순)을 먼저 채우고, 남는 자리는 반응 많은 사진순으로.
+  const RECAP_TOP_K = 8;
   const buildRecapImgs = (roomDecks: Deck[]) => {
-    // 방의 사용자별 best 1장씩 큐레이션(반응 많은 순) 먼저, 그 뒤 나머지 사진(중복 제거)
-    const curated = curateRecap(roomDecks);
-    const order = [...curated.map((p) => p.img), ...roomDecks.flatMap((d) => d.cards.map((c) => c.img))]
-      .filter((s): s is string => !!s);
+    const rcount = (c: Card) => (c.reactions?.length ?? 0) + (c.photoReactions?.length ?? 0);
+    const curated = curateRecap(roomDecks); // 작성자별 best 1, 반응 많은 순
+    const curatedSrcs = new Set(curated.map((p) => p.img));
+    const rest = roomDecks
+      .flatMap((d) => d.cards)
+      .filter((c): c is Card & { img: string } => !!c.img && !curatedSrcs.has(c.img))
+      .sort((a, b) => rcount(b) - rcount(a)) // 나머지는 반응 많은 사진 우선
+      .map((c) => c.img);
+    const order = [...curated.map((p) => p.img), ...rest].filter((s): s is string => !!s);
+    const top = Array.from(new Set(order)).slice(0, RECAP_TOP_K);
     // 사진(src) → 작성자(who) 매핑: 카드 위에 프로필+이름을 작게 얹기 위함
     const whoOf: Record<string, string> = {};
     roomDecks.forEach((d) =>
@@ -1391,7 +1399,7 @@ export default function WakiiApp() {
       }),
     );
     setRecapImgs(
-      Array.from(new Set(order)).map((src) => {
+      top.map((src) => {
         const who = whoOf[src];
         return { src, alt: who ? nameOf(who) : "", name: who ? nameOf(who) : undefined, avatar: who ? avatarOf(who) : undefined };
       }),
@@ -1403,7 +1411,7 @@ export default function WakiiApp() {
     if (!c) return;
     setRecapCourseId(courseId);
     setRecapTitle(`${c.name_ko} 완주!`);
-    setRecapSub(`함께 ${c.distance_km}km · 가족이 함께 걸어 도착했어요`);
+    setRecapSub(`${c.distance_km}km 동안 WAKII 했어요`);
     // 선택된 방(activeGroup)의 사진만 사용. 그 방 데크가 아직 안 실렸으면 그 방만 다시 불러와서 구성.
     // (전엔 미로딩 시 모든 방을 flat 해서 사진이 방끼리 섞였음)
     const roomName = activeGroup?.name;

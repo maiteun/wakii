@@ -158,6 +158,62 @@
   opacity: 0.22;
 }
 
+/* 카드 아래 반응 이모지 (회전 중에도 보임) */
+.cc-react {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cc-card.cc-active .cc-react {
+  opacity: 0;
+}
+
+/* 포커스한 카드의 반응 — 화면 아래쪽에 크게 */
+.cc-focus-react {
+  position: absolute;
+  left: 50%;
+  bottom: 9%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 26px;
+  line-height: 1;
+  pointer-events: none;
+  animation: cc-react-pop 0.3s ease-out;
+}
+
+@keyframes cc-react-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
 .cc-scrim {
   position: absolute;
   inset: 0;

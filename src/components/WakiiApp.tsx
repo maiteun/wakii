@@ -445,9 +445,10 @@ export default function WakiiApp() {
   // recap
   const [recapShow, setRecapShow] = useState(false);
   const [recapTitle, setRecapTitle] = useState("");
-  const [recapSub, setRecapSub] = useState("");
   const [recapCourseId, setRecapCourseId] = useState("");
-  const [recapImgs, setRecapImgs] = useState<{ src: string; alt: string; name?: string; avatar?: string }[]>([]); // 돔 갤러리용 사진
+  const [recapImgs, setRecapImgs] = useState<
+    { src: string; alt: string; name?: string; avatar?: string; emojis?: string[] }[]
+  >([]); // 돔 갤러리용 사진
 
   // walk — course system (A 구조: one active course = one landmark; the whole
   // family's steps combine into the shared distance; finishing resets to 0 and
@@ -1391,17 +1392,28 @@ export default function WakiiApp() {
       .map((c) => c.img);
     const order = [...curated.map((p) => p.img), ...rest].filter((s): s is string => !!s);
     const top = Array.from(new Set(order)).slice(0, RECAP_TOP_K);
-    // 사진(src) → 작성자(who) 매핑: 카드 위에 프로필+이름을 작게 얹기 위함
+    // 사진(src) → 작성자(who) / 반응 이모지 매핑
     const whoOf: Record<string, string> = {};
+    const emojiOf: Record<string, string[]> = {};
     roomDecks.forEach((d) =>
       d.cards.forEach((c) => {
-        if (c.img && !whoOf[c.img]) whoOf[c.img] = c.who;
+        if (!c.img) return;
+        if (!whoOf[c.img]) whoOf[c.img] = c.who;
+        if (!emojiOf[c.img]) {
+          emojiOf[c.img] = [...(c.reactions ?? []), ...(c.photoReactions?.map((p) => p.emoji) ?? [])];
+        }
       }),
     );
     setRecapImgs(
       top.map((src) => {
         const who = whoOf[src];
-        return { src, alt: who ? nameOf(who) : "", name: who ? nameOf(who) : undefined, avatar: who ? avatarOf(who) : undefined };
+        return {
+          src,
+          alt: who ? nameOf(who) : "",
+          name: who ? nameOf(who) : undefined,
+          avatar: who ? avatarOf(who) : undefined,
+          emojis: emojiOf[src] ?? [],
+        };
       }),
     );
   };
@@ -1411,7 +1423,6 @@ export default function WakiiApp() {
     if (!c) return;
     setRecapCourseId(courseId);
     setRecapTitle(`${c.name_ko} 완주!`);
-    setRecapSub(`${c.distance_km}km 동안 WAKII 했어요`);
     // 선택된 방(activeGroup)의 사진만 사용. 그 방 데크가 아직 안 실렸으면 그 방만 다시 불러와서 구성.
     // (전엔 미로딩 시 모든 방을 flat 해서 사진이 방끼리 섞였음)
     const roomName = activeGroup?.name;
@@ -2334,7 +2345,10 @@ export default function WakiiApp() {
                 <div className="rc-flag">🏁</div>
               ))}
             <div className="rc-title">{recapTitle}</div>
-            <div className="rc-sub">{recapSub}</div>
+            <div className="rc-sub">
+              <b className="rc-mint">{courseById(recapCourseId)?.distance_km ?? 0}km</b> 동안{" "}
+              <b className="rc-mint">wakii</b> 했어요
+            </div>
             {recapImgs.length > 0 ? (
               <>
                 <div className="rc-dome">

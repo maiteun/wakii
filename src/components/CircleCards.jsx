@@ -18,10 +18,10 @@ const wrapSigned = (deg) => {
 };
 
 /**
- * @param {{ images?: {src: string, alt?: string, name?: string, avatar?: string}[], center?: string, centerSize?: number, maxCards?: number, cardWidth?: number, cardHeight?: number, perspective?: number, speed?: number }} props
+ * @param {{ images?: {src: string, alt?: string, name?: string, avatar?: string, emojis?: string[]}[], center?: string, centerSize?: number, maxCards?: number, cardWidth?: number, cardHeight?: number, perspective?: number, speed?: number }} props
  */
 export default function CircleCards({
-  images = /** @type {{src: string, alt?: string, name?: string, avatar?: string}[]} */ ([]),
+  images = /** @type {{src: string, alt?: string, name?: string, avatar?: string, emojis?: string[]}[]} */ ([]),
   center = "", // 링 한가운데(회전 축)에 고정으로 뜨는 완주 랜드마크 이미지
   centerSize = 260,
   maxCards = 12,
@@ -252,11 +252,27 @@ export default function CircleCards({
                 <div className="cc-face cc-back">
                   <img src={img.src} alt="" draggable={false} />
                 </div>
+                {/* 돌아가는 와중에도 보이는 반응 이모지 (카드 아래) */}
+                {img.emojis && img.emojis.length > 0 && (
+                  <div className="cc-react">
+                    {img.emojis.slice(0, 6).map((e, k) => (
+                      <span key={k}>{e}</span>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       </div>
+      {/* 포커스한 카드의 반응 — 크게 (탭했을 때) */}
+      {activeIndex !== null && pool[activeIndex]?.emojis?.length > 0 && (
+        <div className="cc-focus-react">
+          {pool[activeIndex].emojis.map((e, k) => (
+            <span key={k}>{e}</span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

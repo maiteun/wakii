@@ -9,7 +9,19 @@ const SIDE_SCALE = 0.72;
 // 한 장 넘기는 데 필요한 드래그 거리(카드 너비 대비). 작을수록 살짝만 밀어도 넘어감.
 const DRAG_UNIT = 0.45;
 
-type Item = { image: string; text?: string };
+type Item = { image: string; text?: string; chain?: string[] };
+
+// 마트료시카: 사진 안에 답장 대상 사진이 좌하단에 얹히고, 그게 또 답장이면 재귀로 한 겹 더.
+function Matryoshka({ chain }: { chain: string[] }) {
+  const [outer, ...rest] = chain;
+  return (
+    <div className="mtry">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={outer} alt="" draggable={false} />
+      {rest.length > 0 && <Matryoshka chain={rest} />}
+    </div>
+  );
+}
 
 export default function DeckCarousel({
   items,
@@ -104,8 +116,7 @@ export default function DeckCarousel({
               if (i !== active) onActive(i);
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={it.image} alt={it.text || ""} draggable={false} />
+            <Matryoshka chain={it.chain && it.chain.length ? it.chain : [it.image]} />
           </div>
         );
       })}

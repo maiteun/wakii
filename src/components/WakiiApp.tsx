@@ -30,8 +30,8 @@ import {
 
 // 덱 카드 커버플로우(가운데 크게 + 양옆 1/3, 한 스와이프에 한 장)
 import DeckCarousel from "./DeckCarousel";
-// 완주 리캡용 3D 돔 갤러리 — DOM/제스처 사용, 클라이언트 전용
-const DomeGallery = dynamic(() => import("./DomeGallery"), { ssr: false });
+// 완주 리캡용 3D 원형 카드 캐러셀 — 자동 회전 + 탭하면 멈춤/포커스, 클라이언트 전용
+const CircleCards = dynamic(() => import("./CircleCards"), { ssr: false });
 
 // role shown on each card by its position in the deck
 const roleLabel = (i: number) => (i === 0 ? "" : `${i}차 반응자`);
@@ -2295,24 +2295,8 @@ export default function WakiiApp() {
             {recapImgs.length > 0 ? (
               <>
                 <div className="rc-caption">가족이 남긴 순간들</div>
-                <div className="rc-hint">드래그해서 둘러보고, 사진을 탭하면 크게 볼 수 있어요</div>
-                <div className="rc-dome">
-                  {recapShow && (
-                    <DomeGallery
-                      images={recapImgs}
-                      fit={0.6}
-                      minRadius={800}
-                      segments={20}
-                      dragDampening={5}
-                      grayscale={false}
-                      overlayBlurColor="#141414"
-                      imageBorderRadius="18px"
-                      openedImageBorderRadius="18px"
-                      openedImageWidth="220px"
-                      openedImageHeight="300px"
-                    />
-                  )}
-                </div>
+                <div className="rc-hint">천천히 돌아가는 사진을 탭하면 멈추고 크게 볼 수 있어요</div>
+                <div className="rc-dome">{recapShow && <CircleCards images={recapImgs} />}</div>
               </>
             ) : (
               <div className="rc-empty">이 여정 동안 가족이 올린 사진이<br />아직 없어요</div>

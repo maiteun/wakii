@@ -1,0 +1,75 @@
+.cc-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+.cc-stage {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.cc-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.cc-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  transition: opacity 0.5s ease;
+}
+
+.cc-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #2a2a2a;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.5s ease;
+}
+
+.cc-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cc-back {
+  transform: rotateY(180deg);
+}
+
+/* 포커스: 선택 카드는 정면에서 확대, 나머지는 흐리게 */
+.cc-root.cc-focused .cc-card:not(.cc-active) {
+  opacity: 0.25;
+}
+
+.cc-card.cc-active {
+  z-index: 10;
+}
+
+.cc-card.cc-active .cc-front {
+  transform: scale(1.55);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.6);
+}
+
+.cc-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: transparent;
+}

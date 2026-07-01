@@ -143,16 +143,16 @@ export default function CircleCards({
                   else focusCard(i);
                 }}
               >
+                {img.name && (
+                  <div className="cc-tag">
+                    <span className="cc-ava">
+                      {img.avatar ? <img src={img.avatar} alt="" draggable={false} /> : img.name.slice(0, 1)}
+                    </span>
+                    <span className="cc-name">{img.name}</span>
+                  </div>
+                )}
                 <div className="cc-face cc-front">
                   <img src={img.src} alt={img.alt || ""} draggable={false} />
-                  {img.name && (
-                    <div className="cc-tag">
-                      <span className="cc-ava">
-                        {img.avatar ? <img src={img.avatar} alt="" draggable={false} /> : img.name.slice(0, 1)}
-                      </span>
-                      <span className="cc-name">{img.name}</span>
-                    </div>
-                  )}
                 </div>
                 <div className="cc-face cc-back">
                   <img src={img.src} alt="" draggable={false} />

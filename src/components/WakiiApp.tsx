@@ -1377,16 +1377,9 @@ export default function WakiiApp() {
 
   // recap of a course. The photo-curation rule (좋아요 수/이모지 종류 등) is TBD,
   // so the photo section is an empty placeholder for now.
-  const openRecap = (courseId: string) => {
-    const c = courseById(courseId);
-    if (!c) return;
-    setRecapCourseId(courseId);
-    setRecapTitle(`${c.name_ko} 완주!`);
-    setRecapSub(`함께 ${c.distance_km}km · 가족이 함께 걸어 도착했어요`);
-    // 선택된 방(activeGroup)의 사진만 모아 사용자별 best 1장씩 큐레이션 → 방의 사용자 n명이면 n장.
-    // (목 데이터: 완주 '기간' 필터는 데이터가 생기면 여기서 createdAt 범위로 거르면 됨)
-    const roomDecks = (activeGroup && rooms[activeGroup.name]) || Object.values(rooms).flat();
-    // 돔 갤러리엔 이 여정의 모든 사진을 넣는다(중복 제거, 반응 많은 순 먼저 → 나머지)
+  // 리캡 사진 구성 — 반드시 '이 방(roomDecks)'의 사진만 사용한다(방 간 섞임 금지).
+  const buildRecapImgs = (roomDecks: Deck[]) => {
+    // 방의 사용자별 best 1장씩 큐레이션(반응 많은 순) 먼저, 그 뒤 나머지 사진(중복 제거)
     const curated = curateRecap(roomDecks);
     const order = [...curated.map((p) => p.img), ...roomDecks.flatMap((d) => d.cards.map((c) => c.img))]
       .filter((s): s is string => !!s);
@@ -1403,6 +1396,31 @@ export default function WakiiApp() {
         return { src, alt: who ? nameOf(who) : "", name: who ? nameOf(who) : undefined, avatar: who ? avatarOf(who) : undefined };
       }),
     );
+  };
+
+  const openRecap = (courseId: string) => {
+    const c = courseById(courseId);
+    if (!c) return;
+    setRecapCourseId(courseId);
+    setRecapTitle(`${c.name_ko} 완주!`);
+    setRecapSub(`함께 ${c.distance_km}km · 가족이 함께 걸어 도착했어요`);
+    // 선택된 방(activeGroup)의 사진만 사용. 그 방 데크가 아직 안 실렸으면 그 방만 다시 불러와서 구성.
+    // (전엔 미로딩 시 모든 방을 flat 해서 사진이 방끼리 섞였음)
+    const roomName = activeGroup?.name;
+    const known = roomName ? rooms[roomName] : undefined;
+    if (known) {
+      buildRecapImgs(known);
+    } else if (roomName && hasSupabase) {
+      setRecapImgs([]);
+      listRoom(roomName, author)
+        .then((decks) => {
+          setRooms((r) => ({ ...r, [roomName]: decks }));
+          buildRecapImgs(decks);
+        })
+        .catch(() => {});
+    } else {
+      setRecapImgs([]);
+    }
     setRecapShow(true);
   };
 

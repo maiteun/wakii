@@ -61,7 +61,7 @@
   transform: rotateY(180deg);
 }
 
-/* 카드 바로 위(카드 외부)에 붙는 작성자 프로필 + 이름 (아주 작게) */
+/* 카드 바로 위(카드 외부) 작성자 — 규칙: 프로필(아이콘) 위, 이름(텍스트)은 다음 줄. 블록 없음. */
 .cc-tag {
   position: absolute;
   bottom: calc(100% + 6px);
@@ -69,21 +69,17 @@
   transform: translateX(-50%);
   backface-visibility: hidden;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  max-width: 100%;
-  padding: 3px 9px 3px 3px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  gap: 3px;
+  max-width: 120%;
   white-space: nowrap;
 }
 
 .cc-ava {
   flex: none;
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   overflow: hidden;
   display: flex;
@@ -91,8 +87,9 @@
   justify-content: center;
   background: rgba(255, 255, 255, 0.28);
   color: #fff;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .cc-ava img {
@@ -104,12 +101,10 @@
 
 .cc-name {
   color: #fff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 
 /* 포커스: 선택 카드는 정면에서 확대, 나머지는 흐리게 */
@@ -158,7 +153,7 @@
   opacity: 0.22;
 }
 
-/* 카드 아래 반응 이모지 (회전 중에도 보임) */
+/* 카드 아래 반응 — 블록 없이 이모지만 (회전 중에도 보임) */
 .cc-react {
   position: absolute;
   top: calc(100% + 6px);
@@ -168,21 +163,17 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1;
   white-space: nowrap;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
 }
 
 .cc-card.cc-active .cc-react {
   opacity: 0;
 }
 
-/* 포커스한 카드의 반응 — 화면 아래쪽에 크게 */
+/* 포커스한 카드의 반응 — 블록 없이 이모지만, 화면 아래쪽에 크게 */
 .cc-focus-react {
   position: absolute;
   left: 50%;
@@ -191,15 +182,11 @@
   z-index: 6;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 9px 16px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  font-size: 26px;
+  gap: 8px;
+  font-size: 30px;
   line-height: 1;
   pointer-events: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
   animation: cc-react-pop 0.3s ease-out;
 }
 

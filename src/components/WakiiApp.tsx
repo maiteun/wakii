@@ -1418,6 +1418,14 @@ export default function WakiiApp() {
     );
   };
 
+  // 목표 도달 시점 ~ 완주까지 걸린 시간(시간 단위). startedAt 데이터가 아직 없어
+  // 거리 기반으로 추정(가족 도보 평균 ~3.5km/h). 실제 시작 시각이 생기면 그걸로 교체.
+  const recapHours = (courseId: string) => {
+    const c = courseById(courseId);
+    if (!c) return 1;
+    return Math.max(1, Math.round(c.distance_km / 3.5));
+  };
+
   const openRecap = (courseId: string) => {
     const c = courseById(courseId);
     if (!c) return;
@@ -2346,7 +2354,8 @@ export default function WakiiApp() {
               ))}
             <div className="rc-title">{recapTitle}</div>
             <div className="rc-sub">
-              <b className="rc-mint">{courseById(recapCourseId)?.distance_km ?? 0}km</b> 동안{" "}
+              <b className="rc-mint">{recapHours(recapCourseId)}시간</b> 동안{" "}
+              <b className="rc-mint">{courseById(recapCourseId)?.distance_km ?? 0}km</b>을 함께{" "}
               <b className="rc-mint">wakii</b> 했어요
             </div>
             {recapImgs.length > 0 ? (

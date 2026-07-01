@@ -30,8 +30,8 @@ const D2 = "daughter2@wakii.demo";
 const PROFILES = [
   { email: MOM, name: "엄마", file: "mockup/프로필 이미지/엄마.png", obj: "demo/4444/mom.png" },
   { email: DAD, name: "아빠", file: "mockup/프로필 이미지/아빠.png", obj: "demo/4444/dad.png" },
-  { email: D1, name: "딸1", file: "mockup/프로필 이미지/딸1.png", obj: "demo/4444/daughter1.png" },
-  { email: D2, name: "딸2", file: "mockup/프로필 이미지/딸2.png", obj: "demo/4444/daughter2.png" },
+  { email: D1, name: "큰언니", file: "mockup/프로필 이미지/딸1.png", obj: "demo/4444/daughter1.png" },
+  { email: D2, name: "작은언니", file: "mockup/프로필 이미지/딸2.png", obj: "demo/4444/daughter2.png" },
 ];
 
 // 게시글 사진(로컬 → Storage 오브젝트 경로). 키로 시나리오에서 참조.

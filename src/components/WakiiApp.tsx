@@ -34,7 +34,6 @@ import DeckCarousel from "./DeckCarousel";
 const CircleCards = dynamic(() => import("./CircleCards"), { ssr: false });
 
 // role shown on each card by its position in the deck
-const roleLabel = (i: number) => (i === 0 ? "" : `${i}차 반응자`);
 // 스탬프 화면 섬 흩뿌림 위치(디자인처럼 랜덤한 느낌). 인덱스로 순환.
 const STAMP_SCATTER: React.CSSProperties[] = [
   { top: "5%", left: "4%", width: "47%" },
@@ -547,8 +546,7 @@ export default function WakiiApp() {
   // (rooms 실시간 갱신엔 반응하지 않게 deck/room 변경 시에만 리셋)
   useEffect(() => {
     if (openDeckIdx == null) return;
-    const len = rooms[currentRoom]?.[openDeckIdx]?.cards.length ?? 1;
-    setActiveCardIdx(Math.max(0, len - 1));
+    setActiveCardIdx(0); // 먼저 올린 사진(원글)부터 — 업로드 순서대로 보기
     setDgMenuOpen(false); // 새 덱 열면 ⋯ 메뉴 닫기
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openDeckIdx, currentRoom]);
@@ -1855,8 +1853,8 @@ export default function WakiiApp() {
                               className={"card" + (c.mine ? " mine" : "") + (deck.isMission ? " mission" : "")}
                               style={style}
                             >
-                              {(deck.isMission ? nameOf(c.who) : roleLabel(i)) && (
-                                <div className="meta">{deck.isMission ? nameOf(c.who) : roleLabel(i)}</div>
+                              {(deck.isMission || i > 0) && (
+                                <div className="meta">{nameOf(c.who)}</div>
                               )}
                               {!c.img && c.ov && <div className="ov">{c.ov}</div>}
                               <div className="seq">{i + 1}</div>

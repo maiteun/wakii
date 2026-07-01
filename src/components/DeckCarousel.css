@@ -33,41 +33,36 @@
   transition: none;
 }
 
-/* ── 마트료시카 답장: 사진 안에 답장 대상 사진이 좌하단에 재귀로 중첩 ── */
-.dcz-card .mtry {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-/* 바깥(자기) 사진 — 카드를 꽉 채움 */
-.dcz-card > .mtry > img {
+/* 카드 본체 사진 — 카드를 꽉 채움 */
+.dcz-photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: 18px;
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
 }
-/* 중첩되는 답장 대상 — 좌하단에 얹힘, 한 겹마다 40%로 작아짐 */
-.dcz-card .mtry .mtry {
+/* 답장 대상(직전 사람) 인셋 — 카드 안에서 드래그로 자유 이동. 크기 28%(=기존 0.7배) */
+.dcz-inset {
   position: absolute;
-  left: 6%;
-  bottom: 6%;
-  width: 40%;
-  height: auto;
-}
-.dcz-card .mtry .mtry > img {
-  width: 100%;
-  height: auto;
+  width: 28%;
   aspect-ratio: 3 / 4;
+  cursor: grab;
+  touch-action: none;
+  z-index: 2;
+}
+.dcz-inset:active {
+  cursor: grabbing;
+}
+.dcz-inset img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   display: block;
   border-radius: 12px;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 6px 16px rgba(0, 0, 0, 0.35);
   filter: brightness(0.94);
-  pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
 }

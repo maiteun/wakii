@@ -526,8 +526,8 @@ export default function WakiiApp() {
 
   // cards for the open deck, as image+label items for the circular gallery.
   // Built async because the author chip is composited onto each card image.
-  // chain: 마트료시카 중첩용 — [자기 사진, 답장 대상, 그 대상의 대상 …] (바깥→안쪽)
-  const [galleryItems, setGalleryItems] = useState<{ image: string; text: string; chain: string[] }[]>([]);
+  // reply: 마트료시카 중첩용 — 이 카드가 답장이면 '직전 사람 사진'을 얹는다(한 겹만)
+  const [galleryItems, setGalleryItems] = useState<{ image: string; text: string; reply?: string }[]>([]);
   useEffect(() => {
     if (openDeckIdx == null) {
       setGalleryItems([]);
@@ -539,13 +539,13 @@ export default function WakiiApp() {
       return;
     }
     // 작성자는 카드 좌상단 글래스 칩(.dg-author)으로 보여주므로 갤러리 하단 라벨은 비운다.
-    // chain = 이 카드부터 답장 대상들을 거슬러 원본까지(바깥→안쪽) — 답장 사진에 대상이 중첩됨.
+    // reply = 이 카드가 답장이면 '직전 사람 사진'만 얹는다(한 겹).
     const imgs = deck.cards.map((c) => buildGalleryImage(c));
     setGalleryItems(
       deck.cards.map((c, i) => ({
         image: imgs[i],
         text: "",
-        chain: c.reply ? imgs.slice(0, i + 1).reverse() : [imgs[i]],
+        reply: c.reply ? imgs[i - 1] : undefined,
       })),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps

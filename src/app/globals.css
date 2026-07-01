@@ -215,7 +215,7 @@ body{background:#D8D6D3;font-family:'Min Sans','Apple SD Gothic Neo','Noto Sans 
 .deck{position:relative;height:300px;cursor:pointer;user-select:none;perspective:1000px;transition:transform .3s cubic-bezier(.22,1,.36,1);transform-origin:center 58%;}
 .deck.open{height:318px;}
 /* 사진 더미: 위치(--tx/--ty)·각도(--rot)·크기(--sc)를 카드마다 다르게 줘 겹쳐 쌓인다 */
-.card{position:absolute;left:50%;top:24px;width:184px;aspect-ratio:3/4;border-radius:15px;overflow:hidden;background:linear-gradient(160deg,#8a8a8a,#5e5e5e);border:3px solid var(--parent);box-shadow:0 8px 20px rgba(0,0,0,.24),0 2px 5px rgba(0,0,0,.14);transform:translate(-50%,0) translate(var(--tx,0),var(--ty,0)) rotate(var(--rot,0deg)) scale(var(--sc,1));transition:transform .34s cubic-bezier(.22,1,.36,1),opacity .3s,box-shadow .34s;transform-origin:center center;transform-style:preserve-3d;}
+.card{position:absolute;left:50%;top:24px;width:184px;aspect-ratio:3/4;border-radius:15px;overflow:hidden;background:linear-gradient(160deg,#8a8a8a,#5e5e5e);border:2px solid var(--parent);box-shadow:0 8px 20px rgba(0,0,0,.24),0 2px 5px rgba(0,0,0,.14);transform:translate(-50%,0) translate(var(--tx,0),var(--ty,0)) rotate(var(--rot,0deg)) scale(var(--sc,1));transition:transform .34s cubic-bezier(.22,1,.36,1),opacity .3s,box-shadow .34s;transform-origin:center center;transform-style:preserve-3d;}
 /* hover: 콜라주 전체 살짝 확대 + 각 사진이 자기 방향으로 벌어져 "쌓인 카드"가 드러남 */
 .deck:hover{transform:scale(1.02);}
 .deck:hover .card{transform:translate(-50%,0) translate(calc(var(--tx,0) + var(--sx,0)),calc(var(--ty,0) + var(--sy,0))) rotate(var(--rot,0deg)) scale(var(--sc,1));box-shadow:0 12px 26px rgba(0,0,0,.28),0 3px 7px rgba(0,0,0,.16);}
@@ -716,7 +716,7 @@ img.stamp-pill{height:30px;width:auto;}
 .dg-acts button:active{background:rgba(116,241,241,.22);}
 
 /* 미션 카드 배경(중립). 색 강조는 '안읽음(unread)' 여부로만 함 */
-.card.mission{background:linear-gradient(160deg,#3a4a5a,#243340);}
+.card.mission{background:linear-gradient(160deg,#3a4a5a,#243340);border-width:3px;}
 .decklabel .mission-names{font-weight:800;}
 .decklabel .rxcnt{margin-left:auto;background:var(--g08);border-radius:8px;padding:1px 7px;font-size:var(--fs-caption);color:var(--g70);font-weight:700;}
 .decklabel .rxcnt + .cnt{margin-left:6px;}

@@ -192,13 +192,13 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .roomcode{text-align:center;color:var(--g25);font-size:var(--fs-caption);letter-spacing:.06em;padding:20px 0 34px;cursor:pointer;user-select:all;}
 /* 덱 사이는 더 벌리고(다른 덱 구분), 프로필+작성자는 덱에 더 붙임 */
 .deckwrap{margin-bottom:40px;}
-.decklabel{display:flex;align-items:center;gap:6px;font-size:var(--fs-caption);color:var(--g40);margin-bottom:3px;}
+.decklabel{display:flex;align-items:center;gap:6px;font-size:var(--fs-caption);color:var(--g40);margin-bottom:10px;position:relative;z-index:2;}
 .decklabel b{color:var(--g70);font-weight:700;}
 .decklabel .cnt{margin-left:auto;background:var(--g08);border-radius:8px;padding:1px 8px;font-size:var(--fs-caption);color:var(--g55);font-weight:700;}
-.deck{position:relative;height:282px;cursor:pointer;user-select:none;perspective:1000px;transition:transform .3s cubic-bezier(.22,1,.36,1);transform-origin:center 58%;}
-.deck.open{height:300px;}
+.deck{position:relative;height:300px;cursor:pointer;user-select:none;perspective:1000px;transition:transform .3s cubic-bezier(.22,1,.36,1);transform-origin:center 58%;}
+.deck.open{height:318px;}
 /* 사진 더미: 위치(--tx/--ty)·각도(--rot)·크기(--sc)를 카드마다 다르게 줘 겹쳐 쌓인다 */
-.card{position:absolute;left:50%;top:20px;width:184px;aspect-ratio:3/4;border-radius:15px;overflow:hidden;background:linear-gradient(160deg,#8a8a8a,#5e5e5e);border:3px solid var(--parent);box-shadow:0 8px 20px rgba(0,0,0,.24),0 2px 5px rgba(0,0,0,.14);transform:translate(-50%,0) translate(var(--tx,0),var(--ty,0)) rotate(var(--rot,0deg)) scale(var(--sc,1));transition:transform .34s cubic-bezier(.22,1,.36,1),opacity .3s,box-shadow .34s;transform-origin:center center;transform-style:preserve-3d;}
+.card{position:absolute;left:50%;top:24px;width:184px;aspect-ratio:3/4;border-radius:15px;overflow:hidden;background:linear-gradient(160deg,#8a8a8a,#5e5e5e);border:3px solid var(--parent);box-shadow:0 8px 20px rgba(0,0,0,.24),0 2px 5px rgba(0,0,0,.14);transform:translate(-50%,0) translate(var(--tx,0),var(--ty,0)) rotate(var(--rot,0deg)) scale(var(--sc,1));transition:transform .34s cubic-bezier(.22,1,.36,1),opacity .3s,box-shadow .34s;transform-origin:center center;transform-style:preserve-3d;}
 /* hover: 콜라주 전체 살짝 확대 + 각 사진이 자기 방향으로 벌어져 "쌓인 카드"가 드러남 */
 .deck:hover{transform:scale(1.02);}
 .deck:hover .card{transform:translate(-50%,0) translate(calc(var(--tx,0) + var(--sx,0)),calc(var(--ty,0) + var(--sy,0))) rotate(var(--rot,0deg)) scale(var(--sc,1));box-shadow:0 12px 26px rgba(0,0,0,.28),0 3px 7px rgba(0,0,0,.16);}
@@ -208,7 +208,7 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .card .seq{position:absolute;bottom:7px;right:8px;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.9);color:#222;font-size:var(--fs-caption);font-weight:800;display:flex;align-items:center;justify-content:center;}
 .card .reporig{position:absolute;top:5px;right:5px;width:26px;aspect-ratio:3/4;border-radius:3px;background:linear-gradient(160deg,#9a9a9a,#6e6e6e);border:1.5px solid #fff;}
 .deck .hint{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);font-size:var(--fs-caption);color:var(--g40);white-space:nowrap;}
-.missionchip{margin-top:6px;text-align:center;font-size:var(--fs-label);font-weight:800;color:var(--g55);}
+.missionchip{margin-top:14px;text-align:center;font-size:var(--fs-label);font-weight:800;color:var(--g55);position:relative;z-index:2;}
 
 .deckacts{display:flex;gap:8px;justify-content:center;margin-top:12px;height:0;overflow:hidden;opacity:0;transition:opacity .3s,height .3s;}
 .deckwrap.open .deckacts{height:36px;opacity:1;}

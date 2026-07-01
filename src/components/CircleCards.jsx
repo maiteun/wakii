@@ -22,7 +22,7 @@ const wrapSigned = (deg) => {
 export default function CircleCards({
   images = /** @type {{src: string, alt?: string}[]} */ ([]),
   center = "", // 링 한가운데(회전 축)에 고정으로 뜨는 완주 랜드마크 이미지
-  centerSize = 150,
+  centerSize = 260,
   maxCards = 12,
   cardWidth = 108,
   cardHeight = 144,
@@ -108,6 +108,20 @@ export default function CircleCards({
     <div className={"cc-root" + (activeIndex !== null ? " cc-focused" : "")} style={{ perspective: `${perspective}px` }}>
       {activeIndex !== null && <div className="cc-scrim" onClick={resume} />}
       <div className="cc-stage">
+        {center && (
+          <div
+            className={"cc-center" + (activeIndex !== null ? " cc-center--dim" : "")}
+            style={{
+              width: `${centerSize}px`,
+              height: `${centerSize}px`,
+              marginLeft: `${-centerSize / 2}px`,
+              marginTop: `${-centerSize / 2}px`,
+              transform: `translateZ(${-radius}px)`,
+            }}
+          >
+            <img src={center} alt="" draggable={false} />
+          </div>
+        )}
         <div ref={ringRef} className="cc-ring">
           {pool.map((img, i) => {
             const angle = i * step;
@@ -140,14 +154,6 @@ export default function CircleCards({
           })}
         </div>
       </div>
-      {center && (
-        <div
-          className={"cc-center" + (activeIndex !== null ? " cc-center--hidden" : "")}
-          style={{ width: `${centerSize}px`, height: `${centerSize}px` }}
-        >
-          <img src={center} alt="" draggable={false} />
-        </div>
-      )}
     </div>
   );
 }

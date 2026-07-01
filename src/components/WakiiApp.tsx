@@ -2294,8 +2294,6 @@ export default function WakiiApp() {
             <div className="rc-sub">{recapSub}</div>
             {recapImgs.length > 0 ? (
               <>
-                <div className="rc-caption">가족이 남긴 순간들</div>
-                <div className="rc-hint">천천히 돌아가는 사진을 탭하면 멈추고 크게 볼 수 있어요</div>
                 <div className="rc-dome">
                   {recapShow && (
                     <CircleCards images={recapImgs} center={(courseImg(recapCourseId) as string) || ""} />

@@ -179,13 +179,14 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 
 /* ===== ROOM ===== */
 .rhead{display:flex;align-items:center;gap:9px;padding:10px 16px;border-bottom:1px solid var(--g08);background:var(--paper);position:sticky;top:0;z-index:10;}
-.rhead .bk{font-size:var(--fs-title);color:var(--g55);cursor:pointer;}
-.rhead .ttl{font-size:var(--fs-body);font-weight:800;}
-.rhead .cam{margin-left:auto;font-size:var(--fs-title);cursor:pointer;filter:grayscale(1);display:flex;align-items:center;}
+.rhead .bk{font-size:var(--fs-title);color:var(--g55);cursor:pointer;flex:0 0 auto;}
+.rhead .ttl{font-size:var(--fs-body);font-weight:800;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rhead .cam{flex:0 0 auto;font-size:var(--fs-title);cursor:pointer;filter:grayscale(1);display:flex;align-items:center;}
 /* 방 헤더 카메라 = 미션 카메라 아이콘(흰색), 크기는 기존 이모지(20px)에 맞춤 */
 .rhead .cam .cam-ic{height:20px;width:auto;display:block;}
-.vtoggle{display:flex;gap:3px;background:var(--g08);border-radius:9px;padding:2px;margin:10px 16px;}
-.vtoggle span{flex:1;text-align:center;font-size:var(--fs-caption);font-weight:700;color:var(--g40);padding:6px 0;border-radius:7px;cursor:pointer;}
+/* 사진/Recap 토글 — 헤더 안에서 [<][방이름] 오른쪽, 카메라 왼쪽에 오는 컴팩트 세그먼트 */
+.vtoggle{display:flex;flex:0 0 auto;gap:2px;background:var(--g08);border-radius:9px;padding:2px;margin-left:auto;}
+.vtoggle span{text-align:center;font-size:var(--fs-caption);font-weight:700;color:var(--g40);padding:5px 12px;border-radius:7px;cursor:pointer;white-space:nowrap;}
 .vtoggle span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);}
 
 .board{padding:6px 16px;}

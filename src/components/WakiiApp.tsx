@@ -1711,23 +1711,23 @@ export default function WakiiApp() {
               <span className="ttl">
                 {currentRoom}
               </span>
+              <div className="vtoggle">
+                <span
+                  className={roomViewMode === "deck" ? "on" : ""}
+                  onClick={() => setRoomViewMode("deck")}
+                >
+                  사진
+                </span>
+                <span
+                  className={roomViewMode === "review" ? "on" : ""}
+                  onClick={() => setRoomViewMode("review")}
+                >
+                  Recap
+                </span>
+              </div>
               <span className="cam" onClick={() => openUpload("room")}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img className="cam-ic" src="/assets/mission/mission-icon.svg" alt="촬영" />
-              </span>
-            </div>
-            <div className="vtoggle">
-              <span
-                className={roomViewMode === "deck" ? "on" : ""}
-                onClick={() => setRoomViewMode("deck")}
-              >
-                사진
-              </span>
-              <span
-                className={roomViewMode === "review" ? "on" : ""}
-                onClick={() => setRoomViewMode("review")}
-              >
-                Recap
               </span>
             </div>
 

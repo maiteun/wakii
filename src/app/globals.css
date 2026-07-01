@@ -353,6 +353,11 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .recap .rc-empty{color:#9aa3b2;font-size:var(--fs-caption);margin-top:18px;text-align:center;line-height:1.7;}
 .recap{overflow-y:auto;}
 .recap .rc-caption{color:#cfd6e2;font-size:var(--fs-caption);font-weight:700;margin-top:18px;}
+/* 완주 리캡 — 3D 돔 갤러리(사진이 많을 땐 위에서부터 쌓이도록 flex-start) */
+.recap.has-dome{justify-content:flex-start;padding-top:34px;}
+.recap.has-dome .rc-hero{width:132px;height:132px;}
+.recap .rc-hint{color:#8b93a2;font-size:var(--fs-caption);margin-top:4px;text-align:center;}
+.recap .rc-dome{position:relative;width:100%;max-width:360px;height:46vh;min-height:300px;max-height:420px;margin-top:14px;border-radius:22px;overflow:hidden;background:#141414;flex:0 0 auto;touch-action:none;}
 .recap .rc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:320px;margin-top:12px;}
 .recap .rc-card{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:3/4;background:#2a2a2a;box-shadow:0 6px 16px rgba(0,0,0,.4);}
 .recap .rc-photo{width:100%;height:100%;object-fit:cover;display:block;}

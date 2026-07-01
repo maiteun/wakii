@@ -30,6 +30,8 @@ import {
 
 // WebGL gallery is client-only (uses window / WebGL at runtime)
 const CircularGallery = dynamic(() => import("./CircularGallery"), { ssr: false });
+// 완주 리캡용 3D 돔 갤러리 — DOM/제스처 사용, 클라이언트 전용
+const DomeGallery = dynamic(() => import("./DomeGallery"), { ssr: false });
 
 // role shown on each card by its position in the deck
 const roleLabel = (i: number) => (i === 0 ? "" : `${i}차 반응자`);
@@ -446,7 +448,7 @@ export default function WakiiApp() {
   const [recapTitle, setRecapTitle] = useState("");
   const [recapSub, setRecapSub] = useState("");
   const [recapCourseId, setRecapCourseId] = useState("");
-  const [recapPhotos, setRecapPhotos] = useState<RecapPhoto[]>([]);
+  const [recapImgs, setRecapImgs] = useState<{ src: string; alt: string }[]>([]); // 돔 갤러리용 사진
 
   // walk — course system (A 구조: one active course = one landmark; the whole
   // family's steps combine into the shared distance; finishing resets to 0 and
@@ -1377,7 +1379,15 @@ export default function WakiiApp() {
     // 선택된 방(activeGroup)의 사진만 모아 사용자별 best 1장씩 큐레이션 → 방의 사용자 n명이면 n장.
     // (목 데이터: 완주 '기간' 필터는 데이터가 생기면 여기서 createdAt 범위로 거르면 됨)
     const roomDecks = (activeGroup && rooms[activeGroup.name]) || Object.values(rooms).flat();
-    setRecapPhotos(curateRecap(roomDecks));
+    // 돔 갤러리엔 이 여정의 모든 사진을 넣는다(중복 제거, 반응 많은 순 먼저 → 나머지)
+    const curated = curateRecap(roomDecks);
+    const order = [...curated.map((p) => p.img), ...roomDecks.flatMap((d) => d.cards.map((c) => c.img))]
+      .filter((s): s is string => !!s);
+    const altOf: Record<string, string> = {};
+    curated.forEach((p) => {
+      altOf[p.img] = nameOf(p.who);
+    });
+    setRecapImgs(Array.from(new Set(order)).map((src) => ({ src, alt: altOf[src] || "" })));
     setRecapShow(true);
   };
 
@@ -2271,7 +2281,7 @@ export default function WakiiApp() {
           </div>
 
           {/* recap modal */}
-          <div className={"recap" + (recapShow ? " show" : "")}>
+          <div className={"recap" + (recapShow ? " show" : "") + (recapImgs.length ? " has-dome" : "")}>
             <span className="rc-x" onClick={() => setRecapShow(false)}>
               ✕
             </span>
@@ -2282,26 +2292,26 @@ export default function WakiiApp() {
             )}
             <div className="rc-title">{recapTitle}</div>
             <div className="rc-sub">{recapSub}</div>
-            {recapPhotos.length > 0 ? (
+            {recapImgs.length > 0 ? (
               <>
-                <div className="rc-caption">가족이 가장 많이 반응한 사진</div>
-                <div className="rc-grid">
-                  {recapPhotos.map((p, i) => (
-                    <div key={i} className="rc-card">
-                      <img className="rc-photo" src={p.img} alt="" />
-                      {p.count > 0 && (
-                        <div className="rc-react">
-                          {p.emojis[0] || "❤️"} {p.count}
-                        </div>
-                      )}
-                      <div className="rc-who">
-                        <span className="rc-avatar">
-                          {avatarOf(p.who) ? <img src={avatarOf(p.who)} alt="" /> : nameOf(p.who).slice(0, 1)}
-                        </span>
-                        {nameOf(p.who)}
-                      </div>
-                    </div>
-                  ))}
+                <div className="rc-caption">가족이 남긴 순간들</div>
+                <div className="rc-hint">드래그해서 둘러보고, 사진을 탭하면 크게 볼 수 있어요</div>
+                <div className="rc-dome">
+                  {recapShow && (
+                    <DomeGallery
+                      images={recapImgs}
+                      fit={0.6}
+                      minRadius={800}
+                      segments={20}
+                      dragDampening={5}
+                      grayscale={false}
+                      overlayBlurColor="#141414"
+                      imageBorderRadius="18px"
+                      openedImageBorderRadius="18px"
+                      openedImageWidth="220px"
+                      openedImageHeight="300px"
+                    />
+                  )}
                 </div>
               </>
             ) : (

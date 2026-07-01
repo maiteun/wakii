@@ -2296,7 +2296,14 @@ export default function WakiiApp() {
               <>
                 <div className="rc-dome">
                   {recapShow && (
-                    <CircleCards images={recapImgs} center={(courseImg(recapCourseId) as string) || ""} />
+                    <CircleCards
+                      images={recapImgs}
+                      center={(courseImg(recapCourseId) as string) || ""}
+                      cardWidth={184}
+                      cardHeight={245}
+                      centerSize={420}
+                      perspective={1100}
+                    />
                   )}
                 </div>
               </>

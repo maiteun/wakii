@@ -2483,12 +2483,13 @@ export default function WakiiApp() {
               </div>
               <CircularGallery
                 items={galleryItems}
-                bend={3}
+                bend={0}
                 textColor="#ffffff"
                 borderRadius={0.06}
                 font="600 30px sans-serif"
                 fontUrl={undefined}
-                scrollEase={0.03}
+                scrollSpeed={3}
+                scrollEase={0.08}
                 loop={false}
                 onActiveChange={setActiveCardIdx}
               />

@@ -350,6 +350,15 @@ class Media {
       }
     }
 
+    // 중앙에 가까울수록 카드를 크게(coverflow) — 지금 보는 '메인' 카드가 명확히 구분된다
+    if (this.baseScaleX) {
+      const norm = Math.min(1, Math.abs(this.plane.position.x) / this.width);
+      const f = 1.28 - 0.5 * norm; // 중앙 1.28배 → 한 칸 옆 0.78배
+      this.plane.scale.x = this.baseScaleX * f;
+      this.plane.scale.y = this.baseScaleY * f;
+      this.plane.program.uniforms.uPlaneSizes.value = [this.plane.scale.x, this.plane.scale.y];
+    }
+
     this.speed = scroll.current - scroll.last;
     this.program.uniforms.uTime.value += 0.04;
     this.program.uniforms.uSpeed.value = this.speed;
@@ -378,9 +387,13 @@ class Media {
     this.scale = this.screen.height / 1500;
     this.plane.scale.y = (this.viewport.height * (900 * this.scale)) / this.screen.height;
     this.plane.scale.x = (this.viewport.width * (700 * this.scale)) / this.screen.width;
+    // 기준(중립) 크기 — update()에서 중앙 카드만 이 값을 키우고 옆 카드는 줄인다
+    this.baseScaleX = this.plane.scale.x;
+    this.baseScaleY = this.plane.scale.y;
     this.plane.program.uniforms.uPlaneSizes.value = [this.plane.scale.x, this.plane.scale.y];
-    this.padding = 2;
-    this.width = this.plane.scale.x + this.padding;
+    // 중앙 확대(최대 1.28배)해도 옆 카드와 안 겹치도록 간격을 넉넉히
+    this.padding = this.baseScaleX * 0.42;
+    this.width = this.baseScaleX + this.padding;
     this.widthTotal = this.width * this.length;
     this.x = this.width * this.index;
   }

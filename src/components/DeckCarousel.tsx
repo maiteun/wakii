@@ -6,6 +6,8 @@ import "./DeckCarousel.css";
 // 인덱스당 이동량(카드 너비 대비 %). 양옆 카드가 ~1/3 보이도록 튜닝.
 const STEP_PCT = 88;
 const SIDE_SCALE = 0.72;
+// 한 장 넘기는 데 필요한 드래그 거리(카드 너비 대비). 작을수록 살짝만 밀어도 넘어감.
+const DRAG_UNIT = 0.45;
 
 type Item = { image: string; text?: string };
 
@@ -36,7 +38,7 @@ export default function DeckCarousel({
       if (items.length <= 1) return;
       const card = rootRef.current?.querySelector<HTMLElement>(".dcz-card");
       const cardW = card?.offsetWidth || (rootRef.current?.clientWidth || 300) * 0.5;
-      dragRef.current = { startX: e.clientX, pxPerDelta: (STEP_PCT / 100) * cardW };
+      dragRef.current = { startX: e.clientX, pxPerDelta: DRAG_UNIT * cardW };
       movedRef.current = false;
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },

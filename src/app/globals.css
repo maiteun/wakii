@@ -149,9 +149,9 @@ body{background:#D8D6D3;font-family:'Apple SD Gothic Neo','Noto Sans KR',system-
 .home-screen .ravatar.on{background:linear-gradient(135deg,rgba(255,255,255,.55),rgba(255,255,255,.35));}
 .home-screen .ravatar img{width:100%;height:100%;object-fit:cover;}
 .home-screen .rmeta{flex:1;min-width:0;}
-.home-screen .rname{color:#fff;font-size:var(--fs-title);font-weight:700;letter-spacing:-.04em;line-height:24px;}
-.home-screen .rtime{color:rgba(255,255,255,.5);font-size:var(--fs-body);line-height:20px;letter-spacing:-.04em;margin-top:2px;}
-.home-screen .rprev{color:rgba(255,255,255,.5);font-size:var(--fs-body);line-height:20px;letter-spacing:-.04em;margin-top:2px;}
+.home-screen .rname{color:#fff;font-size:17px;font-weight:700;letter-spacing:-.04em;line-height:21px;}
+.home-screen .rtime{color:rgba(255,255,255,.5);font-size:13px;line-height:17px;letter-spacing:-.04em;margin-top:2px;}
+.home-screen .rprev{color:rgba(255,255,255,.5);font-size:13px;line-height:17px;letter-spacing:-.04em;margin-top:2px;}
 /* 안읽음 배지 (Figma: #74F1F1 .7, 흰 숫자, pill) */
 .home-screen .rbadge{flex-shrink:0;align-self:center;background:rgba(116,241,241,.7);color:#fff;font-size:var(--fs-body);font-weight:600;line-height:1;min-width:24px;height:24px;padding:0 7px;border-radius:12px;display:flex;align-items:center;justify-content:center;}
 .home-screen .rprev-share{color:#bcd0ff;}

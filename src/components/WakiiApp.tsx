@@ -1715,14 +1715,36 @@ export default function WakiiApp() {
                 <span
                   className={roomViewMode === "deck" ? "on" : ""}
                   onClick={() => setRoomViewMode("deck")}
+                  role="button"
+                  aria-label="사진"
+                  aria-pressed={roomViewMode === "deck"}
                 >
-                  사진
+                  {/* 사진(덱) — 세로 바 ||| */}
+                  <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <rect x="3.2" y="3" width="2.6" height="14" rx="1.3" />
+                    <rect x="8.7" y="3" width="2.6" height="14" rx="1.3" />
+                    <rect x="14.2" y="3" width="2.6" height="14" rx="1.3" />
+                  </svg>
                 </span>
                 <span
                   className={roomViewMode === "review" ? "on" : ""}
                   onClick={() => setRoomViewMode("review")}
+                  role="button"
+                  aria-label="Recap"
+                  aria-pressed={roomViewMode === "review"}
                 >
-                  Recap
+                  {/* Recap(그리드) — 점 9개 그리드 */}
+                  <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <circle cx="4.5" cy="4.5" r="1.8" />
+                    <circle cx="10" cy="4.5" r="1.8" />
+                    <circle cx="15.5" cy="4.5" r="1.8" />
+                    <circle cx="4.5" cy="10" r="1.8" />
+                    <circle cx="10" cy="10" r="1.8" />
+                    <circle cx="15.5" cy="10" r="1.8" />
+                    <circle cx="4.5" cy="15.5" r="1.8" />
+                    <circle cx="10" cy="15.5" r="1.8" />
+                    <circle cx="15.5" cy="15.5" r="1.8" />
+                  </svg>
                 </span>
               </div>
               <span className="cam" onClick={() => openUpload("room")}>

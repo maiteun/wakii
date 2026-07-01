@@ -17,10 +17,10 @@ const wrapSigned = (deg) => {
 };
 
 /**
- * @param {{ images?: {src: string, alt?: string}[], center?: string, centerSize?: number, maxCards?: number, cardWidth?: number, cardHeight?: number, perspective?: number, speed?: number }} props
+ * @param {{ images?: {src: string, alt?: string, name?: string, avatar?: string}[], center?: string, centerSize?: number, maxCards?: number, cardWidth?: number, cardHeight?: number, perspective?: number, speed?: number }} props
  */
 export default function CircleCards({
-  images = /** @type {{src: string, alt?: string}[]} */ ([]),
+  images = /** @type {{src: string, alt?: string, name?: string, avatar?: string}[]} */ ([]),
   center = "", // 링 한가운데(회전 축)에 고정으로 뜨는 완주 랜드마크 이미지
   centerSize = 260,
   maxCards = 12,
@@ -145,6 +145,14 @@ export default function CircleCards({
               >
                 <div className="cc-face cc-front">
                   <img src={img.src} alt={img.alt || ""} draggable={false} />
+                  {img.name && (
+                    <div className="cc-tag">
+                      <span className="cc-ava">
+                        {img.avatar ? <img src={img.avatar} alt="" draggable={false} /> : img.name.slice(0, 1)}
+                      </span>
+                      <span className="cc-name">{img.name}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="cc-face cc-back">
                   <img src={img.src} alt="" draggable={false} />

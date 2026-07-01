@@ -447,7 +447,7 @@ export default function WakiiApp() {
   const [recapTitle, setRecapTitle] = useState("");
   const [recapSub, setRecapSub] = useState("");
   const [recapCourseId, setRecapCourseId] = useState("");
-  const [recapImgs, setRecapImgs] = useState<{ src: string; alt: string }[]>([]); // 돔 갤러리용 사진
+  const [recapImgs, setRecapImgs] = useState<{ src: string; alt: string; name?: string; avatar?: string }[]>([]); // 돔 갤러리용 사진
 
   // walk — course system (A 구조: one active course = one landmark; the whole
   // family's steps combine into the shared distance; finishing resets to 0 and
@@ -1390,11 +1390,19 @@ export default function WakiiApp() {
     const curated = curateRecap(roomDecks);
     const order = [...curated.map((p) => p.img), ...roomDecks.flatMap((d) => d.cards.map((c) => c.img))]
       .filter((s): s is string => !!s);
-    const altOf: Record<string, string> = {};
-    curated.forEach((p) => {
-      altOf[p.img] = nameOf(p.who);
-    });
-    setRecapImgs(Array.from(new Set(order)).map((src) => ({ src, alt: altOf[src] || "" })));
+    // 사진(src) → 작성자(who) 매핑: 카드 위에 프로필+이름을 작게 얹기 위함
+    const whoOf: Record<string, string> = {};
+    roomDecks.forEach((d) =>
+      d.cards.forEach((c) => {
+        if (c.img && !whoOf[c.img]) whoOf[c.img] = c.who;
+      }),
+    );
+    setRecapImgs(
+      Array.from(new Set(order)).map((src) => {
+        const who = whoOf[src];
+        return { src, alt: who ? nameOf(who) : "", name: who ? nameOf(who) : undefined, avatar: who ? avatarOf(who) : undefined };
+      }),
+    );
     setRecapShow(true);
   };
 
@@ -2310,7 +2318,7 @@ export default function WakiiApp() {
                       center={(courseImg(recapCourseId) as string) || ""}
                       cardWidth={184}
                       cardHeight={245}
-                      centerSize={420}
+                      centerSize={560}
                       perspective={1100}
                     />
                   )}

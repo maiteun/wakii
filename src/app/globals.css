@@ -369,7 +369,7 @@ body{background:#D8D6D3;font-family:'Min Sans','Apple SD Gothic Neo','Noto Sans 
 .recap{overflow-y:auto;}
 .recap .rc-caption{color:#cfd6e2;font-size:var(--fs-caption);font-weight:700;margin-top:18px;}
 /* 완주 리캡 — 3D 돔 갤러리(사진이 많을 땐 위에서부터 쌓이도록 flex-start) */
-.recap.has-dome{justify-content:flex-start;padding:44px 0 0;overflow:hidden;}
+.recap.has-dome{justify-content:flex-start;padding:9vh 0 0;overflow:hidden;}
 .recap.has-dome .rc-hero{width:132px;height:132px;}
 .recap .rc-hint{color:#8b93a2;font-size:var(--fs-caption);margin-top:4px;text-align:center;}
 .recap .rc-dome{position:relative;width:100%;max-width:none;height:auto;flex:1 1 auto;min-height:0;margin-top:8px;overflow:hidden;background:transparent;touch-action:manipulation;}

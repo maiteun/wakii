@@ -369,7 +369,7 @@ body{background:#D8D6D3;font-family:'Min Sans','Apple SD Gothic Neo','Noto Sans 
 .recap{overflow-y:auto;}
 .recap .rc-caption{color:#cfd6e2;font-size:var(--fs-caption);font-weight:700;margin-top:18px;}
 /* 완주 리캡 — 3D 돔 갤러리(사진이 많을 땐 위에서부터 쌓이도록 flex-start) */
-.recap.has-dome{justify-content:flex-start;padding:6vh 0 0;overflow:hidden;}
+.recap.has-dome{justify-content:flex-start;padding:9vh 0 0;overflow:hidden;}
 .recap.has-dome .rc-hero{width:132px;height:132px;}
 /* 완주! 제목 — 민트 글래스 블록 */
 .recap.has-dome .rc-title{position:relative;z-index:2;display:inline-block;margin-top:0;padding:9px 22px;border-radius:999px;color:#eafeff;background:rgba(116,241,241,.15);border:1.5px solid rgba(116,241,241,.55);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);box-shadow:0 6px 22px rgba(116,241,241,.16),inset 0 1px 0 rgba(255,255,255,.25);}

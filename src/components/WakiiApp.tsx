@@ -2010,7 +2010,7 @@ export default function WakiiApp() {
                 onChange={pickAvatar}
               />
               <div className="myname">{name || "나"}</div>
-              <div className="mysub">{myGroups.length}와 함께 와키 중</div>
+              <div className="mysub">{myGroups.length}그룹과 함께 와키 중</div>
             </div>
             <div className="cal">
               <h4>{calMonthNum}월</h4>

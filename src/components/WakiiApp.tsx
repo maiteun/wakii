@@ -1235,7 +1235,7 @@ export default function WakiiApp() {
   ]
     .map((nm) => myGroups.find((g) => g.name === nm))
     .filter((g): g is Group => Boolean(g))
-    .map((g) => ({ nm: g.name, e: "🏠" }));
+    .map((g) => ({ nm: g.name, e: "🏠", avatar: g.avatar }));
 
   const bumpRecent = (targets: string[]) => {
     setRecentRooms((prev) => {
@@ -1297,12 +1297,15 @@ export default function WakiiApp() {
   // COURSE_SEED를 올리면 기존 저장 1회 무시(데모 상태로 리셋).
   const COURSE_SEED = 5;
   const courseStore = useRef<Record<string, { active: string; km: number; done: string[] }>>({});
-  // 저장값이 없는 방의 기본 시드: 첫 방은 데모(콜로세움 완주+에펠 진행), 나머지는 새 출발.
-  // 목업: 정사각형에 가까운 다양한 랜드마크 위주(에펠탑처럼 긴 건 제외)
-  const seedFor = (idx: number) =>
-    idx === 0
-      ? { active: "taj_mahal", km: 8.6, done: ["moai", "santorini", "statue_of_liberty"] }
-      : { active: "moai", km: 5.0, done: ["taj_mahal"] };
+  // 방마다 다른 여정/완주/스탬프가 보이도록 방별 데모 시드를 구분(실제 걸음 연동 전 목업).
+  // 정사각형에 가까운 랜드마크 위주(에펠탑처럼 긴 건 제외). 5번째 방부터는 새 출발.
+  const COURSE_SEEDS = [
+    { active: "taj_mahal", km: 8.6, done: ["moai", "santorini", "statue_of_liberty"] },
+    { active: "moai", km: 5.0, done: ["taj_mahal"] },
+    { active: "hallasan", km: 12.4, done: ["colosseum", "angkor_wat"] },
+    { active: "mount_fuji", km: 3.2, done: ["santorini"] },
+  ];
+  const seedFor = (idx: number) => COURSE_SEEDS[idx] || { active: "angkor_wat", km: 0, done: [] };
 
   const activeGroup = myGroups[walkSel] || myGroups[0]; // 워키 상단 = 선택된 방
   const groupKey = activeGroup?.code;
@@ -2193,7 +2196,7 @@ export default function WakiiApp() {
               </div>
             )}
             {/* share — bottom sheet, rooms ordered by most-recently shared */}
-            <div className={"sharesheet" + (shareShow ? " show" : "")} onClick={() => setShareShow(false)}>
+            <div className={"sharesheet share" + (shareShow ? " show" : "")} onClick={() => setShareShow(false)}>
               <div className="ss-panel" onClick={(e) => e.stopPropagation()}>
                 <div className="grip" />
                 <h4>어디에 공유할까요?</h4>
@@ -2205,10 +2208,16 @@ export default function WakiiApp() {
                       className={"ss-room" + (on ? " sel" : "")}
                       onClick={() => toggleShare(r.nm)}
                     >
-                      {r.e} {r.nm}{" "}
-                      <span className="ck" style={on ? undefined : { color: "var(--g25)" }}>
-                        {on ? "✓" : "○"}
+                      <span className="ss-ava">
+                        {r.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={r.avatar} alt="" />
+                        ) : (
+                          r.nm.slice(0, 1)
+                        )}
                       </span>
+                      <span className="ss-nm">{r.nm}</span>
+                      <span className={"ck" + (on ? " on" : "")}>{on ? "✓" : "○"}</span>
                     </div>
                   );
                 })}
@@ -2406,42 +2415,47 @@ export default function WakiiApp() {
                   <span className="dg-name">{nameOf(openDeck.cards[activeCardIdx]?.who || openDeck.label)}</span>
                 </div>
                 <div className="dg-headbtns">
-                  <div className="dg-morewrap">
-                    <button
-                      className="dg-icbtn"
-                      aria-label="더보기"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDgMenuOpen((v) => !v);
-                      }}
-                    >
-                      ⋯
-                    </button>
-                    {dgMenuOpen && (
-                      <div className="dg-menu" onClick={(e) => e.stopPropagation()}>
-                        {openDeck.cards[0]?.mine && (
-                          <button
-                            className="dg-mi del"
-                            onClick={() => {
-                              setDgMenuOpen(false);
-                              deleteOpenDeck();
-                            }}
-                          >
-                            사진 내리기
-                          </button>
-                        )}
-                        <button
-                          className="dg-mi"
-                          onClick={() => {
-                            setDgMenuOpen(false);
-                            saveActivePhoto();
-                          }}
-                        >
-                          사진 저장하기
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  {(openDeck.cards[0]?.mine || openDeck.cards[activeCardIdx]?.mine) && (
+                    <div className="dg-morewrap">
+                      <button
+                        className="dg-icbtn"
+                        aria-label="더보기"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDgMenuOpen((v) => !v);
+                        }}
+                      >
+                        ⋯
+                      </button>
+                      {dgMenuOpen && (
+                        <div className="dg-menu" onClick={(e) => e.stopPropagation()}>
+                          {openDeck.cards[0]?.mine && (
+                            <button
+                              className="dg-mi del"
+                              onClick={() => {
+                                setDgMenuOpen(false);
+                                deleteOpenDeck();
+                              }}
+                            >
+                              사진 내리기
+                            </button>
+                          )}
+                          {/* 사진 저장하기는 본인이 올린 사진(지금 보고 있는 카드)만 */}
+                          {openDeck.cards[activeCardIdx]?.mine && (
+                            <button
+                              className="dg-mi"
+                              onClick={() => {
+                                setDgMenuOpen(false);
+                                saveActivePhoto();
+                              }}
+                            >
+                              사진 저장하기
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <button className="dg-icbtn" aria-label="나가기" onClick={() => setOpenDeckIdx(null)}>
                     ✕
                   </button>

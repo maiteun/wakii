@@ -8,6 +8,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import sharp from "sharp";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const env = readFileSync(join(ROOT, ".env.local"), "utf8");
@@ -49,12 +50,34 @@ const PHOTOS = {
   "p4-react1": { file: "mockup/게시글4/반응1.png", obj: "demo/4444/p4-react1.png" },
   "p4-reply1": { file: "mockup/게시글4/답장.png", obj: "demo/4444/p4-reply1.png" },
   "p4-reply2": { file: "mockup/게시글4/답장2.png", obj: "demo/4444/p4-reply2.png" },
+  "p5-daughter": { file: "mockup/미션1/큰딸동네.png", obj: "demo/4444/p5-daughter.png" },
+  "p5-mom": { file: "mockup/미션1/엄마동네.png", obj: "demo/4444/p5-mom.png" },
+};
+
+// 위치 스티커(날씨/위치 칩)를 합성할 사진 — 엄마·아빠는 대전. 앱 편집기 칩 스타일로 굽는다.
+const CHIP = {
+  "p1-breakfast": "대전", // 엄마
+  "p1-coffee": "대전", // 아빠
+  "p3-m1": "대전", // 아빠
+  "p3-m3": "대전", // 엄마
+  "p4-main": "대전", // 아빠
+  "p5-mom": "대전", // 엄마
 };
 
 // 시나리오. r: 반응 = { by, emoji, photo?(즉석사진 키) }.  emoji에 텍스트를 넣으면 텍스트 반응.
 const DECKS = [
   {
-    // [게시글4] 오늘(가장 최근) — 아빠가 올림
+    // [오늘의 미션] 하루 하나 — 오늘 미션. 큰언니(큰딸동네) 먼저, 이어서 엄마(엄마동네)
+    label: MISSION_LABEL,
+    is_mission: true,
+    at: "2026-07-02T09:00:00Z",
+    cards: [
+      { by: D1, img: "p5-daughter", at: "2026-07-02T09:01:00Z", r: [] },
+      { by: MOM, img: "p5-mom", reply: true, at: "2026-07-02T09:05:00Z", r: [] },
+    ],
+  },
+  {
+    // [게시글4] 오늘 — 아빠가 올림
     label: DAD,
     is_mission: false,
     at: "2026-07-02T06:00:00Z",
@@ -74,17 +97,17 @@ const DECKS = [
     ],
   },
   {
-    // [게시글3] 미션 · 오늘 — 아빠가 올림
+    // [게시글3] 미션 · 어제(이전 미션) — 아빠가 올림
     label: MISSION_LABEL,
     is_mission: true,
-    at: "2026-07-02T03:00:00Z",
+    at: "2026-07-01T03:00:00Z",
     cards: [
       {
-        by: DAD, img: "p3-m1", at: "2026-07-02T03:01:00Z",
+        by: DAD, img: "p3-m1", at: "2026-07-01T03:01:00Z",
         r: [{ by: MOM, emoji: "❤️" }, { by: D2, emoji: "😮", photo: "p3-m2" }],
       },
-      { by: MOM, img: "p3-m3", reply: true, at: "2026-07-02T03:20:00Z", r: [] },
-      { by: D2, img: "p3-m4", reply: true, at: "2026-07-02T03:25:00Z", r: [] },
+      { by: MOM, img: "p3-m3", reply: true, at: "2026-07-01T03:20:00Z", r: [] },
+      { by: D2, img: "p3-m4", reply: true, at: "2026-07-01T03:25:00Z", r: [] },
     ],
   },
   {
@@ -136,12 +159,11 @@ async function api(method, path, body, headers = H) {
   return text ? JSON.parse(text) : null;
 }
 
-// 로컬 파일을 Storage에 올리고 공개 URL 반환.
+// 바이트를 Storage에 올리고 공개 URL 반환.
 // anon 키는 새 오브젝트 생성만 되고 덮어쓰기(update)는 RLS로 막히므로,
 // 이미 있으면(409/중복) 업로드를 건너뛰고 기존 공개 URL을 그대로 쓴다.
-async function upload(file, obj) {
+async function putObject(obj, bytes) {
   const publicUrl = `${URL_}/storage/v1/object/public/${BUCKET}/${obj}`;
-  const bytes = readFileSync(join(ROOT, file));
   const res = await fetch(`${URL_}/storage/v1/object/${BUCKET}/${obj}`, {
     method: "POST",
     headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "image/png" },
@@ -151,6 +173,35 @@ async function upload(file, obj) {
   const txt = await res.text();
   if (res.status === 409 || /exists|duplicate/i.test(txt)) return publicUrl; // 이미 있음 → 재사용
   throw new Error(`upload ${obj} → ${res.status} ${txt}`);
+}
+async function upload(file, obj) {
+  return putObject(obj, readFileSync(join(ROOT, file)));
+}
+
+// 사진 위(오른쪽 위)에 앱 편집기 스타일 위치 칩(🌧 도시)을 합성해 PNG 버퍼로 반환.
+async function bakeChip(file, city) {
+  const img = sharp(readFileSync(join(ROOT, file)));
+  const meta = await img.metadata();
+  const W = meta.width || 1000;
+  const Hh = meta.height || 1000;
+  const fs = Math.round(W * 0.045);
+  const padX = Math.round(fs * 0.75);
+  const pillH = Math.round(fs * 1.95);
+  const pillW = Math.round(fs * 3.5 + padX * 2); // 아이콘+공백+한글 2자 대략치
+  const margin = Math.round(W * 0.038);
+  const x = W - margin - pillW;
+  const y = margin;
+  const svg = Buffer.from(
+    `<svg width="${W}" height="${Hh}" xmlns="http://www.w3.org/2000/svg">
+       <g transform="translate(${x},${y})">
+         <rect width="${pillW}" height="${pillH}" rx="${Math.round(pillH / 2)}"
+               fill="rgba(15,17,22,0.42)" stroke="rgba(255,255,255,0.55)" stroke-width="${Math.max(1, Math.round(fs * 0.05))}"/>
+         <text x="${Math.round(pillW / 2)}" y="${Math.round(pillH * 0.68)}" text-anchor="middle"
+               font-family="Apple SD Gothic Neo, AppleGothic, sans-serif" font-size="${fs}" font-weight="700" fill="#ffffff">🌧 ${city}</text>
+       </g>
+     </svg>`,
+  );
+  return img.composite([{ input: svg, top: 0, left: 0 }]).png().toBuffer();
 }
 
 async function wipeRoom() {
@@ -171,12 +222,19 @@ async function wipeRoom() {
 }
 
 async function main() {
-  // 1) 사진 업로드 → 키별 공개 URL
+  // 1) 사진 업로드 → 키별 공개 URL (CHIP 대상은 위치 칩 합성본을 -loc로 업로드)
   const url = {};
+  let nChip = 0;
   for (const [key, p] of Object.entries(PHOTOS)) {
-    url[key] = await upload(p.file, p.obj);
+    if (CHIP[key]) {
+      const baked = await bakeChip(p.file, CHIP[key]);
+      url[key] = await putObject(p.obj.replace(/\.png$/, "-loc.png"), baked);
+      nChip++;
+    } else {
+      url[key] = await upload(p.file, p.obj);
+    }
   }
-  console.log(`✓ 게시글 사진 업로드: ${Object.keys(PHOTOS).length}장`);
+  console.log(`✓ 게시글 사진 업로드: ${Object.keys(PHOTOS).length}장 (위치 칩 합성 ${nChip}장)`);
 
   // 2) 프로필(이름 + 아바타) 업서트
   const profileRows = [];

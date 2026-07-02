@@ -1692,7 +1692,7 @@ export default function WakiiApp() {
           <div className={"screen home-screen" + (screen === "home" ? " active" : "")} id="s-home" ref={homeScrollRef}>
             <div className="home-hero">
               <div className="home-top">
-                <img className="home-logo" src="/assets/home/logo.png" alt="wakii" />
+                <img className="home-logo" src="/assets/home/logo.svg" alt="wakii" />
                 <div className="home-step">
                   <b>6,200</b>
                 </div>
@@ -2735,14 +2735,14 @@ export default function WakiiApp() {
             {/* 온보딩1 — 스플래시(로고 중앙). 터치하면 온보딩2 */}
             {obStep === "intro1" && (
               <div className="ob-splash" onClick={() => setObStep("intro2")}>
-                <img className="ob-splash-logo" src="/assets/home/logo.png" alt="wakii" />
+                <img className="ob-splash-logo" src="/assets/home/logo.svg" alt="wakii" />
               </div>
             )}
 
             {/* 온보딩2 — 로고 + 로그인 버튼. 아무 곳이나 터치하면 참여코드 화면 */}
             {obStep === "intro2" && (
               <div className="ob-intro" onClick={() => setObStep("join")}>
-                <img className="ob-intro-logo" src="/assets/home/logo.png" alt="wakii" />
+                <img className="ob-intro-logo" src="/assets/home/logo.svg" alt="wakii" />
                 <div className="ob-intro-btns">
                   <button className="ob-btn2 kakao">
                     <span className="ob-ic2 kakao-ic">TALK</span>

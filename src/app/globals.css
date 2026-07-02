@@ -739,8 +739,8 @@ img.stamp-pill{height:30px;width:auto;}
 .ob-intro-btns{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;}
 .ob-btn2{width:100%;max-width:340px;display:flex;align-items:center;justify-content:center;border:none;border-radius:999px;padding:16px;font-size:var(--fs-body);font-weight:800;font-family:inherit;position:relative;cursor:pointer;}
 .ob-btn2 .ob-ic2{position:absolute;left:18px;display:flex;align-items:center;}
-.ob-btn2.kakao{background:#FEE500;color:#191600;}
-.ob-btn2.kakao .kakao-ic{background:#191600;color:#FEE500;font-size:9px;font-weight:900;border-radius:6px;padding:3px 5px;letter-spacing:.02em;line-height:1;}
+.ob-btn2.kakao{background:#FAE100;color:#371C1D;}
+.ob-btn2.kakao .kakao-ic{background:#371C1D;color:#FAE100;font-size:9px;font-weight:900;border-radius:6px;padding:3px 5px;letter-spacing:.02em;line-height:1;}
 .ob-btn2.email{background:#fff;color:#222;}
 .ob-intro-alt{margin-top:16px;color:rgba(255,255,255,.85);font-size:var(--fs-label);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
 .ob-logo{font-family:inherit;font-style:normal;font-size:34px;font-weight:800;letter-spacing:-.02em;color:#fff;margin-bottom:18px;}

@@ -352,7 +352,9 @@ export default function WakiiApp() {
   const [joinCodeDraft, setJoinCodeDraft] = useState("");
   const [pendingGroup, setPendingGroup] = useState<Group | null>(null); // created/joined, awaiting confirm
   const [pendingJoinCode, setPendingJoinCode] = useState(""); // from an invite deep-link (/?j=CODE), joined after onboarding
-  const needSetup = !name || !email || myGroups.length === 0;
+  // 온보딩 게이트 = "아직 참여한 그룹이 없음". 그룹에 들어오면(코드/생성/초대)
+  // 로그인·이름을 안 거쳤어도 바로 홈으로 진입시킨다(데모 탭-플로우 대응).
+  const needSetup = myGroups.length === 0;
 
   // rooms — start empty on the backend (real data); seeded demo only in mock mode
   const [rooms, setRooms] = useState<RoomsData>(hasSupabase ? {} : initialRooms);
@@ -740,7 +742,7 @@ export default function WakiiApp() {
     });
     setCurrentRoom(g.name);
     setAddingGroup(false);
-    setObStep("login");
+    setObStep("intro1"); // 오버레이는 needSetup=false 로 닫힘 → 홈 노출. 다음에 열릴 땐 처음부터
   };
   const doCreateGroup = async () => {
     const nm = groupNameDraft.trim();

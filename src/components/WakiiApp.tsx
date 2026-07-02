@@ -2688,7 +2688,6 @@ export default function WakiiApp() {
 
             {phrasesOpen && (
               <div className="rx-phrases" onClick={(e) => e.stopPropagation()}>
-                <div className="rx-phrases-title">✨ AI 추천 멘트</div>
                 <div className="rx-phrases-row">
                   {AI_PHRASES.map((p) => (
                     <button key={p} onClick={() => playPhrase(p)}>

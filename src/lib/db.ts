@@ -226,6 +226,7 @@ export async function listRoom(room: string, me: string): Promise<Deck[]> {
         who: c.author,
         mine: c.author === me,
         date: fmtDate(c.created_at),
+        iso: c.created_at,
         ov: "",
         reply: c.is_reply,
         img: c.image_url || undefined,

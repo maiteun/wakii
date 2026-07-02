@@ -454,6 +454,9 @@ export default function WakiiApp() {
   const [recapImgs, setRecapImgs] = useState<
     { src: string; alt: string; name?: string; avatar?: string; emojis?: string[] }[]
   >([]); // 돔 갤러리용 사진
+  // 방(그룹코드)별 '지난 리캡 시각'. 새 완주 리캡은 이 시각 이후 올린 사진만 보여주고,
+  // 리캡을 만든 뒤 시각을 now로 전진 → 이후 추가된 사진은 다음 완주 리캡에 담긴다.
+  const recapSinceRef = useRef<Record<string, string>>({});
 
   // walk — course system (A 구조: one active course = one landmark; the whole
   // family's steps combine into the shared distance; finishing resets to 0 and
@@ -828,6 +831,15 @@ export default function WakiiApp() {
     try {
       const saved = localStorage.getItem("wakii.recentRooms");
       if (saved) setRecentRooms(JSON.parse(saved));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // 방별 '지난 리캡 시각' 로드 (완주 리캡 기간 구분용)
+  useEffect(() => {
+    try {
+      recapSinceRef.current = JSON.parse(localStorage.getItem("wakii.recapSince") || "{}");
     } catch {
       /* ignore */
     }
@@ -1386,7 +1398,13 @@ export default function WakiiApp() {
   // 리캡 사진 구성 — 반드시 '이 방(roomDecks)'의 사진만 사용(방 간 섞임 금지).
   // TOP K: 작성자별 best 1장(반응 많은 순)을 먼저 채우고, 남는 자리는 반응 많은 사진순으로.
   const RECAP_TOP_K = 8;
-  const buildRecapImgs = (roomDecks: Deck[]) => {
+  const buildRecapImgs = (inputDecks: Deck[], sinceIso?: string) => {
+    // sinceIso가 있으면 그 시각 이후 올린 사진만(다음 리캡 구간). 없으면 전체.
+    const roomDecks = sinceIso
+      ? inputDecks
+          .map((d) => ({ ...d, cards: d.cards.filter((c) => !c.iso || c.iso > sinceIso) }))
+          .filter((d) => d.cards.length)
+      : inputDecks;
     const rcount = (c: Card) => (c.reactions?.length ?? 0) + (c.photoReactions?.length ?? 0);
     const curated = curateRecap(roomDecks); // 작성자별 best 1, 반응 많은 순
     const curatedSrcs = new Set(curated.map((p) => p.img));
@@ -1431,23 +1449,37 @@ export default function WakiiApp() {
     return Math.max(1, Math.round(c.distance_km / 3.5));
   };
 
-  const openRecap = (courseId: string) => {
+  // advance=true(새 완주): 지난 리캡 이후 올린 사진만 → 만든 뒤 커서를 now로 전진.
+  // advance=false(스탬프 재조회): 그 방 전체 사진.
+  const openRecap = (courseId: string, advance = false) => {
     const c = courseById(courseId);
     if (!c) return;
     setRecapCourseId(courseId);
     setRecapTitle(`${c.name_ko} 완주!`);
     // 선택된 방(activeGroup)의 사진만 사용. 그 방 데크가 아직 안 실렸으면 그 방만 다시 불러와서 구성.
-    // (전엔 미로딩 시 모든 방을 flat 해서 사진이 방끼리 섞였음)
     const roomName = activeGroup?.name;
+    const code = activeGroup?.code || "";
+    const since = advance ? recapSinceRef.current[code] || "" : "";
+    const build = (decks: Deck[]) => {
+      buildRecapImgs(decks, since);
+      if (advance && code) {
+        recapSinceRef.current = { ...recapSinceRef.current, [code]: new Date().toISOString() };
+        try {
+          localStorage.setItem("wakii.recapSince", JSON.stringify(recapSinceRef.current));
+        } catch {
+          /* ignore */
+        }
+      }
+    };
     const known = roomName ? rooms[roomName] : undefined;
     if (known) {
-      buildRecapImgs(known);
+      build(known);
     } else if (roomName && hasSupabase) {
       setRecapImgs([]);
       listRoom(roomName, author)
         .then((decks) => {
           setRooms((r) => ({ ...r, [roomName]: decks }));
-          buildRecapImgs(decks);
+          build(decks);
         })
         .catch(() => {});
     } else {
@@ -1465,7 +1497,7 @@ export default function WakiiApp() {
     setActiveCourseId(id);
     setFamilyKm(0);
     setCourseSheet(false);
-    if (finishing) openRecap(finishedId);
+    if (finishing) openRecap(finishedId, true); // 새 완주 → 지난 리캡 이후 사진만 + 커서 전진
   };
 
   // Journey path (bottom → top = 과거 → 미래). Cloud opacity is the single axis

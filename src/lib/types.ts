@@ -5,6 +5,7 @@ export type Card = {
   who: string;
   mine: boolean;
   date: string;
+  iso?: string; // 원본 created_at(ISO) — 리캡 기간 필터용
   ov: string;
   reply?: boolean;
   img?: string; // captured + edited photo (URL or data URL)

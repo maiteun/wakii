@@ -27,31 +27,32 @@ const DAD = "dad@wakii.demo";
 const D1 = "daughter1@wakii.demo";
 const D2 = "daughter2@wakii.demo";
 
-// 프로필: 이름 + 아바타(mockup/프로필 이미지)
+// 프로필: 이름 + 아바타(mockup/profiles/). 파일명 = obj 키와 동일.
 const PROFILES = [
-  { email: MOM, name: "엄마", file: "mockup/프로필 이미지/엄마.png", obj: "demo/4444/mom.png" },
-  { email: DAD, name: "아빠", file: "mockup/프로필 이미지/아빠.png", obj: "demo/4444/dad.png" },
-  { email: D1, name: "큰언니", file: "mockup/프로필 이미지/딸1.png", obj: "demo/4444/daughter1.png" },
-  { email: D2, name: "작은언니", file: "mockup/프로필 이미지/딸2.png", obj: "demo/4444/daughter2.png" },
+  { email: MOM, name: "엄마", file: "mockup/profiles/mom.png", obj: "demo/4444/mom.png" },
+  { email: DAD, name: "아빠", file: "mockup/profiles/dad.png", obj: "demo/4444/dad.png" },
+  { email: D1, name: "큰언니", file: "mockup/profiles/daughter1.png", obj: "demo/4444/daughter1.png" },
+  { email: D2, name: "작은언니", file: "mockup/profiles/daughter2.png", obj: "demo/4444/daughter2.png" },
 ];
 
 // 게시글 사진(로컬 → Storage 오브젝트 경로). 키로 시나리오에서 참조.
+// mockup/posts/<키>.png — 파일명이 아래 키와 1:1로 일치하므로 찾기 쉬움.
 const PHOTOS = {
-  "p1-breakfast": { file: "mockup/게시글1/아침.png", obj: "demo/4444/p1-breakfast.png" },
-  "p1-coffee": { file: "mockup/게시글1/coffee.png", obj: "demo/4444/p1-coffee.png" },
-  "p1-d1react": { file: "mockup/게시글1/딸1_1.png", obj: "demo/4444/p1-d1react.png" },
-  "p2-work1": { file: "mockup/게시글2/야근1.png", obj: "demo/4444/p2-work1.png" },
-  "p2-work2": { file: "mockup/게시글2/야근2.png", obj: "demo/4444/p2-work2.png" },
-  "p3-m1": { file: "mockup/게시글3/미션1.png", obj: "demo/4444/p3-m1.png" },
-  "p3-m2": { file: "mockup/게시글3/미션2.png", obj: "demo/4444/p3-m2.png" },
-  "p3-m3": { file: "mockup/게시글3/미션3.png", obj: "demo/4444/p3-m3.png" },
-  "p3-m4": { file: "mockup/게시글3/미션4.png", obj: "demo/4444/p3-m4.png" },
-  "p4-main": { file: "mockup/게시글4/와키중1.png", obj: "demo/4444/p4-main.png" },
-  "p4-react1": { file: "mockup/게시글4/반응1.png", obj: "demo/4444/p4-react1.png" },
-  "p4-reply1": { file: "mockup/게시글4/답장.png", obj: "demo/4444/p4-reply1.png" },
-  "p4-reply2": { file: "mockup/게시글4/답장2.png", obj: "demo/4444/p4-reply2.png" },
-  "p5-daughter": { file: "mockup/미션1/큰딸동네.png", obj: "demo/4444/p5-daughter.png" },
-  "p5-mom": { file: "mockup/미션1/엄마동네.png", obj: "demo/4444/p5-mom.png" },
+  "p1-breakfast": { file: "mockup/posts/p1-breakfast.png", obj: "demo/4444/p1-breakfast.png" },
+  "p1-coffee": { file: "mockup/posts/p1-coffee.png", obj: "demo/4444/p1-coffee.png" },
+  "p1-d1react": { file: "mockup/posts/p1-d1react.png", obj: "demo/4444/p1-d1react.png" },
+  "p2-work1": { file: "mockup/posts/p2-work1.png", obj: "demo/4444/p2-work1.png" },
+  "p2-work2": { file: "mockup/posts/p2-work2.png", obj: "demo/4444/p2-work2.png" },
+  "p3-m1": { file: "mockup/posts/p3-m1.png", obj: "demo/4444/p3-m1.png" },
+  "p3-m2": { file: "mockup/posts/p3-m2.png", obj: "demo/4444/p3-m2.png" },
+  "p3-m3": { file: "mockup/posts/p3-m3.png", obj: "demo/4444/p3-m3.png" },
+  "p3-m4": { file: "mockup/posts/p3-m4.png", obj: "demo/4444/p3-m4.png" },
+  "p4-main": { file: "mockup/posts/p4-main.png", obj: "demo/4444/p4-main.png" },
+  "p4-react1": { file: "mockup/posts/p4-react1.png", obj: "demo/4444/p4-react1.png" },
+  "p4-reply1": { file: "mockup/posts/p4-reply1.png", obj: "demo/4444/p4-reply1.png" },
+  "p4-reply2": { file: "mockup/posts/p4-reply2.png", obj: "demo/4444/p4-reply2.png" },
+  "p5-daughter": { file: "mockup/posts/p5-daughter.png", obj: "demo/4444/p5-daughter.png" },
+  "p5-mom": { file: "mockup/posts/p5-mom.png", obj: "demo/4444/p5-mom.png" },
 };
 
 // 위치 스티커(날씨/위치 칩)를 합성할 사진 — 엄마·아빠는 대전. 앱 편집기 칩 스타일로 굽는다.

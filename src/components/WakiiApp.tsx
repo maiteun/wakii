@@ -325,7 +325,7 @@ export default function WakiiApp() {
   const [nameDraft, setNameDraft] = useState("");
   const [emailDraft, setEmailDraft] = useState("");
   const author = email || name || "나"; // DB에 저장되는 작성자 키(고유 이메일)
-  type ObStep = "login" | "name" | "house" | "group" | "create" | "join" | "code" | "joined";
+  type ObStep = "intro1" | "intro2" | "login" | "name" | "house" | "group" | "create" | "join" | "code" | "joined";
   // "우리 집" art: chosen at onboarding, changeable via long-press on home
   const [house, setHouse] = useState(DEFAULT_HOUSE);
   const [housePicker, setHousePicker] = useState(false);
@@ -342,7 +342,7 @@ export default function WakiiApp() {
       setProfileMap(email ? { ...m, [email]: { name: name || m[email]?.name, avatar: avatar || m[email]?.avatar } } : m),
     );
   }, [email, name, avatar]);
-  const [obStep, setObStep] = useState<ObStep>("login");
+  const [obStep, setObStep] = useState<ObStep>("intro1");
   const [addingGroup, setAddingGroup] = useState(false); // opening the group flow from "+"
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [groupNameDraft, setGroupNameDraft] = useState("");
@@ -636,7 +636,7 @@ export default function WakiiApp() {
 
     const onboarded = nm && em;
     if (!onboarded && nm) setNameDraft(nm); // 이름은 채워두고 이메일만 더 받기
-    setObStep(onboarded ? "group" : "login");
+    setObStep(onboarded ? "group" : "intro1");
     if (onboarded && grps.length) setCurrentRoom(grps[0].name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1680,12 +1680,6 @@ export default function WakiiApp() {
 
   return (
     <>
-      <div className="head">
-        <div className="eye">wakii · 전체 프로토타입</div>
-        <h1>홈 · 방 · 업로드 · 걸음 · 마이</h1>
-        <p>하단 글래스 네비로 이동 · 방 들어가 카드덱 펼치기 · 걸음 맵 · 마이 캘린더</p>
-      </div>
-
       <div className="device">
         <div className="notch" />
         <div className="status">
@@ -2735,9 +2729,53 @@ export default function WakiiApp() {
           </div>
         )}
 
-        {/* onboarding: login → name → group (create / join) */}
+        {/* onboarding: intro1 → intro2 → login → name → group (create / join) */}
         {(needSetup || addingGroup) && (
-          <div className="onboarding">
+          <div className={"onboarding" + (obStep === "intro1" || obStep === "intro2" ? " ob-dark" : "")}>
+            {/* 온보딩1 — 스플래시(로고 중앙). 터치하면 온보딩2 */}
+            {obStep === "intro1" && (
+              <div className="ob-splash" onClick={() => setObStep("intro2")}>
+                <img className="ob-splash-logo" src="/assets/home/logo.png" alt="wakii" />
+              </div>
+            )}
+
+            {/* 온보딩2 — 로고 + 로그인 버튼. 아무 곳이나 터치하면 참여코드 화면 */}
+            {obStep === "intro2" && (
+              <div className="ob-intro" onClick={() => setObStep("join")}>
+                <img className="ob-intro-logo" src="/assets/home/logo.png" alt="wakii" />
+                <div className="ob-intro-btns">
+                  <button className="ob-btn2 kakao">
+                    <span className="ob-ic2 kakao-ic">TALK</span>
+                    카카오 로그인
+                  </button>
+                  <button className="ob-btn2 email">
+                    <span className="ob-ic2" aria-hidden="true">
+                      <svg width="20" height="20" viewBox="0 0 48 48">
+                        <path
+                          fill="#EA4335"
+                          d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                        />
+                        <path
+                          fill="#4285F4"
+                          d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                        />
+                      </svg>
+                    </span>
+                    이메일 로그인
+                  </button>
+                  <div className="ob-intro-alt">다른 이메일로 시작하기</div>
+                </div>
+              </div>
+            )}
+
             {obStep === "login" && (
               <>
                 <div className="ob-logo">wakii</div>

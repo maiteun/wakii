@@ -45,10 +45,31 @@ const PHOTOS = {
   "p3-m2": { file: "mockup/게시글3/미션2.png", obj: "demo/4444/p3-m2.png" },
   "p3-m3": { file: "mockup/게시글3/미션3.png", obj: "demo/4444/p3-m3.png" },
   "p3-m4": { file: "mockup/게시글3/미션4.png", obj: "demo/4444/p3-m4.png" },
+  "p4-main": { file: "mockup/게시글4/와키중1.png", obj: "demo/4444/p4-main.png" },
+  "p4-react1": { file: "mockup/게시글4/반응1.png", obj: "demo/4444/p4-react1.png" },
+  "p4-reply1": { file: "mockup/게시글4/답장.png", obj: "demo/4444/p4-reply1.png" },
+  "p4-reply2": { file: "mockup/게시글4/답장2.png", obj: "demo/4444/p4-reply2.png" },
 };
 
 // 시나리오. r: 반응 = { by, emoji, photo?(즉석사진 키) }.  emoji에 텍스트를 넣으면 텍스트 반응.
 const DECKS = [
+  {
+    // [게시글4] 오늘(가장 최근) — 아빠가 올림
+    label: DAD,
+    is_mission: false,
+    at: "2026-07-02T06:00:00Z",
+    cards: [
+      {
+        by: DAD, img: "p4-main", at: "2026-07-02T06:01:00Z",
+        r: [{ by: D1, emoji: "😍" }, { by: D2, emoji: "😮", photo: "p4-react1" }],
+      },
+      { by: D1, img: "p4-reply1", reply: true, at: "2026-07-02T06:20:00Z", r: [] },
+      {
+        by: D2, img: "p4-reply2", reply: true, at: "2026-07-02T06:25:00Z",
+        r: [{ by: MOM, emoji: "파이팅해!!" }],
+      },
+    ],
+  },
   {
     // [게시글3] 미션 · 오늘 — 아빠가 올림
     label: MISSION_LABEL,
@@ -112,16 +133,21 @@ async function api(method, path, body, headers = H) {
   return text ? JSON.parse(text) : null;
 }
 
-// 로컬 파일을 Storage에 올리고 공개 URL 반환(x-upsert로 덮어씀).
+// 로컬 파일을 Storage에 올리고 공개 URL 반환.
+// anon 키는 새 오브젝트 생성만 되고 덮어쓰기(update)는 RLS로 막히므로,
+// 이미 있으면(409/중복) 업로드를 건너뛰고 기존 공개 URL을 그대로 쓴다.
 async function upload(file, obj) {
+  const publicUrl = `${URL_}/storage/v1/object/public/${BUCKET}/${obj}`;
   const bytes = readFileSync(join(ROOT, file));
   const res = await fetch(`${URL_}/storage/v1/object/${BUCKET}/${obj}`, {
     method: "POST",
-    headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "image/png", "x-upsert": "true" },
+    headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "image/png" },
     body: bytes,
   });
-  if (!res.ok) throw new Error(`upload ${obj} → ${res.status} ${await res.text()}`);
-  return `${URL_}/storage/v1/object/public/${BUCKET}/${obj}`;
+  if (res.ok) return publicUrl;
+  const txt = await res.text();
+  if (res.status === 409 || /exists|duplicate/i.test(txt)) return publicUrl; // 이미 있음 → 재사용
+  throw new Error(`upload ${obj} → ${res.status} ${txt}`);
 }
 
 async function wipeRoom() {

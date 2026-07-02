@@ -96,6 +96,7 @@
   --g25:#C7C7C7;--g15:#DEDEDE;--g08:#ECEBEA;--g04:#F4F3F2;--paper:#FBFAF9;--line:#E3E1DF;
   --me:#2E2E2E;--parent:#9E9E9E;
 }
+html{background:#000;}
 body{background:#000;font-family:'Min Sans','Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 12px 40px;}
 .head{text-align:center;margin-bottom:16px;}
 .head .eye{font-size:var(--fs-caption);letter-spacing:.3em;text-transform:uppercase;color:#888;font-weight:700;}
@@ -587,7 +588,7 @@ img.stamp-pill{height:30px;width:auto;}
 .toast{position:absolute;left:50%;bottom:88px;transform:translateX(-50%) translateY(8px);background:var(--ink);color:#fff;font-size:var(--fs-caption);font-weight:600;border-radius:11px;padding:9px 16px;opacity:0;transition:opacity .3s,transform .3s;z-index:200;white-space:nowrap;pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-.hintline{text-align:center;font-size:var(--fs-caption);color:#555;margin-top:14px;max-width:340px;line-height:1.6;}
+.hintline{display:none;text-align:center;font-size:var(--fs-caption);color:#555;margin-top:14px;max-width:340px;line-height:1.6;}
 
 /* reaction emoji bar (inlined in prototype markup) */
 .emojibar{position:absolute;left:50%;transform:translateX(-50%);background:#fff;border-radius:16px;padding:6px 9px;display:flex;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,.22);z-index:85;opacity:0;pointer-events:none;transition:opacity .25s;}

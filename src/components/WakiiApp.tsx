@@ -2778,7 +2778,7 @@ export default function WakiiApp() {
 
             {obStep === "login" && (
               <>
-                <div className="ob-logo">wakii</div>
+                <div className="ob-logo brand">wakii</div>
                 <div className="ob-tag">
                   간편하게 로그인하고
                   <br />
@@ -2806,7 +2806,7 @@ export default function WakiiApp() {
 
             {obStep === "name" && (
               <>
-                <div className="ob-logo">wakii</div>
+                <div className="ob-logo brand">wakii</div>
                 <div className="ob-tag">이메일과 이름으로 프로필을 만들어요</div>
                 <div className="ob-name">
                   <input
@@ -2861,7 +2861,7 @@ export default function WakiiApp() {
 
             {obStep === "group" && (
               <>
-                <div className="ob-logo">wakii</div>
+                <div className="ob-logo brand">wakii</div>
                 <div className="ob-tag">그룹을 만들거나 참여하세요</div>
                 <div className="ob-buttons">
                   <button className="ob-btn dark" onClick={() => setObStep("create")}>

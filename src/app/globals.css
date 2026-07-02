@@ -518,7 +518,8 @@ img.stamp-pill{height:30px;width:auto;}
 .walkprogress{margin:0 18px 4px;color:rgba(255,255,255,.85);font-size:var(--fs-label);font-weight:600;}
 .walkprogress b{color:#fff;font-weight:800;}
 .walkprogress .wp-pct{color:#74f1f1;}
-.walkprogress .wp-km{margin-left:8px;color:rgba(255,255,255,.55);}
+.walkprogress .wp-km{margin-left:8px;color:#74f1f1;font-weight:800;}
+.ob-logo.brand{color:#74F1F1;}
 /* 워키 여정 — 레이어드 섬 스택(near=완주 아래, far=미래 위). Figma '세번째 화면' */
 /* 워키 화면을 세로 플렉스로 → journey가 남은 영역을 채우는 pan/zoom 뷰포트 */
 #s-walk{display:flex;flex-direction:column;}

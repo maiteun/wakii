@@ -1710,7 +1710,7 @@ export default function WakiiApp() {
                 <img
                   className="mission-text"
                   src="/assets/mission/mission-text.svg"
-                  alt="오늘의 미션 — 오늘은 하지예요! 1년 중 해가 가장 긴 날의 풍경을 담아보세요"
+                  alt="오늘의 미션 — 장마가 시작된대요~ 오늘 하늘 어떤지 궁금해요 ☔"
                 />
                 <svg className="mission-cam" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 4a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
@@ -2242,7 +2242,7 @@ export default function WakiiApp() {
                       <img
                         className="mission-text"
                         src="/assets/mission/mission-text.svg"
-                        alt="오늘의 미션 — 오늘은 하지예요! 1년 중 해가 가장 긴 날의 풍경을 담아보세요"
+                        alt="오늘의 미션 — 장마가 시작된대요~ 오늘 하늘 어떤지 궁금해요 ☔"
                       />
                     </div>
                   )}

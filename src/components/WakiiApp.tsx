@@ -1680,7 +1680,7 @@ export default function WakiiApp() {
 
   return (
     <>
-      <div className="device">
+      <div className={"device" + ((needSetup || addingGroup) && obStep === "intro1" ? " splash" : "")}>
         <div className="notch" />
         <div className="status">
           <span>9:41</span>
@@ -2735,7 +2735,7 @@ export default function WakiiApp() {
             {/* 온보딩1 — 스플래시(로고 중앙). 터치하면 온보딩2 */}
             {obStep === "intro1" && (
               <div className="ob-splash" onClick={() => setObStep("intro2")}>
-                <img className="ob-splash-logo" src="/assets/home/logo.svg" alt="wakii" />
+                <img className="ob-splash-img" src="/assets/onboarding/onboarding-1.jpg" alt="wakii" />
               </div>
             )}
 

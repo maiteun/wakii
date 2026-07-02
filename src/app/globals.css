@@ -730,9 +730,10 @@ img.stamp-pill{height:30px;width:auto;}
 .onboarding{position:absolute;inset:0;z-index:110;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;background:url('/assets/home/home_bg.svg') center/cover no-repeat;background-color:#0a1430;padding:28px 26px calc(28px + env(safe-area-inset-bottom));}
 /* 온보딩 스플래시/인트로 — 다크 네이비 + 노이즈 */
 .onboarding.ob-dark{padding:0;color:#fff;background-color:#0a1228;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='luminanceToAlpha' result='a'/%3E%3CfeComponentTransfer in='a' result='b'%3E%3CfeFuncA type='discrete' tableValues='0 0 0 1 0 1 0 0 1 0'/%3E%3C/feComponentTransfer%3E%3CfeFlood flood-color='%236190ff' flood-opacity='0.4' result='c'/%3E%3CfeComposite operator='in' in='c' in2='b'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-repeat:repeat;}
-/* 온보딩1 — 로고 중앙 스플래시 */
-.ob-splash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-.ob-splash-logo{width:172px;height:auto;}
+/* 온보딩1 — 풀스크린 스플래시 이미지(자체 상태바 포함). .device.splash 에서 가짜 상태바 숨김 */
+.ob-splash{position:absolute;inset:0;cursor:pointer;}
+.ob-splash-img{width:100%;height:100%;object-fit:cover;display:block;}
+.device.splash .notch,.device.splash .status{display:none;}
 /* 온보딩2 — 로고 + 로그인 버튼 */
 .ob-intro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 26px calc(46px + env(safe-area-inset-bottom));cursor:pointer;}
 .ob-intro-logo{width:164px;height:auto;margin-bottom:52px;}

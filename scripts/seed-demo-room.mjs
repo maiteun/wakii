@@ -63,7 +63,10 @@ const DECKS = [
         by: DAD, img: "p4-main", at: "2026-07-02T06:01:00Z",
         r: [{ by: D1, emoji: "😍" }, { by: D2, emoji: "😮", photo: "p4-react1" }],
       },
-      { by: D1, img: "p4-reply1", reply: true, at: "2026-07-02T06:20:00Z", r: [] },
+      {
+        by: D1, img: "p4-reply1", reply: true, at: "2026-07-02T06:20:00Z",
+        r: [{ by: DAD, emoji: "건강한\n우리가족^^" }], // 아빠의 텍스트 반응(민트)
+      },
       {
         by: D2, img: "p4-reply2", reply: true, at: "2026-07-02T06:25:00Z",
         r: [{ by: MOM, emoji: "파이팅해!!" }],

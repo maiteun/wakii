@@ -154,6 +154,9 @@ const REACTIONS = [
 // AI-suggested phrases (long-press 텍스트); tapping one showers the phrase
 const AI_PHRASES = ["파이팅!", "예쁘다!", "슬프다", "최고야!", "보고싶어"];
 
+// 저장된 반응이 텍스트인지(이모지가 아닌지) 판별 — 텍스트면 민트 텍스트 버블로 재생.
+const isTextReaction = (s: string) => /[0-9A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ.,!?~^\s]/.test(s);
+
 // gallery card image: real photos pass through as-is; cards without a photo
 // get a gradient placeholder. The author shows as the label below the card.
 function buildGalleryImage(card: Card): string {
@@ -996,7 +999,7 @@ export default function WakiiApp() {
     let i = 0;
     const id = setInterval(() => {
       const it = items[i % items.length];
-      spawnBubble(it.emoji, it.img, it.img ? 2 : 3);
+      spawnBubble(it.emoji, it.img, it.img ? 2 : 3, !it.img && isTextReaction(it.emoji));
       i++;
     }, 1500);
     return () => clearInterval(id);
